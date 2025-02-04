@@ -4,6 +4,7 @@ WEC Class module file
 
 import os
 import pandas as pd
+import numpy as np
 import matlab.engine
 
 # Updated local imports with relative paths
@@ -30,19 +31,29 @@ class WEC:
     """
 
     def __init__(
-        self, ID, model, bus_location, Pmax=9999, Pmin=-9999, Qmax=9999, Qmin=-9999
-    ):
+        self, ID, model, bus_location, Pmax=9999, Pmin=-9999, Qmax=9999, Qmin=-9999, MBASE=0.1, config=None):
         self.ID = ID
         self.bus_location = bus_location
         self.model = model
         self.dataframe = pd.DataFrame()
+        self.MBASE = MBASE # default value for MBASE is 10 KW 
         self.Pmax = Pmax
         self.Pmin = Pmin
         self.Qmax = Qmax
         self.Qmin = Qmin
+        self.gen_id = ""
+        # Ensure config is a dictionary
+        self.config = config if config is not None else {}
 
+        # Ensure waveSeed is set (use existing value if available, otherwise generate a random one)
+        self.config["waveSeed"] = int(self.config.get(
+            "waveSeed",
+            np.random.randint(np.iinfo(np.int32).min, np.iinfo(np.int32).max, dtype=np.int32)
+        ))
+        
         if not self.pull_wec_data():
-            print(f"Data for WEC {self.ID} not found in the database.")
+            print(f"Data for WEC {self.ID} not found in the database. Running simulation.")
+            self.WEC_Sim()
 
     def pull_wec_data(self):
         """
@@ -55,6 +66,7 @@ class WEC:
             bool: True if the data pull was successful, False otherwise.
         """
 
+        #print("Pulling WEC data from the database")
         table_check_query = "SELECT name FROM sqlite_master WHERE type='table' AND name='WEC_output_{}'".format(
             self.ID
         )
@@ -70,7 +82,7 @@ class WEC:
         self.dataframe = dbQuery(data_query, return_type="df")
         return True
 
-    def WEC_Sim(self, config):
+    def WEC_Sim(self):
         """
         Description: This function runs the WEC-SIM simulation for the model in the input folder.
         input:
@@ -88,15 +100,18 @@ class WEC:
         drop_table_query = f"DROP TABLE IF EXISTS {table_name};"
         dbQuery(drop_table_query)
 
+        print("Starting MATLAB Engine")
         eng = matlab.engine.start_matlab()
         eng.cd(os.path.join(PATHS["wec_model"], self.model))
         eng.addpath(eng.genpath(PATHS["wec_sim"]), nargout=0)
         print(f"Running {self.model}")
 
         eng.workspace["wecId"] = self.ID
-        for key, value in config.items():
+        for key, value in self.config.items():
             eng.workspace[key] = value
-
+            
+        #eng.workspace["waveSeed"] = self.waveSeed
+        
         eng.workspace["DB_PATH"] = DB_PATH  # move to front end?
         if self.model == "LUPA":
             eng.eval(
@@ -104,6 +119,7 @@ class WEC:
                 nargout=0,
             )
         else:
+            
             eng.eval(
                 "m2g_out = w2gSim(wecId,simLength,Tsample,waveHeight,wavePeriod,waveSeed);",
                 nargout=0,

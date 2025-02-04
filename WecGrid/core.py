@@ -94,7 +94,7 @@ class WecGrid:
             f"PyPSA initialized with case file: {self.case_file_name}."
         )  # TODO: this shoould be a check not a print
 
-    def create_wec(self, ID, model, from_bus, to_bus, run_sim=True):
+    def create_wec(self, ID, model, farm_size, from_bus, to_bus, run_sim=True, mbase=0.01, config=None):
         """
         Creates a WEC device and adds it to both PSSE and PyPSA models.
 
@@ -104,7 +104,6 @@ class WecGrid:
             from_bus (int): The bus number from which the WEC device is connected.
             to_bus (int): The bus number to which the WEC device is connected.
         """
-        self.wecObj_list.append(wec_class.WEC(ID, model, to_bus, run_sim))
 
         # self.psseObj.dataframe.loc[
         #     self.psseObj.dataframe["BUS_ID"] == bus_location, "Type"
@@ -112,10 +111,24 @@ class WecGrid:
         # self.psseObj.wecObj_list = self.wecObj_list
         # TODO: need to update pyPSA obj too if exists? maybe not
         if self.pypsaObj is not None:
-            self.pypsaObj.add_wec(model, ID, from_bus, to_bus)
+            self.pypsaObj.add_wec(model, ID, farm_size, from_bus, to_bus)
 
         if self.psseObj is not None:
-            self.psseObj.add_wec(model, ID, from_bus, to_bus)
+            # get SBASE from PSSE
+            sbase = self.psseObj.get_sbase()
+            #mbase = 0.1 # hard coded for now. for a system with an sbse of 100 MVA, this would be 10 KW (0.01 MVA)
+            
+            for i in range(farm_size):
+                self.wecObj_list.append(
+                    wec_class.WEC(
+                        ID=ID,
+                        model=model,
+                        bus_location=to_bus,
+                        MBASE=mbase,
+                        config=config  
+                    )
+                )
+            self.psseObj.add_wec(model, from_bus, to_bus)
 
     def create_cec(self, ID, model, bus_location, run_sim=True):
         self.cecObj_list.append(cec_class.CEC(ID, model, bus_location, run_sim))

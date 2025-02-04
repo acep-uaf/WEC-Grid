@@ -201,6 +201,7 @@ function Configure-MATLAB {
     Write-Color "Installing MATLAB Engine API..." "Yellow"
     Push-Location $matlabEnginePath
     python -m pip install . --force-reinstall
+    python -m pip install matlabengine
     Pop-Location
 
     #TODO: need to fix this verify code

@@ -9,6 +9,7 @@ import sys
 # 3rd Party Libraries
 import pandas as pd
 import cmath
+import numpy as np
 import matplotlib.pyplot as plt
 
 # Local Libraries (updated with relative imports)
@@ -44,7 +45,8 @@ class PSSeWrapper:
         self.z_history = {}
         self.flow_data = {}
         self.WecGridCore = WecGridCore  # Reference to the parent WecGrid
-        self.lst_param = ["BASE", "PU", "ANGLE", "P", "Q"]
+        self.lst_param = ["BASE", "PU", "ANGLE", "MISMATCH", "P", "Q"]
+        self.load_profiles = pd.DataFrame()
         self.solver = None  # unneeded?
 
     def initialize(self, solver="fnsl"):  # TODO: miss spelling
@@ -71,7 +73,7 @@ class PSSeWrapper:
         psspy.report_output(islct=2, filarg="NUL", options=[0])
 
         self.history = {}
-        self.lst_param = ["BASE", "PU", "ANGLE", "P", "Q"]
+        #self.lst_param = ["BASE", "PU", "ANGLE", "P", "Q"]
         self.solver = solver
         self.dynamic_case_file = ""
 
@@ -93,7 +95,7 @@ class PSSeWrapper:
             print("Error reading the case file.")
             return 0
 
-        if self.run_powerflow(solver):
+        if not self.run_powerflow(solver): # 0 return is good
             self.history[-1] = self.dataframe
             self.z_values(time=-1)
             self.store_p_flow(t=-1)
@@ -117,8 +119,11 @@ class PSSeWrapper:
         self.run_powerflow(self.solver)
         # program variables
         # self.history['Start'] = self.dataframe
+        
+    def get_sbase(self):
+        return PSSeWrapper.psspy.sysmva()
 
-    def add_wec(self, model, ID, from_bus, to_bus):
+    def add_wec(self, model, from_bus, to_bus):
         """
         Adds a WEC system to the PSSE model by:
         1. Adding a new bus.
@@ -132,7 +137,7 @@ class PSSeWrapper:
         - to_bus (int): New bus ID for the WEC system.
         """
         # Create a name for this WEC system
-        name = f"{model}-{ID}"
+        name = f"{model}-{to_bus}"
 
         from_bus_voltage = PSSeWrapper.psspy.busdat(from_bus, "BASE")[1]
 
@@ -169,35 +174,59 @@ class PSSeWrapper:
             print(f"Error adding plant data to bus {to_bus}. PSS®E error code: {ierr}")
             return
 
-        # Step 3: Add a generator at the new bus
-        intgar_gen = [1, 1, 0, 0, 0, 0, 0]  # Generator status, ownership
-        realar_gen = [
-            0.0,  # PG: Active power generation
-            0.0,  # QG: Reactive power generation
-            1.0,  # QT (upper reactive power limit)
-            -1.0,  # QB (lower reactive power limit)
-            3.0,  # PT (upper active power limit)
-            -0.0,  # PB (lower active power limit, 0 means no negative generation)
-            100.0,  # MBASE: MVA base for generator TODO: Check this value, should be passed in ??
-            0.005,  # ZR: Small internal resistance (pu)
-            0.1,  # ZX: Small reactance (pu)
-            0.0,  # RT: Step-up transformer resistance (optional)
-            0.0,  # XT: Step-up transformer reactance (optional)
-            1.0,  # GTAP: Tap ratio (1.0 means no change)
-            1.0,  # F1: First owner fraction
-            0.0,  # F2: Second owner fraction
-            0.0,  # F3: Third owner fraction
-            0.0,  # F4: Fourth owner fraction
-            0.0,  # WPF: Non-conventional machine power factor (0 for conventional)
-        ]
-        ierr = PSSeWrapper.psspy.machine_data_4(to_bus, str(ID), intgar_gen, realar_gen)
-        if ierr != 0:
-            print(
-                f"Error adding generator {ID} to bus {to_bus}. PSS®E error code: {ierr}"
-            )
-            return
+        for i, wec_obj in enumerate(self.WecGridCore.wecObj_list):
+            # Step 3: Add a generator at the new bus
+            intgar_gen = [1, 1, 0, 0, 0, 0, 0]  # Generator status, ownership
+            # realar_gen = [
+            #     0.0,  # PG: Active power generation
+            #     0.0,  # QG: Reactive power generation
+            #     1.0,  # QT (upper reactive power limit)
+            #     -1.0,  # QB (lower reactive power limit)
+            #     3.0,  # PT (upper active power limit)
+            #     -0.0,  # PB (lower active power limit, 0 means no negative generation)
+            #     #self.WecGridCore.wecObj_list[0].MBASE,  #this is a hack, this should be added per wec. 
+            #     0.,  # MBASE: MVA base for generator TODO: Check this value, should be passed in ??
+            #     0.005,  # ZR: Small internal resistance (pu)
+            #     0.1,  # ZX: Small reactance (pu)
+            #     0.0,  # RT: Step-up transformer resistance (optional)
+            #     0.0,  # XT: Step-up transformer reactance (optional)
+            #     1.0,  # GTAP: Tap ratio (1.0 means no change)
+            #     1.0,  # F1: First owner fraction
+            #     0.0,  # F2: Second owner fraction
+            #     0.0,  # F3: Third owner fraction
+            #     0.0,  # F4: Fourth owner fraction
+            #     0.0,  # WPF: Non-conventional machine power factor (0 for conventional)
+            # ]
+            realar_gen = [
+                0.0,    # PG: Active power generation (pu)
+                0.0,    # QG: Reactive power generation (pu)
+                1.0,    # QT (upper reactive power limit)
+                -1.0,   # QB (lower reactive power limit)
+                3.0,    # PT (upper active power limit)
+                0.0,    # PB (lower active power limit)
+                wec_obj.MBASE,   # MBASE: Machine base power in MVA (10 kW)
+                0.005,  # ZR: Small internal resistance (pu)
+                0.1,    # ZX: Small reactance (pu)
+                0.0,    # RT: Transformer resistance (optional)
+                0.0,    # XT: Transformer reactance (optional)
+                1.0,    # GTAP: Tap ratio (1.0 means no change)
+                1.0,    # F1: First owner fraction
+                0.0,    # F2: Second owner fraction
+                0.0,    # F3: Third owner fraction
+                0.0,    # F4: Fourth owner fraction
+                0.0,    # WPF: Non-conventional machine power factor (0 for conventional)
+            ]
+            wec_obj.gen_id = f'G{i+1}'
+            ierr = PSSeWrapper.psspy.machine_data_4(to_bus, wec_obj.gen_id, intgar_gen, realar_gen)
+            #wec_obj.gen_id = str(i+1)
 
-        print(f"Generator {ID} added successfully to bus {to_bus}.")
+            if ierr != 0:
+                print(
+                    f"Error adding generator {wec_obj.gen_id} to bus {to_bus}. PSS®E error code: {ierr}"
+                )
+                return
+
+            print(f"Generator {wec_obj.gen_id} added successfully to bus {to_bus}.")
 
         # Step 4: Add a branch (line) connecting the existing bus to the new bus
         ckt_id = "1"  # Circuit identifier
@@ -242,6 +271,57 @@ class PSSeWrapper:
         self.history[t] = self.dataframe
         self.z_values(time=t)
         self.store_p_flow(t)
+        
+    def generate_load_curve(self, noise_level=0.002, time=None):
+        """
+        Generate a simple bell curve load profile.
+
+        - Starts at initial P Load from the raw file.
+        - Peaks slightly (~5% higher).
+        - Returns to the original value.
+        - No noise.
+
+        Returns:
+        - None (updates self.load_profiles).
+        """
+
+        df = self.dataframe  # Get main dataframe
+        if time is None:
+            time_data = self.WecGridCore.wecObj_list[0].dataframe.time.to_list()
+        else:
+            time_data = time
+        num_timesteps = len(time_data)
+
+        # Get initial P Load values from raw file
+        p_load_values = df.set_index("Bus")["P Load"].fillna(0)
+
+        # Set bell curve shape
+        midpoint = num_timesteps // 2  # Peak at midpoint
+        time_index = np.linspace(-1, 1, num_timesteps)  # Range from -1 to 1
+        bell_curve = np.exp(-4 * time_index**2)  # Standard bell curve
+
+        load_profiles = {}
+
+        for bus_id, base_load in p_load_values.items():
+            if base_load == 0:
+                load_profiles[bus_id] = np.zeros(num_timesteps)
+                continue
+
+            # Scale bell curve: Peaks at ~5% higher than base load
+            curve = base_load * (1 + 0.05 * bell_curve)
+            
+            noise = np.random.normal(0, noise_level * base_load, num_timesteps)
+            curve += noise
+
+            # Ensure first time step matches initial P Load exactly
+            curve[0] = base_load
+
+            # Store the generated curve
+            load_profiles[bus_id] = curve
+
+        # Create DataFrame with time as index and buses as columns
+        self.load_profiles = pd.DataFrame(load_profiles, index=time_data)
+    
 
     def run_powerflow(self, solver):
         """
@@ -250,23 +330,24 @@ class PSSeWrapper:
              solver: the solver you want to use supported by PSSe, "fnsl" is a good default (str)
         output: None
         """
-        ierr = 1  # default there is an error
+        sim_ierr = 1  # default there is an error
 
         if solver == "fnsl":
-            ierr = PSSeWrapper.psspy.fnsl()
+            sim_ierr = PSSeWrapper.psspy.fnsl()
         elif solver == "GS":
-            ierr = PSSeWrapper.psspy.solv()
+            sim_ierr = PSSeWrapper.psspy.solv()
         elif solver == "DC":
-            ierr = PSSeWrapper.psspy.dclf_2(1, 1, [1, 0, 1, 2, 1, 1], [0, 0, 0], "1")
+            sim_ierr = PSSeWrapper.psspy.dclf_2(1, 1, [1, 0, 1, 2, 1, 1], [0, 0, 0], "1")
         else:
             print("not a valid solver")
             return 0
 
-        if ierr < 1:  # no error in solving
+        if sim_ierr == 0:  # no error in solving
             ierr = self.get_values()
+            return 0 # all good 
         else:
             print("Error while solving")
-            return 0
+            return 1
 
         if ierr == 1:  # no error while grabbing values
             return 1
@@ -562,43 +643,44 @@ class PSSeWrapper:
         plt.show()
         return plt
 
-    def update_load(self, ibus, time_step):
+    def update_load(self, time_step):
         """
-        Update the load at the given bus using the load_profiles DataFrame for the given time_step.
+        Update the load at each bus using `load_profiles` for a given time step.
 
         Parameters:
-        - ibus (int): The bus number to update.
-        - time_step (int): The time step index in the load_profiles DataFrame.
-        - load_profiles_df (pd.DataFrame): The load profile DataFrame. Columns should be bus numbers and rows are the time steps.
+        - time_step (int): The time step index in `load_profiles`.
 
         Returns:
         - int: Error code from PSS/E API call.
         """
+        
+    
+        if time_step not in self.load_profiles.index:
+            print(f"Time step {time_step} not found in load_profiles.")
+            return -1  # Error code
 
-        load_value = self.load_profiles.loc[
-            self.load_profiles["time"] == time_step, f"bus {ibus}"
-        ].values[0]
+        for bus_id in self.load_profiles.columns:
+            load_value = self.load_profiles.at[time_step, bus_id]  # Load in MW
 
-        # Default values from the documentation
-        _id = "1"  # Identifier; default is '1' for most loads
-        # intgar = [1, 0, 0, 0, 1, 0, 0]  # default values based on documentation
-        realar = [
-            load_value,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ]  # Update active power, keep others default
-        lodtyp = "CONSTP"  # Load type description; 'CONSTP' for constant power
-        intgar = [1, 1, 1, 1, 1, 0, 0]
+            if np.isnan(load_value):
+                load_value = 0.0  # Avoid NaN issues
+                
+            if load_value > 0:
+                # Default load parameters
+                _id = "1"
+                realar = [load_value, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+                lodtyp = "CONSTP"
+                intgar = [1, 1, 1, 1, 1, 0, 0]
 
-        # Call PSS/E API to update load
-        ierr = PSSeWrapper.psspy.load_data_6(ibus, _id, intgar, realar, lodtyp)
 
-        return ierr
+                # Update the load in PSS/E
+                ierr = PSSeWrapper.psspy.load_data_6(ibus=int(bus_id.split()[1]), realar1=load_value)
+
+                if ierr > 0:
+                    print(f"Error updating load at bus {bus_id} for time step {time_step}")
+                    return ierr
+
+        return 0  # Success
 
     def steady_state(self, gen, load, time, solver):
 
@@ -647,21 +729,35 @@ class PSSeWrapper:
         num_wecs = len(self.WecGridCore.wecObj_list)
         num_cecs = len(self.WecGridCore.cecObj_list)
 
-        time = self.WecGridCore.wecObj_list[0].dataframe.time.to_list()
+        if time is None:
+            time = self.WecGridCore.wecObj_list[0].dataframe.time.to_list()
         for t in time:
             # print("time: {}".format(t))
             if t >= start and t <= end:
                 if num_wecs > 0:
                     for idx, wec_obj in enumerate(self.WecGridCore.wecObj_list):
                         bus = wec_obj.bus_location
+                        machine_id = wec_obj.gen_id
                         pg = float(
                             wec_obj.dataframe.loc[wec_obj.dataframe.time == t].pg
-                        )  # adjust activate power
-                        ierr = PSSeWrapper.psspy.machine_data_2(
-                            bus, str(wec_obj.ID), realar1=pg
+                        ) 
+                        
+                        # adjust activate power
+                        ierr = PSSeWrapper.psspy.machine_data_4(
+                            bus, machine_id, realar1=pg
                         )  # adjust activate power
                         if ierr > 0:
                             raise Exception("Error in AC injection")
+                        
+                                # adjust activate power
+                        ierr = PSSeWrapper.psspy.machine_data_4(
+                            bus, machine_id, realar5=pg
+                        )  # adjust activate power
+                        
+                        if ierr > 0:
+                            raise Exception("Error in AC injection")
+                        
+                        
                         vs = float(
                             wec_obj.dataframe.loc[wec_obj.dataframe.time == t].vs
                         )
@@ -672,8 +768,8 @@ class PSSeWrapper:
                             raise Exception("Error in AC injection")
 
                         # self.run_powerflow(self.solver)
-                        # self.update_load(bus, t) # TODO: Implement update_load, should be optinal tho
-                        # print("=======")plot_bus
+                        
+                        print("===============")
                 if num_cecs > 0:  # TODO: Issue with the CEC data
                     if t in self.WecGridCore.wecObj_list[0].dataframe["time"].values:
                         for idx, cec_obj in enumerate(self.WecGridCore.cecObj_list):
@@ -694,14 +790,17 @@ class PSSeWrapper:
                                 raise Exception("Error in AC injection")
 
                             # self.run_powerflow(self.solver)
-                            # self.update_load(bus, t) # TODO: Implement update_load, should be optinal tho
                         #     #print("=======")
-
-                self.run_powerflow(self.solver)
+                self.update_load(t) 
+                ierr = self.run_powerflow(self.solver)
+                if ierr > 0:
+                    raise Exception("Error in AC injection")
+                    return ierr # ierr code
                 self.update_type()  # TODO: check if I need this still. I think i update the type when I create the models
                 self.history[t] = self.dataframe
                 self.z_values(time=t)
                 self.store_p_flow(t)
+                print("time: {} - error code: {}".format(t, ierr))
             if t > end:
                 break
         return
