@@ -7,6 +7,13 @@ import bqplot as bq
 import ipycytoscape
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
+from matplotlib.patches import Rectangle, Circle
+
+
+from matplotlib.patches import Rectangle, Circle, FancyArrow
+from matplotlib.lines import Line2D
+
 import pandas as pd
 import seaborn as sns
 from ipywidgets import Dropdown, HTML, HBox, Layout, SelectionSlider, VBox, widgets
@@ -65,9 +72,9 @@ class PSSEVisualizer:
         )
 
         if arg_1 == "P":
-            ylabel = ""
+            ylabel = " pu"
         else:
-            ylabel = ""
+            ylabel = " pu" # todo fix this later
 
         ax1.set(xlabel="", ylabel=f"{arg_1} - {ylabel}")
         ax2.set(xlabel="Time (seconds)", ylabel=f"{arg_2} - {ylabel}")
@@ -323,3 +330,5 @@ class PSSEVisualizer:
         layout = self._layout_widgets(cyto_graph, time_slider, info_html)
 
         return layout
+    
+

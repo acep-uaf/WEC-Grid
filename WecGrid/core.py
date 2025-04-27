@@ -80,7 +80,7 @@ class WecGrid:
             f"PSSE initialized with case file: {self.case_file_name}."
         )  # TODO: this shoould be a check not a print
 
-    def initialize_pypsa(self, solver_args=None):
+    def initialize_pypsa(self, solver_args=None, flag=False):
         """
         Initializes the PyPSA solver.
 
@@ -89,7 +89,10 @@ class WecGrid:
         """
         solver_args = solver_args or {}  # Use empty dict if no args are provided
         self.pypsaObj = pyPSAWrapper(self.case_file, self)
-        self.pypsaObj.initialize(solver_args)
+        if flag:
+            self.pypsaObj.initialize_og(solver_args)
+        else:   
+            self.pypsaObj.initialize(solver_args)
         print(
             f"PyPSA initialized with case file: {self.case_file_name}."
         )  # TODO: this shoould be a check not a print
@@ -110,24 +113,49 @@ class WecGrid:
         # ] = 4  # This updated the Grid Model for the grid to know that the bus now has a WEC/CEC on it.
         # self.psseObj.wecObj_list = self.wecObj_list
         # TODO: need to update pyPSA obj too if exists? maybe not
+        
+        # create wecs
+        for i in range(farm_size):
+            self.wecObj_list.append(
+                wec_class.WEC(
+                    ID=ID,
+                    model=model,
+                    bus_location=to_bus,
+                    MBASE=mbase,
+                    config=config  
+                )
+            )
+        
         if self.pypsaObj is not None:
-            self.pypsaObj.add_wec(model, ID, farm_size, from_bus, to_bus)
+            # for i in range(farm_size):
+            #     self.wecObj_list.append(
+            #         wec_class.WEC(
+            #             ID=ID,
+            #             model=model,
+            #             bus_location=to_bus,
+            #             MBASE=mbase,
+            #             config=config  
+            #         )
+            #     )
+            self.pypsaObj.add_wec(model, from_bus, to_bus)
+            #self.pypsaObj.add_wec(model, ID, farm_size, from_bus, to_bus)
+            
 
         if self.psseObj is not None:
             # get SBASE from PSSE
             sbase = self.psseObj.get_sbase()
             #mbase = 0.1 # hard coded for now. for a system with an sbse of 100 MVA, this would be 10 KW (0.01 MVA)
             
-            for i in range(farm_size):
-                self.wecObj_list.append(
-                    wec_class.WEC(
-                        ID=ID,
-                        model=model,
-                        bus_location=to_bus,
-                        MBASE=mbase,
-                        config=config  
-                    )
-                )
+            # for i in range(farm_size):
+            #     self.wecObj_list.append(
+            #         wec_class.WEC(
+            #             ID=ID,
+            #             model=model,
+            #             bus_location=to_bus,
+            #             MBASE=mbase,
+            #             config=config  
+            #         )
+            #     )
             self.psseObj.add_wec(model, from_bus, to_bus)
 
     def create_cec(self, ID, model, bus_location, run_sim=True):
@@ -136,3 +164,13 @@ class WecGrid:
         #     self.psseObj.dataframe["BUS_ID"] == bus_location, "Type"
         # ] = 4  # This updated the Grid Model for the grid to know that the bus now has a WEC/CEC on it.
         # TODO: need to update pyPSA obj too
+        
+        
+    def generate_load_curve(self, noise_level=0.002, time=None):
+        
+        if self.psseObj is not None:
+            self.psseObj.generate_load_curve(noise_level=noise_level, time=time)
+        
+        if self.pypsaObj is not None:
+            self.pypsaObj.generate_load_curve(noise_level=noise_level, time=time)
+ 

@@ -11,6 +11,14 @@ import pandas as pd
 import cmath
 import numpy as np
 import matplotlib.pyplot as plt
+import networkx as nx
+from collections import defaultdict
+from matplotlib.patches import Rectangle, Circle, FancyArrow
+from matplotlib.lines import Line2D
+from collections import namedtuple
+import time
+import time as time_module
+
 
 # Local Libraries (updated with relative imports)
 from ..utilities.util import read_paths  # Relative import for utilities/util.py
@@ -19,6 +27,8 @@ from ..viz.psse_viz import PSSEVisualizer  # Relative import for viz/psse_viz.py
 # Initialize the PATHS dictionary
 # PATHS = read_paths()
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
+
+Snapshot = namedtuple("Snapshot", ["time", "buses", "generators","metadata"])   
 
 # TODO: the PSSE is sometimes blowing up but not returning and error so the sim continues. Need to fix ASAP
 class PSSeWrapper:
@@ -40,14 +50,14 @@ class PSSeWrapper:
             wec_grid (WecGrid): Instance of the WecGrid class.
         """
         self.case_file = case
-        self.dataframe = pd.DataFrame()
-        self.history = {}
-        self.z_history = {}
+        self.bus_dataframe = pd.DataFrame()
+        self.gen_dataframe = pd.DataFrame()
+        self.snapshot_history = []
         self.flow_data = {}
         self.WecGridCore = WecGridCore  # Reference to the parent WecGrid
-        self.lst_param = ["BASE", "PU", "ANGLE", "MISMATCH", "P", "Q"]
         self.load_profiles = pd.DataFrame()
         self.solver = None  # unneeded?
+        
 
     def initialize(self, solver="fnsl"):  # TODO: miss spelling
         """
@@ -57,11 +67,20 @@ class PSSeWrapper:
         output: None
         """
         try:
-            import psse35
             import psspy
+            import psse35
+            import redirect
 
             psse35.set_minor(3)
             psspy.psseinit(50)
+            
+            # # Silence unnecessary outputs
+            psspy.prompt_output(6, "", [])    # no interactive prompts
+            psspy.alert_output(6, "", [])     # no alerts
+            psspy.progress_output(6, "", [])  # no progress messages
+            #psspy.report_output(2, "", [])    # enable only report (results/errors) to screen
+                        
+                        
         except ModuleNotFoundError as e:
             print(
                 "Error: PSSE modules not found. Ensure PSSE is installed and paths are configured."
@@ -72,7 +91,6 @@ class PSSeWrapper:
         PSSeWrapper.psspy = psspy
         psspy.report_output(islct=2, filarg="NUL", options=[0])
 
-        self.history = {}
         #self.lst_param = ["BASE", "PU", "ANGLE", "P", "Q"]
         self.solver = solver
         self.dynamic_case_file = ""
@@ -96,32 +114,135 @@ class PSSeWrapper:
             return 0
 
         if not self.run_powerflow(solver): # 0 return is good
-            self.history[-1] = self.dataframe
-            self.z_values(time=-1)
-            self.store_p_flow(t=-1)
+            self.take_snapshot()
             return 1
         else:
             print("Error running power flow.")
             return 0
 
-    def clear(self):
-        """
-        Description: This function clears all the data and resets the variables of the PSSe valuables
-        input: None
-        output: None
-        """
-        # initalized variables and files
-        self.lst_param = ["PU", "P", "Q"]
-        self.dataframe = pd.DataFrame()
-        self.history = {}
-        # initialization functions
-        PSSeWrapper.psspy.read(1, self.case_file)
-        self.run_powerflow(self.solver)
-        # program variables
-        # self.history['Start'] = self.dataframe
-        
     def get_sbase(self):
         return PSSeWrapper.psspy.sysmva()
+    
+    def take_snapshot(self, time=None, metadata=None):
+        """
+        Takes a snapshot of the PSSE system state.
+        
+        Args:
+            time (float, optional): Timestamp to assign to snapshot. Defaults to `time.time()`.
+            metadata (any, optional): Optional metadata to tag with the snapshot. Can be string or dict.
+        
+        Returns:
+            Snapshot: Namedtuple containing time, buses, generators, and metadata.
+        """
+        if metadata is None:
+            metadata = {}
+
+        snapshot = Snapshot(
+            time=time if time is not None else time_module.time(),  # Avoid shadowing 'time'
+            buses=self.snapshot_buses(),
+            generators=self.snapshot_generators(),
+            metadata=metadata
+        )
+
+        print(f"[Snapshot] t={snapshot.time:.2f}, note={metadata}")
+        self.snapshot_history.append(snapshot)
+        self.bus_dataframe = snapshot.buses
+        self.gen_dataframe = snapshot.generators
+        return snapshot
+    
+    
+    def snapshot_generators(self):
+        """Snapshots generator state across the entire grid using amach* calls."""
+        ierr1, bus_numbers = PSSeWrapper.psspy.amachint(-1, 4, "NUMBER")
+        ierr2, gen_ids = PSSeWrapper.psspy.amachchar(-1, 4, "ID")
+        ierr3, pg_values = PSSeWrapper.psspy.amachreal(-1, 4, "PGEN")
+        ierr4, qg_values = PSSeWrapper.psspy.amachreal(-1, 4, "QGEN")
+        ierr5, mbase_values = PSSeWrapper.psspy.amachreal(-1, 4, "MBASE")
+        ierr6, status_vals = PSSeWrapper.psspy.amachint(-1, 4, "STATUS")
+        ierr7, mismatch_vals = PSSeWrapper.psspy.agenbusreal(-1,1,'MISMATCH') # Bus mismatch, in MVA 
+        ierr8, percent_vals = PSSeWrapper.psspy.agenbusreal(-1,1,'PERCENT') # Bus mismatch, in MVA 
+
+        if any(ierr != 0 for ierr in [ierr1, ierr2, ierr3, ierr4, ierr5, ierr6, ierr7, ierr8]):
+            raise RuntimeError("One or more PSSE API calls failed.")
+
+        data = [
+            {
+                "BUS_ID": b,
+                "GEN_ID": g,
+                "Pg": p,
+                "Qg": q,
+                "MBASE": m,
+                "STATUS": s,
+                "MISMATCH": mi,
+                "PERCENT": pe,
+            }
+            for b, g, p, q, m, s, mi, pe in zip(
+                bus_numbers[0], gen_ids[0], pg_values[0], qg_values[0], mbase_values[0], status_vals[0], mismatch_vals[0], percent_vals[0]
+            )
+        ]
+
+        return pd.DataFrame(data)
+    
+    def snapshot_buses(self, bus_ids=None):
+        """
+        Robust bus snapshot for:
+        - Pd, Qd: real/reactive load
+        - Pg, Qg: real/reactive gen
+        - P: net injection (Pg - Pd)
+        - Voltage magnitude and angle
+        NaN values used where data is unavailable.
+        """
+        if bus_ids is None:
+            ierr, bus_ids = PSSeWrapper.psspy.abusint(-1, 1, 'NUMBER')  # in-service buses
+            bus_ids = bus_ids[0]
+
+        data = []
+        ierr, rarray = PSSeWrapper.psspy.abusreal(-1,1,'MISMATCH') # Bus mismatch, in MVA 
+
+        for i in range(len(bus_ids)):
+            bus = bus_ids[i]
+            # Load (MW / MVAr)
+            ierr, cmpval = PSSeWrapper.psspy.busdt2(bus, 'TOTAL', 'ACT')
+            Pd = cmpval.real if ierr == 0 else 0.0
+            Qd = cmpval.imag if ierr == 0 else 0.0
+
+            # Generation (MW / MVAr)
+            ierr, cmpval_gen = PSSeWrapper.psspy.gendat(bus)
+            Pg = cmpval_gen.real if ierr == 0 else 0.0
+            Qg = cmpval_gen.imag if ierr == 0 else 0.0
+
+            # Voltage and angle
+            v_pu        = PSSeWrapper.psspy.busdat(bus, 'PU')[1]
+            base_kv   = PSSeWrapper.psspy.busdat(bus, 'BASE')[1]
+            v_mag_kv    = PSSeWrapper.psspy.busdat(bus, 'KV')[1]
+            v_angle_deg = PSSeWrapper.psspy.busdat(bus, 'ANGLED')[1]
+            v_angle_rad = PSSeWrapper.psspy.busdat(bus, 'ANGLE')[1]
+            bus_type = PSSeWrapper.psspy.busint(bus, 'TYPE')[1]
+
+            data.append({
+                'BUS_ID': bus,
+                'TYPE': bus_type,
+                'Pd': Pd,
+                'Qd': Qd,
+                'Pg': Pg,
+                'Qg': Qg,
+                'P': Pg - Pd,
+                'Q': Qg - Qd,
+                'V_PU': v_pu,
+                'V_KV': v_mag_kv,
+                'BASE_KV': base_kv,
+                'ANGLE_DEG': v_angle_deg,
+                'ANGLE_RAD': v_angle_rad,
+                'MISMATCH': rarray[0][i],
+            })
+
+        return pd.DataFrame(data)
+
+    def get_all_buses_df(self):
+        return pd.concat([
+            snap.buses.assign(timestamp=snap.time, metadata=str(snap.metadata))
+            for snap in self.snapshot_history
+        ], ignore_index=True)
 
     def add_wec(self, model, from_bus, to_bus):
         """
@@ -136,24 +257,20 @@ class PSSeWrapper:
         - from_bus (int): Existing bus ID to connect the line from.
         - to_bus (int): New bus ID for the WEC system.
         """
+        print("Adding WECs to PSS/E network")
         # Create a name for this WEC system
         name = f"{model}-{to_bus}"
 
         from_bus_voltage = PSSeWrapper.psspy.busdat(from_bus, "BASE")[1]
 
         # Step 1: Add a new bus
-        intgar_bus = [2, 1, 1, 1]  # Bus type, area, zone, owner
-        realar_bus = [
-            from_bus_voltage,
-            1.0,
-            0.0,
-            1.05,
-            0.95,
-            1.1,
-            0.9,
-        ]  # Base voltage, magnitude, etc.
+        
         ierr = PSSeWrapper.psspy.bus_data_4(
-            to_bus, inode=0, intgar=intgar_bus, realar=realar_bus, name=name
+            ibus=to_bus, 
+            inode=0, 
+            intgar1=2, # Bus type (2 = PV bus ), area, zone, owner
+            realar1=from_bus_voltage, # Base voltage of the from bus in kV
+            name=name
         )
         if ierr != 0:
             print(f"Error adding bus {to_bus}. PSS®E error code: {ierr}")
@@ -162,12 +279,10 @@ class PSSeWrapper:
         print(f"Bus {to_bus} added successfully.")
 
         # Step 2: Add plant data
-        intgar_plant = [0, 0]  # No remote voltage regulation
-        realar_plant = [
-            1.0,
-            10.0,
-        ]  # Scheduled voltage = 1.0, max reactive contribution = 10 MVar
-        ierr = PSSeWrapper.psspy.plant_data_4(to_bus, 0, intgar_plant, realar_plant)
+        ierr = PSSeWrapper.psspy.plant_data_4(
+            ibus=to_bus, 
+            inode=0
+        )
         if ierr == 0:
             print(f"Plant data added successfully to bus {to_bus}.")
         else:
@@ -176,51 +291,15 @@ class PSSeWrapper:
 
         for i, wec_obj in enumerate(self.WecGridCore.wecObj_list):
             # Step 3: Add a generator at the new bus
-            intgar_gen = [1, 1, 0, 0, 0, 0, 0]  # Generator status, ownership
-            # realar_gen = [
-            #     0.0,  # PG: Active power generation
-            #     0.0,  # QG: Reactive power generation
-            #     1.0,  # QT (upper reactive power limit)
-            #     -1.0,  # QB (lower reactive power limit)
-            #     3.0,  # PT (upper active power limit)
-            #     -0.0,  # PB (lower active power limit, 0 means no negative generation)
-            #     #self.WecGridCore.wecObj_list[0].MBASE,  #this is a hack, this should be added per wec. 
-            #     0.,  # MBASE: MVA base for generator TODO: Check this value, should be passed in ??
-            #     0.005,  # ZR: Small internal resistance (pu)
-            #     0.1,  # ZX: Small reactance (pu)
-            #     0.0,  # RT: Step-up transformer resistance (optional)
-            #     0.0,  # XT: Step-up transformer reactance (optional)
-            #     1.0,  # GTAP: Tap ratio (1.0 means no change)
-            #     1.0,  # F1: First owner fraction
-            #     0.0,  # F2: Second owner fraction
-            #     0.0,  # F3: Third owner fraction
-            #     0.0,  # F4: Fourth owner fraction
-            #     0.0,  # WPF: Non-conventional machine power factor (0 for conventional)
-            # ]
-            realar_gen = [
-                0.0,    # PG: Active power generation (pu)
-                0.0,    # QG: Reactive power generation (pu)
-                1.0,    # QT (upper reactive power limit)
-                -1.0,   # QB (lower reactive power limit)
-                3.0,    # PT (upper active power limit)
-                0.0,    # PB (lower active power limit)
-                wec_obj.MBASE,   # MBASE: Machine base power in MVA (10 kW)
-                0.005,  # ZR: Small internal resistance (pu)
-                0.1,    # ZX: Small reactance (pu)
-                0.0,    # RT: Transformer resistance (optional)
-                0.0,    # XT: Transformer reactance (optional)
-                1.0,    # GTAP: Tap ratio (1.0 means no change)
-                1.0,    # F1: First owner fraction
-                0.0,    # F2: Second owner fraction
-                0.0,    # F3: Third owner fraction
-                0.0,    # F4: Fourth owner fraction
-                0.0,    # WPF: Non-conventional machine power factor (0 for conventional)
-            ]
             wec_obj.gen_id = f'G{i+1}'
-            ierr = PSSeWrapper.psspy.machine_data_4(to_bus, wec_obj.gen_id, intgar_gen, realar_gen)
-            #wec_obj.gen_id = str(i+1)
+            ierr = PSSeWrapper.psspy.machine_data_4(
+                ibus=to_bus, 
+                id=wec_obj.gen_id,
+                realar1= 0.02,# PG, machine active power (0.0 by default)
+                realar7=wec_obj.MBASE # 1 MVA typically
+            )
 
-            if ierr != 0:
+            if ierr > 0:
                 print(
                     f"Error adding generator {wec_obj.gen_id} to bus {to_bus}. PSS®E error code: {ierr}"
                 )
@@ -229,23 +308,10 @@ class PSSeWrapper:
             print(f"Generator {wec_obj.gen_id} added successfully to bus {to_bus}.")
 
         # Step 4: Add a branch (line) connecting the existing bus to the new bus
-        ckt_id = "1"  # Circuit identifier
-        intgar_branch = [1, 1, 0, 0, 0, 0]  # Owner, branch status, metered end, etc.
-        realar_branch = [
-            0.05,  # R (resistance)
-            0.15,  # X (reactance)
-            0.0,  # B (line charging)
-            0.0,  # GI (real line shunt at from bus)
-            0.0,  # BI (reactive line shunt at from bus)
-            0.0,  # GJ (real line shunt at to bus)
-            0.0,  # BJ (reactive line shunt at to bus)
-            0.0,  # LEN (line length)
-            1.0,  # F1 (owner fraction)
-            0.0,  # F2 (second owner fraction)
-            0.0,  # F3 (third owner fraction)
-            0.0,  # F4 (fourth owner fraction)
-        ]
-        ierr = PSSeWrapper.psspy.branch_data_3(from_bus, to_bus, ckt_id)
+        ierr = PSSeWrapper.psspy.branch_data_3(
+            ibus=from_bus, 
+            jbus=to_bus, 
+        )
         if ierr != 0:
             print(
                 f"Error adding branch from {from_bus} to {to_bus}. PSS®E error code: {ierr}"
@@ -256,22 +322,11 @@ class PSSeWrapper:
 
         # Step 5: Run load flow and log voltages
         ierr = PSSeWrapper.psspy.fnsl()
-        if ierr == 0:
-            _, from_bus_voltage = PSSeWrapper.psspy.busdat(from_bus, "PU")
-            _, to_bus_voltage = PSSeWrapper.psspy.busdat(to_bus, "PU")
-            print(f"Voltage at bus {from_bus}: {from_bus_voltage:.4f} p.u.")
-            print(f"Voltage at bus {to_bus}: {to_bus_voltage:.4f} p.u.")
-        else:
+        if ierr != 0:
             print(f"Error running load flow analysis. PSS®E error code: {ierr}")
-
         self.run_powerflow(self.solver)
+        self.take_snapshot()
 
-        t = -1
-        self.update_type()  # TODO: check if I need this still. I think i update the type when I create the models
-        self.history[t] = self.dataframe
-        self.z_values(time=t)
-        self.store_p_flow(t)
-        
     def generate_load_curve(self, noise_level=0.002, time=None):
         """
         Generate a simple bell curve load profile.
@@ -285,7 +340,7 @@ class PSSeWrapper:
         - None (updates self.load_profiles).
         """
 
-        df = self.dataframe  # Get main dataframe
+        df = self.bus_dataframe  # Get main dataframe
         if time is None:
             time_data = self.WecGridCore.wecObj_list[0].dataframe.time.to_list()
         else:
@@ -293,7 +348,7 @@ class PSSeWrapper:
         num_timesteps = len(time_data)
 
         # Get initial P Load values from raw file
-        p_load_values = df.set_index("Bus")["P Load"].fillna(0)
+        p_load_values = df.set_index("BUS_ID")["Pd"].fillna(0)
 
         # Set bell curve shape
         midpoint = num_timesteps // 2  # Peak at midpoint
@@ -322,7 +377,6 @@ class PSSeWrapper:
         # Create DataFrame with time as index and buses as columns
         self.load_profiles = pd.DataFrame(load_profiles, index=time_data)
     
-
     def run_powerflow(self, solver):
         """
         Description: This function runs the powerflow for PSSe for the given solver passed for the case in memory
@@ -343,8 +397,7 @@ class PSSeWrapper:
             return 0
 
         if sim_ierr == 0:  # no error in solving
-            ierr = self.get_values()
-            return 0 # all good 
+            return PSSeWrapper.psspy.solved()
         else:
             print("Error while solving")
             return 1
@@ -355,293 +408,41 @@ class PSSeWrapper:
             print("Error while grabbing values")
             return 0
 
-    def get_values(self):
-        """
-        Description: This function grabs all the important values we want in our dataframe
-        input: None, uses lst_param tho
-        output: Dataframe of the selected parameters for each bus.
-        """
-        lst = self.lst_param
-        temp_dict = {}
-        for bus_parameter in lst:
-            if bus_parameter != "P" and bus_parameter != "Q":
-                # grabs the bus parameter values for the specified parameter - list
-                ierr, bus_parameter_values = PSSeWrapper.psspy.abusreal(
-                    -1, string=bus_parameter
-                )
-                if ierr != 0:
-                    print("error in get_values function")
-                    return 0
-                bus_add = {}
-                for bus_index, value in enumerate(
-                    bus_parameter_values[0]
-                ):  # loops over those values to create bus num & value pairs
-                    bus_add["BUS {}".format(bus_index + 1)] = value
-                temp_dict[bus_parameter] = bus_add
+    # def store_p_flow(self, t):
+    #     """
+    #     Function to store the p_flow values of a grid network in a dictionary.
 
-        self.dataframe = pd.DataFrame.from_dict(temp_dict)
-        self.dataframe = self.dataframe.reset_index()
-        self.dataframe = self.dataframe.rename(columns={"index": "Bus"})
-        # gets the bus type (3 = swing)
-        self.dataframe["Type"] = PSSeWrapper.psspy.abusint(-1, string="TYPE")[1][0]
-        self.dataframe.insert(0, "BUS_ID", range(1, 1 + len(self.dataframe)))
-        self.addGeninfo()
-        self.addLoadinfo()
+    #     Parameters:
+    #     - t (float): Time at which the p_flow values are to be retrieved.
+    #     """
+    #     # Create an empty dictionary for this particular time
+    #     p_flow_dict = {}
 
-        if "P" in lst:
-            self.get_p_or_q("P")
-        if "Q" in lst:
-            self.get_p_or_q("Q")
+    #     try:
+    #         ierr, (fromnumber, tonumber) = PSSeWrapper.psspy.abrnint(
+    #             sid=-1, flag=3, string=["FROMNUMBER", "TONUMBER"]
+    #         )
 
-        # Check if column exists, if not then initialize
-        if "ΔP" not in self.dataframe.columns:
-            self.dataframe["ΔP"] = 0.0  # default value
-        if "ΔQ" not in self.dataframe.columns:
-            self.dataframe["ΔQ"] = 0.0  # default value
-        if "M_Angle" not in self.dataframe.columns:
-            self.dataframe["M_Angle"] = 0.0  # default value
-        if "M_Mag" not in self.dataframe.columns:
-            self.dataframe["M_Mag"] = 0.0  # default value
+    #         for index in range(len(fromnumber)):
+    #             ierr, p_flow = PSSeWrapper.psspy.brnmsc(
+    #                 int(fromnumber[index]), int(tonumber[index]), "1", "P"
+    #             )
 
-        # Your loop remains unchanged
-        for index, row in self.dataframe.iterrows():
-            mismatch = PSSeWrapper.psspy.busmsm(row["BUS_ID"])[1]
-            self.dataframe.at[index, "ΔP"] = mismatch.real  # should be near zero
-            self.dataframe.at[index, "ΔQ"] = mismatch.imag
-            self.dataframe.at[index, "M_Angle"] = abs(mismatch)
-            self.dataframe.at[index, "M_Mag"] = cmath.phase(mismatch)
-        return 1
+    #             source = str(fromnumber[index]) if p_flow >= 0 else str(tonumber[index])
+    #             target = str(tonumber[index]) if p_flow >= 0 else str(fromnumber[index])
+    #             # print("{} -> {}".format(source, target))
 
-    def get_p_or_q(self, letter):
-        """
-        Description: retrieves P (activate) or Q (reactive) Voltage (in PU) and Voltage Angle for each Bus in the current loaded case
-        input:
-            letter: either P or Q as a string
-        output: None
-        """
-        gen_values = self.dataframe["{} Gen".format(letter)]  #
-        load_values = self.dataframe["{} Load".format(letter)]
-        letter_list = [None] * len(self.dataframe)
+    #             p_flow_dict[(source, target)] = p_flow
 
-        for i in range(len(letter_list)):
-            gen = gen_values[i]
-            load = load_values[i]
-            if (not pd.isnull(gen)) and (not pd.isnull(load)):
-                letter_list[i] = gen - load
-            else:
-                if not pd.isnull(gen):
-                    letter_list[i] = gen
-                if not pd.isnull(load):
-                    letter_list[i] = 0 - load  # gen is
-        self.dataframe["{}".format(letter)] = letter_list
+    #         # Store the p_flow data for this time in the flow_data dictionary
+    #         self.flow_data[t] = p_flow_dict
 
-    def busNum(self):
-        """
-        Description: Returns the number of Buses in the currently loaded case
-        input: None
-        output: Number of Buses
-        """
-        PSSeWrapper.psspy.bsys(0, 0, [0.0, 0.0], 1, [1], 0, [], 0, [], 0, [])
-        ierr, all_bus = PSSeWrapper.psspy.abusint(0, 1, ["number"])
-        return all_bus[0]
+    #     except Exception as e:
+    #         print(f"Error fetching data: {e}")
 
-    def addGeninfo(self):
-        """
-        Description: This function grabs the generator values from the PSSe system and updates the dataframe with the generator data.
-        Input: None
-        Output: None but updates dataframe with generator data
-        """
-        machine_bus_nums = PSSeWrapper.psspy.amachint(-1, 4, "NUMBER")[1][
-            0
-        ]  # get the bus numbers of the machines - list
-        # grabs the complex values for the machine
-        ierr, machine_bus_values = PSSeWrapper.psspy.amachcplx(-1, 1, "PQGEN")
-        if ierr != 0:
-            raise Exception("Error in grabbing PGGEN values in addgen function")
-        p_gen_df_list = [None] * len(self.dataframe)
-        q_gen_df_list = [None] * len(self.dataframe)
-        # iterate over the machine values
-        for list_index, value in enumerate(machine_bus_values[0]):
-            p_gen_df_list[
-                machine_bus_nums[list_index] - 1
-            ] = value.real  # -1 is for the offset
-            q_gen_df_list[machine_bus_nums[list_index] - 1] = value.imag
-
-        self.dataframe["P Gen"] = p_gen_df_list
-        self.dataframe["Q Gen"] = q_gen_df_list
-
-    def addLoadinfo(self):
-        """
-        Description: this function grabs the load values from the PSSe system
-        input: None
-        output: None but updates dataframe with load data
-        """
-        load_bus_nums = PSSeWrapper.psspy.aloadint(-1, 4, "NUMBER")[1][
-            0
-        ]  # get the bus numbers of buses with loads - list
-        ierr, load_bus_values = PSSeWrapper.psspy.aloadcplx(
-            -1, 1, "MVAACT"
-        )  # load values
-        if ierr != 0:
-            raise Exception("Error in grabbing PGGEN values in addgen function")
-        p_load_df_list = [None] * len(self.dataframe)
-        q_load_df_list = [None] * len(self.dataframe)
-
-        # iterate over the machine values
-        for list_index, value in enumerate(load_bus_values[0]):
-            p_load_df_list[
-                load_bus_nums[list_index] - 1
-            ] = value.real  # -1 is for the offset
-            q_load_df_list[load_bus_nums[list_index] - 1] = value.imag
-        self.dataframe["P Load"] = p_load_df_list
-        self.dataframe["Q Load"] = q_load_df_list
-
-    def z_values(self, time):
-        """
-        Retrieve the impedance values for each branch in the power grid at a given time.
-
-        Parameters:
-        - time (float): The time at which to retrieve the impedance values.
-
-        Returns:
-        - None. The impedance values are stored in the `z_history` attribute of the object.
-        """
-        # Retrieve FROMNUMBER and TONUMBER for all branches
-        ierr, (from_numbers, to_numbers) = PSSeWrapper.psspy.abrnint(
-            sid=-1, flag=3, string=["FROMNUMBER", "TONUMBER"]
-        )
-        assert ierr == 0, "Error retrieving branch data"
-
-        # Create a dictionary to store the impedance values for each branch
-        impedances = {}
-
-        for from_bus, to_bus in zip(from_numbers, to_numbers):
-            ickt = "1"  # Assuming a default circuit identifier; might need adjustment for your system
-
-            ierr, cmpval = PSSeWrapper.psspy.brndt2(from_bus, to_bus, ickt, "RX")
-            if ierr == 0:
-                impedances[
-                    (from_bus, to_bus)
-                ] = cmpval  # Store the complex impedance value directly
-            else:
-                print(f"Error fetching impedance data for branch {from_bus}-{to_bus}")
-
-        # The impedances dictionary contains impedance for each branch
-        self.z_history[time] = impedances
-
-    def store_p_flow(self, t):
-        """
-        Function to store the p_flow values of a grid network in a dictionary.
-
-        Parameters:
-        - t (float): Time at which the p_flow values are to be retrieved.
-        """
-        # Create an empty dictionary for this particular time
-        p_flow_dict = {}
-
-        try:
-            ierr, (fromnumber, tonumber) = PSSeWrapper.psspy.abrnint(
-                sid=-1, flag=3, string=["FROMNUMBER", "TONUMBER"]
-            )
-
-            for index in range(len(fromnumber)):
-                ierr, p_flow = PSSeWrapper.psspy.brnmsc(
-                    int(fromnumber[index]), int(tonumber[index]), "1", "P"
-                )
-
-                source = str(fromnumber[index]) if p_flow >= 0 else str(tonumber[index])
-                target = str(tonumber[index]) if p_flow >= 0 else str(fromnumber[index])
-                # print("{} -> {}".format(source, target))
-
-                p_flow_dict[(source, target)] = p_flow
-
-            # Store the p_flow data for this time in the flow_data dictionary
-            self.flow_data[t] = p_flow_dict
-
-        except Exception as e:
-            print(f"Error fetching data: {e}")
-
-    def update_type(self):
-        for wec in self.WecGridCore.wecObj_list:
-            self.dataframe.loc[self.dataframe["BUS_ID"] == wec.bus_location, "Type"] = 4
-
-    def run_dynamics(self, dyr_file=""):
-        import numpy as np
-
-        """
-        Description: This function is a wrapper around the dynamic modeling process in PSSe, this function checks for .dyr file and
-        then proceeds to run a simple simulations.
-        input: you can add dyr file path or the function will just ask you via CL
-        output: None
-        """
-
-        output_file = "./simulation_output_file.out"
-        solved_case = "solved_case.sav"
-
-        # check if dynamic file is loaded
-        if self.dynamic_case_file == "":
-            self.c = input("Dynamic File location")
-
-        PSSeWrapper.psspy.dyre_new(dyrefile=dyr_file)
-        PSSeWrapper.psspy.fnsl()
-        PSSeWrapper.psspy.save(solved_case)
-
-        # Setup for dynamic simulation
-        PSSeWrapper.psspy.cong(0)
-        PSSeWrapper.psspy.ordr(0)
-        PSSeWrapper.psspy.fact()
-        PSSeWrapper.psspy.tysl(0)
-
-        # Add channels (e.g., bus voltage, machine speed)
-        PSSeWrapper.psspy.chsb(
-            sid=0, all=1, status=[-1, -1, -1, 1, 13, 0]
-        )  # Bus voltage
-        PSSeWrapper.psspy.chsb(
-            sid=0, all=1, status=[-1, -1, -1, 1, 7, 0]
-        )  # Machine speed
-        PSSeWrapper.psspy.chsb(sid=0, all=1, status=[-1, -1, -1, 1, 1, 0])  # ANGLE
-        PSSeWrapper.psspy.chsb(sid=0, all=1, status=[-1, -1, -1, 1, 12, 0])  # bus freq
-
-        # Start recording to output file and run dynamic simulation
-        PSSeWrapper.psspy.strt(outfile=output_file)
-        end_time = 10  #
-        time_step = 0.01 / end_time  # Half-cycle step
-        for current_time in np.arange(0, end_time, time_step):
-            PSSeWrapper.psspy.run(tpause=current_time)
-            # if current_time == 1.0:
-            #     psspy.dist_branch_trip(1, 5, '1')
-            # if current_time == 5.0:
-            #     psspy.dist_branch_close(1, 5,'1')
-
-        PSSeWrapper.psspy.save("final_state_after_dynamic_sim.sav")
-
-    def plot_simulation_results(self, output_file, channels):
-        import dyntools
-        import numpy as np
-
-        chnf_obj = dyntools.CHNF(output_file)
-        _, channel_ids, channel_data = chnf_obj.get_data()
-        base_frequency = 60.0  # Hz
-
-        plt.figure(figsize=(10, 6))
-
-        # Assuming channels for generator frequencies are correctly numbered
-
-        for ch in channels:
-            frequency_deviation = np.array(channel_data[ch])
-            time_array = np.array(channel_data["time"])
-            actual_frequency = 60.0 * (1 + frequency_deviation)
-
-            plt.plot(time_array, actual_frequency, label=f"Channel {ch} Frequency")
-
-        plt.xlabel("Time (s)")
-        plt.ylabel("Frequency (Hz)")
-        plt.title("Generator Frequency Over Time")
-        plt.legend()
-        plt.grid(True)
-        plt.ylim(59.96, 60.012)
-        plt.show()
-        return plt
+    # def update_type(self):
+    #     for wec in self.WecGridCore.wecObj_list:
+    #         self.dataframe.loc[self.dataframe["BUS_ID"] == wec.bus_location, "Type"] = 4
 
     def update_load(self, time_step):
         """
@@ -674,7 +475,7 @@ class PSSeWrapper:
 
 
                 # Update the load in PSS/E
-                ierr = PSSeWrapper.psspy.load_data_6(ibus=int(bus_id.split()[1]), realar1=load_value)
+                ierr = PSSeWrapper.psspy.load_data_6(ibus=int(bus_id), realar1=load_value)
 
                 if ierr > 0:
                     print(f"Error updating load at bus {bus_id} for time step {time_step}")
@@ -682,33 +483,8 @@ class PSSeWrapper:
 
         return 0  # Success
 
-    def steady_state(self, gen, load, time, solver):
 
-        for bus, gen_values in gen.items():
-            pg = gen_values[0]  # pg
-            ierr = PSSeWrapper.psspy.machine_data_4(
-                bus, "1", realar1=pg, realar3=gen_values[2], realar4=gen_values[3]
-            )  # adjust activate power
-            if ierr > 0:
-                raise Exception("Error in AC injection")
-            vs = gen_values[1]  # vs
-            ierr = PSSeWrapper.psspy.bus_chng_4(
-                bus, 0, realar2=vs
-            )  # adjsut voltage mag PU
-            if ierr > 0:
-                raise Exception("Error in AC injection")
-            print("gen at bus {} is {} at time {}".format(bus, pg, time))
-
-        for bus, load_value in load.items():
-            ierr = PSSeWrapper.psspy.load_data_6(
-                bus, "1", realar1=load_value["P"], realar2=load_value["Q"]
-            )
-
-        self.run_powerflow(solver)
-        self.update_type()
-        self.history[time] = self.dataframe
-
-    def ac_injection(self, start, end, p=None, v=None, time=None):
+    def ac_injection(self, start=None, end=None, p=None, v=None, time=None):
         # TODO: There has to be a better way to do this.
         # I think we should create a marine models obj list or dict and then iterate over that instead
         # of having two list?
@@ -726,101 +502,49 @@ class PSSeWrapper:
         output:
             no output but dataframe is updated and so is history
         """
+
         num_wecs = len(self.WecGridCore.wecObj_list)
-        num_cecs = len(self.WecGridCore.cecObj_list)
 
         if time is None:
             time = self.WecGridCore.wecObj_list[0].dataframe.time.to_list()
+        if start is None:
+            start = time[0]
+        if end is None:
+            end = time[-1]
         for t in time:
-            # print("time: {}".format(t))
+            print(f"Running powerflow for time: {t}")
             if t >= start and t <= end:
                 if num_wecs > 0:
                     for idx, wec_obj in enumerate(self.WecGridCore.wecObj_list):
                         bus = wec_obj.bus_location
                         machine_id = wec_obj.gen_id
-                        pg = float(
-                            wec_obj.dataframe.loc[wec_obj.dataframe.time == t].pg
-                        ) 
                         
-                        # adjust activate power
-                        ierr = PSSeWrapper.psspy.machine_data_4(
-                            bus, machine_id, realar1=pg
-                        )  # adjust activate power
-                        if ierr > 0:
-                            raise Exception("Error in AC injection")
-                        
-                                # adjust activate power
-                        ierr = PSSeWrapper.psspy.machine_data_4(
-                            bus, machine_id, realar5=pg
-                        )  # adjust activate power
-                        
-                        if ierr > 0:
-                            raise Exception("Error in AC injection")
-                        
-                        
-                        vs = float(
-                            wec_obj.dataframe.loc[wec_obj.dataframe.time == t].vs
+                        # get activate power from wec at time t
+                        pg = float(wec_obj.dataframe.loc[wec_obj.dataframe.time == t].pg) 
+                        # adjust activate power 
+                        ierr = PSSeWrapper.psspy.machine_chng_4(
+                            bus, machine_id, realar1=pg #, realar7=wec_obj.MBASE
                         )
-                        ierr = PSSeWrapper.psspy.bus_chng_4(
-                            bus, 0, realar2=vs
-                        )  # adjsut voltage mag PU
                         if ierr > 0:
-                            raise Exception("Error in AC injection")
-
-                        # self.run_powerflow(self.solver)
+                            raise Exception("Error in adjust activate power")
                         
-                        print("===============")
-                if num_cecs > 0:  # TODO: Issue with the CEC data
-                    if t in self.WecGridCore.wecObj_list[0].dataframe["time"].values:
-                        for idx, cec_obj in enumerate(self.WecGridCore.cecObj_list):
-                            bus = cec_obj.bus_location
-                            pg = cec_obj.dataframe.loc[
-                                cec_obj.dataframe.time == t
-                            ].pg  # adjust activate power
-                            ierr = PSSeWrapper.psspy.machine_data_2(
-                                bus, "1", realar1=pg
-                            )  # adjust activate power
-                            if ierr > 0:
-                                raise Exception("Error in AC injection")
-                            vs = wec_obj.dataframe.loc[wec_obj.dataframe.time == t].vs
-                            ierr = PSSeWrapper.psspy.bus_chng_4(
-                                bus, 0, realar2=vs
-                            )  # adjsut voltage mag PU
-                            if ierr > 0:
-                                raise Exception("Error in AC injection")
-
-                            # self.run_powerflow(self.solver)
-                        #     #print("=======")
+                        # ierr, rval = PSSeWrapper.psspy.macdat(bus, machine_id, 'MBASE')
+                        # print(f"Machine {machine_id} MBASE: {rval}")
+                        # ierr, rval = PSSeWrapper.psspy.macdat(bus, machine_id, 'P')
+                        # print(f"Machine {machine_id} P: {rval}")
                 self.update_load(t) 
-                ierr = self.run_powerflow(self.solver)
-                if ierr > 0:
-                    raise Exception("Error in AC injection")
-                    return ierr # ierr code
-                self.update_type()  # TODO: check if I need this still. I think i update the type when I create the models
-                self.history[t] = self.dataframe
-                self.z_values(time=t)
-                self.store_p_flow(t)
-                print("time: {} - error code: {}".format(t, ierr))
+                sim_ierr = PSSeWrapper.psspy.fnsl()
+                
+                ierr = PSSeWrapper.psspy.solved()
+                self.take_snapshot(metadata={"Solver output": sim_ierr, "Solved Status": ierr})
+                
             if t > end:
                 break
         return
 
     def bus_history(self, bus_num):
-        """
-        Description: this function grab all the data associated with a bus through the simulation
-        input:
-            bus_num: bus number (Int)
-        output:
-            bus_dataframe: a pandas dateframe of the history
-        """
-        # maybe I should add a filering parameter?
-
-        bus_dataframe = pd.DataFrame()
-        for time, df in self.history.items():
-            temp = pd.DataFrame(df.loc[df["BUS_ID"] == bus_num])
-            temp.insert(0, "time", time)
-            bus_dataframe = bus_dataframe.append(temp)
-        return bus_dataframe
+        pass
+        #TODO: update to work with new snapshat datatype
 
     def plot_bus(self, bus_num, time, arg_1="P", arg_2="Q"):
         """
@@ -831,125 +555,349 @@ class PSSeWrapper:
         output:
             matplotlib chart
         """
+        #TODO: update to work with new snapshot datatype
         visualizer = PSSEVisualizer(psse_obj=self)
         visualizer.plot_bus(bus_num, time, arg_1, arg_2)
 
-    def plot_load_curve(self, bus_id):
+    # def plot_load_curve(self, bus_id):
+    #     """
+    #     Description: This function plots the load curve for a given bus
+    #     input:
+    #         bus_id: the bus number we want to visualize (Int)
+    #     output:
+    #         matplotlib chart
+    #     """
+    #     #TODO: update to work with new snapshot datatype
+    #     # Check if the bus_id exists in load_profiles
+    #     viz = PSSEVisualizer(
+    #         dataframe=self.dataframe,
+    #         history=self.history,
+    #     )
+    #     viz.plot_load_curve(bus_id)
+
+    # def viz(self, dataframe=None):
+    #     """ """
+    #     #TODO: update to work with new snapshot datatype
+    #     visualizer = PSSEVisualizer(psse_obj=self)  # need to pass this object itself?
+    #     return visualizer.viz()
+
+    # def get_flow_data(self, t=None):
+    #     """
+    #     Description:
+    #     This method retrieves the power flow data for all branches in the power system at a given timestamp.
+    #     If no timestamp is provided, the method fetches the data from PSS/E and returns it.
+    #     If a timestamp is provided, the method retrieves the corresponding data from the dictionary and returns it.
+
+    #     Inputs:
+    #     - t (float): timestamp for which to retrieve the power flow data (optional)
+
+    #     Outputs:
+    #     - flow_data (dict): dictionary containing the power flow data for all branches in the power system
+    #     """
+    #     # If t is not provided, fetch data from PSS/E
+    #     if t is None:
+    #         flow_data = {}
+
+    #         try:
+    #             ierr, (fromnumber, tonumber) = self.psspy.abrnint(
+    #                 sid=-1, flag=3, string=["FROMNUMBER", "TONUMBER"]
+    #             )
+
+    #             for index in range(len(fromnumber)):
+    #                 ierr, p_flow = self.psspy.brnmsc(
+    #                     int(fromnumber[index]), int(tonumber[index]), "1", "P"
+    #                 )
+
+    #                 edge_data = {
+    #                     "source": str(fromnumber[index])
+    #                     if p_flow >= 0
+    #                     else str(tonumber[index]),
+    #                     "target": str(tonumber[index])
+    #                     if p_flow >= 0
+    #                     else str(fromnumber[index]),
+    #                     "p_flow": p_flow,
+    #                 }
+
+    #                 # Use a tuple (source, target) as a unique identifier for each edge
+    #                 edge_identifier = (edge_data["source"], edge_data["target"])
+    #                 flow_data[edge_identifier] = edge_data["p_flow"]
+    #         except Exception as e:
+    #             print(f"Error fetching data: {e}")
+
+    #         # Assign the fetched data to the current timestamp and return it
+    #         # self.flow_data[time.time()] = flow_data
+    #         return flow_data
+
+    #     # If t is provided, retrieve the corresponding data from the dictionary
+    #     else:
+    #         return self.flow_data.get(t, {})
+        
+        
+    # '''
+    # TODO: these function below need to be moved into PSSE-VIZ soon
+    # '''
+    def draw_transformer_arrow(self, ax, path):
         """
-        Description: This function plots the load curve for a given bus
-        input:
-            bus_id: the bus number we want to visualize (Int)
-        output:
-            matplotlib chart
+        Draws an arrow along the transformer connection path.
+        The arrow direction follows the second movement segment.
+        Adds "^^^" symbol above the arrow at the arrow tip.
         """
-        # Check if the bus_id exists in load_profiles
-        viz = PSSEVisualizer(
-            dataframe=self.dataframe,
-            history=self.history,
-            # load_profiles=self.load_profiles,
-            # flow_data=self.flow_data,
+        if len(path) < 4:
+            return  # Not enough points to draw an arrow
+
+        # Select second segment for placing the arrow
+        x1, y1 = path[2]
+        x2, y2 = path[3]
+
+        dx = (x2 - x1) * 0.3  # Scale down arrow length
+        dy = (y2 - y1) * 0.3
+
+        # **Compute arrow tip**
+        arrow_tip_x = x1 + dx
+        arrow_tip_y = y1 + dy
+
+        # **Draw arrow**
+        ax.add_patch(FancyArrow(x1, y1, dx, dy, width=0.005, head_width=0.02, head_length=0.02, color='blue'))
+
+        # # **Place "^^^" symbol at arrow tip**
+        # if dy == 0:  # Horizontal transformer
+        #     ax.text(arrow_tip_x - 0.01, arrow_tip_y + 0.008, "^^^", fontsize=8, fontweight="bold", ha='center', va='center',rotation=90, color='blue')
+        # else:  # Vertical transformer
+        #     ax.text(arrow_tip_x - 0.005, arrow_tip_y - 0.01, "^^^", fontsize=8, fontweight="bold", ha='center', va='center', rotation=180, color='blue')
+            
+    def determine_connection_sides(self, from_bus, to_bus, from_pos, to_pos, bus_connections, used_connections):
+        """
+        Determines the best connection points for a given bus pair while avoiding overlapping connections.
+        - Uses x and y positions to determine if the connection is horizontal (left/right) or vertical (top/bottom).
+        - Selects an available connection within that side (inner, middle, outer) to reduce overlap.
+        """
+
+        y_tuner = 0.1  # Controls how strict we are about vertical vs. horizontal
+        x_tuner = 0.48  # Controls how strict we are about left/right priority
+
+        x1, y1 = from_pos
+        x2, y2 = to_pos
+
+        # --- Step 1: Determine primary connection direction ---
+        if abs(x1 - x2) > abs(y1 - y2):  
+            primary_connection = "horizontal"  # Mostly horizontal movement
+        else:  
+            primary_connection = "vertical"  # Mostly vertical movement
+
+        # Adjust with tuners
+        if abs(y1 - y2) < y_tuner:
+            primary_connection = "horizontal"
+        elif abs(x1 - x2) < x_tuner:
+            primary_connection = "vertical"
+
+        # --- Step 2: Determine connection points ---
+        if primary_connection == "horizontal":
+            if x1 < x2:  # Moving left → right
+                from_side = "right"
+                to_side = "left"
+            else:  # Moving right → left
+                from_side = "left"
+                to_side = "right"
+        else:  # Vertical Connection
+            if y1 > y2:  # Moving top → bottom
+                from_side = "bottom"
+                to_side = "top"
+            else:  # Moving bottom → top
+                from_side = "top"
+                to_side = "bottom"
+
+        # **Select the best available connection point within the side**
+        for priority in ["middle", "inner", "outer"]:  # Prioritize middle, then fallback
+            from_point_key = f"{from_side}_{priority}"
+            to_point_key = f"{to_side}_{priority}"
+
+            if from_point_key not in used_connections[from_bus] and to_point_key not in used_connections[to_bus]:
+                used_connections[from_bus].add(from_point_key)
+                used_connections[to_bus].add(to_point_key)
+                return bus_connections[from_bus][from_point_key], bus_connections[to_bus][to_point_key], f"{from_side}-{to_side}"
+
+        # Fallback (shouldn't reach here unless something is wrong)
+        return bus_connections[from_bus]["right_middle"], bus_connections[to_bus]["left_middle"], "fallback"
+
+    def route_line(self, p1, p2, connection_type):
+        """
+        Creates an L-shaped or Z-shaped path between two points using right-angle bends.
+        - Left/Right: Midpoint in X first, then Y.
+        - Top/Bottom: Midpoint in Y first, then X.
+        """
+        x1, y1 = p1
+        x2, y2 = p2
+
+        if x1 == x2 or y1 == y2:
+            return [p1, p2]  # Direct connection
+
+        if connection_type in ["left-right", "right-left"]:
+            mid_x = (x1 + x2) / 2  # First bend in X direction
+            return [p1, (mid_x, y1), (mid_x, y2), p2]  # Two bends: X first, then Y
+
+        elif connection_type in ["top-bottom", "bottom-top"]:
+            mid_y = (y1 + y2) / 2  # First bend in Y direction
+            return [p1, (x1, mid_y), (x2, mid_y), p2]  # Two bends: Y first, then X
+
+        return [p1, p2]  # Default (fallback)
+
+    def get_bus_color(self, bus_type):
+        """ Returns the color for a given bus type. """
+        color_map = {
+            1: "#A9A9A9",  # Gray
+            2: "#32CD32",  # Green
+            3: "#FF4500",  # Red
+            4: "#1E90FF",  # Blue
+        }
+        return color_map.get(bus_type, "#D3D3D3")  # Default light gray if undefined
+
+    def sld(self):
+        """
+        Generates a structured single-line diagram with correct bus connection logic and predictable bends.
+        Includes:
+        - Loads (downward arrows)
+        - Generators (circles above bus)
+        """
+
+        # --- Step 1: Extract Bus, Load, and Generator Data ---
+        ierr, bus_numbers = self.psspy.abusint(-1, 1, "NUMBER")
+        #ierr, bus_types = self.psspy.abusint(-1, 1, "TYPE")
+        bus_type_df = self.bus_dataframe[["BUS_ID", "TYPE"]]
+        
+        ierr, (from_buses, to_buses) = self.psspy.abrnint(sid=-1, flag=3, string=["FROMNUMBER", "TONUMBER"])
+        ierr, load_buses = self.psspy.aloadint(-1, 1, "NUMBER")  # Correct API for loads
+        ierr, gen_buses = self.psspy.amachint(-1, 4, "NUMBER")  # Correct API for generators
+        ierr, (xfmr_from_buses, xfmr_to_buses) = self.psspy.atrnint(
+            sid=-1, owner=1, ties=3, flag=2, entry=1, string=["FROMNUMBER", "TONUMBER"]
         )
-        viz.plot_load_curve(bus_id)
+        xfmr_pairs = set(zip(xfmr_from_buses, xfmr_to_buses))
 
-    def viz(self, dataframe=None):
-        """ """
-        visualizer = PSSEVisualizer(psse_obj=self)  # need to pass this object itself?
-        return visualizer.viz()
+        # Convert lists to sets for quick lookup
+        load_buses = set(load_buses[0]) if load_buses[0] else set()
+        gen_buses = set(gen_buses[0]) if gen_buses[0] else set()
 
-    def adjust_gen(self, bus_num, p=None, v=None, q=None):
-        """
-        Description: Given a generator bus number. Adjust the values based on the parameters passed.
-        input:
-        output:
-        """
+        # --- Step 2: Build Graph Representation ---
+        G = nx.Graph()
+        for bus in bus_numbers[0]:
+            G.add_node(bus)
+        for from_bus, to_bus in zip(from_buses, to_buses):
+            G.add_edge(from_bus, to_bus)
 
-        if p is not None:
-            ierr = PSSeWrapper.psspy.machine_data_2(
-                bus_num, "1", realar1=p
-            )  # adjust activate power
-            if ierr > 0:
-                raise Exception("Error in AC injection")
+        # --- Step 3: Compute Layout ---
+        pos = nx.kamada_kawai_layout(G)
 
-        if v is not None:
-            ierr = PSSeWrapper.psspy.bus_chng_4(
-                bus_num, 0, realar2=v
-            )  # adjsut voltage mag PU
-            if ierr > 0:
-                raise Exception("Error in AC injection")
+        # Normalize positions for even spacing
+        pos_values = np.array(list(pos.values()))
+        x_vals, y_vals = pos_values[:, 0], pos_values[:, 1]
+        x_min, x_max = np.min(x_vals), np.max(x_vals)
+        y_min, y_max = np.min(y_vals), np.max(y_vals)
+        for node in pos:
+            pos[node] = (
+                2 * (pos[node][0] - x_min) / (x_max - x_min) - 1,
+                1.5 * (pos[node][1] - y_min) / (y_max - y_min) - 0.5
+            )
 
-        if q is not None:
-            ierr = PSSeWrapper.psspy.machine_data_2(
-                bus_num, "1", realar2=q
-            )  # adjust Reactivate power
-            if ierr > 0:
-                raise Exception("Error in AC injection")
+        # --- Step 4: Create Visualization ---
+        fig, ax = plt.subplots(figsize=(14, 10))
+        node_width, node_height = 0.12, 0.04
 
-    def get_flow_data(self, t=None):
-        """
-        Description:
-        This method retrieves the power flow data for all branches in the power system at a given timestamp.
-        If no timestamp is provided, the method fetches the data from PSS/E and returns it.
-        If a timestamp is provided, the method retrieves the corresponding data from the dictionary and returns it.
+        # Store predefined connection points for each bus
+        bus_connections = {}
+        used_connections = {bus: set() for bus in bus_numbers[0]}  # Track used connections
+        for bus in bus_numbers[0]:
+            x, y = pos[bus]
+            bus_connections[bus] = {
+                # Left side (3 points)
+                "left_inner": (x - node_width / 2, y - node_height / 3),
+                "left_middle": (x - node_width / 2, y),
+                "left_outer": (x - node_width / 2, y + node_height / 3),
 
-        Inputs:
-        - t (float): timestamp for which to retrieve the power flow data (optional)
+                # Right side (3 points)
+                "right_inner": (x + node_width / 2, y - node_height / 3),
+                "right_middle": (x + node_width / 2, y),
+                "right_outer": (x + node_width / 2, y + node_height / 3),
 
-        Outputs:
-        - flow_data (dict): dictionary containing the power flow data for all branches in the power system
-        """
-        # If t is not provided, fetch data from PSS/E
-        if t is None:
-            flow_data = {}
+                # Top side (3 points)
+                "top_inner": (x - node_width / 3, y + node_height / 2),
+                "top_middle": (x, y + node_height / 2),
+                "top_outer": (x + node_width / 3, y + node_height / 2),
+
+                # Bottom side (3 points)
+                "bottom_inner": (x - node_width / 3, y - node_height / 2),
+                "bottom_middle": (x, y - node_height / 2),
+                "bottom_outer": (x + node_width / 3, y - node_height / 2),
+            }
+
+        # Draw right-angle connections based on simplified logic
+        for from_bus, to_bus in zip(from_buses, to_buses):
+            from_pos = pos[from_bus]
+            to_pos = pos[to_bus]
 
             try:
-                ierr, (fromnumber, tonumber) = self.psspy.abrnint(
-                    sid=-1, flag=3, string=["FROMNUMBER", "TONUMBER"]
-                )
+                p1, p2, ctype = self.determine_connection_sides(from_bus, to_bus, from_pos, to_pos, bus_connections, used_connections)
+            except KeyError:
+                continue
 
-                for index in range(len(fromnumber)):
-                    ierr, p_flow = self.psspy.brnmsc(
-                        int(fromnumber[index]), int(tonumber[index]), "1", "P"
-                    )
+            path = self.route_line(p1, p2, ctype)
 
-                    edge_data = {
-                        "source": str(fromnumber[index])
-                        if p_flow >= 0
-                        else str(tonumber[index]),
-                        "target": str(tonumber[index])
-                        if p_flow >= 0
-                        else str(fromnumber[index]),
-                        "p_flow": p_flow,
-                    }
+            # Draw path segments
+            for i in range(len(path) - 1):
+                ax.plot([path[i][0], path[i+1][0]], [path[i][1], path[i+1][1]], 'k-', lw=1.5, linestyle="dashed")
+            
+            if (from_bus, to_bus) in xfmr_pairs or (to_bus, from_bus) in xfmr_pairs:
+                self.draw_transformer_arrow(ax, path)  # Attach arrow to 2nd segment of the path
+                #draw_transformer_marker(ax, path)  # Attach diamond marker to midpoint of the path
 
-                    # Use a tuple (source, target) as a unique identifier for each edge
-                    edge_identifier = (edge_data["source"], edge_data["target"])
-                    flow_data[edge_identifier] = edge_data["p_flow"]
-            except Exception as e:
-                print(f"Error fetching data: {e}")
+                
+        # Draw bus rectangles
+        for bus in bus_numbers[0]:
+            x, y = pos[bus]
+            #temp = bus_numbers[0].index(bus)
+            
+            bus_type = bus_type_df.loc[bus_type_df["BUS_ID"] == bus, "TYPE"].values[0]
+            bus_color = self.get_bus_color(bus_type)
+            
+            #bus_color = self.get_bus_color()
+            
+            rect = Rectangle((x - node_width / 2, y - node_height / 2), node_width, node_height,
+                            linewidth=1.5, edgecolor='black', facecolor=bus_color)
+            ax.add_patch(rect)
+            ax.text(x, y, str(bus), fontsize=8, fontweight="bold", ha='center', va='center')
 
-            # Assign the fetched data to the current timestamp and return it
-            # self.flow_data[time.time()] = flow_data
-            return flow_data
+            # Draw loads (right-offset downward arrows)
+            if bus in load_buses:
+                ax.arrow(x + node_width / 2 - 0.02, y + 0.02, 0, 0.05, head_width=0.02, head_length=0.02, fc='black', ec='black')
 
-        # If t is provided, retrieve the corresponding data from the dictionary
-        else:
-            return self.flow_data.get(t, {})
+            # Draw generators (left-offset circles above bus)
+            if bus in gen_buses:
+                gen_x = x - node_width / 2 + 0.02  # Move generator left
+                gen_y = y + node_height / 2 + 0.05
+                gen_size = 0.02
+                ax.plot([gen_x, gen_x], [y + node_height / 2 + 0.005, gen_y - gen_size ], color='black', lw=2)
+                ax.add_patch(Circle((gen_x, gen_y), gen_size, color='none', ec='black', lw=1.5))
+        
+    
 
-    def _psse_dc_injection(self, ibus, p, pf_solver, time):
-        """
-        Description: preforms the DC injection of the wec buses
-        input:
-            p: a list of active power set point in order(list)
-            pf_solver: supported PSSe solver (Str)
-            time: (Int)
-        output: None
-        """
-        ierr = WecGridCore.psspy.machine_chng_3(ibus, "1", [], [p])
-        if ierr > 0:
-            print("Failed | machine_chng_3 code = {}".format(ierr))
-        # psspy.dclf_2(status4=2)
-        ierr = WecGridCore.psspy.dclf_2(1, 1, [1, 0, 1, 2, 0, 1], [0, 0, 1], "1")
-        if ierr > 0:
-            raise Exception("Error in DC injection")
-        self._psse_get_values()
-        self.history[time] = self.dataframe
+
+        ax.set_aspect('equal', adjustable='datalim')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_frame_on(False)
+        ax.set_title(f"Generated Single-Line Diagram of {self.case_file}", fontsize=14)
+        # Extract the final file name without path and extension
+        case_file_name = os.path.splitext(os.path.basename(self.case_file))[0]
+        ax.set_title(f"Generated Single-Line Diagram of {case_file_name}", fontsize=14)
+        # Define legend elements
+        legend_elements = [
+            Line2D([0], [0], marker='o', color='black', markersize=8, label="Generator", markerfacecolor='none', markeredgecolor='black', lw=0),
+            Line2D([0], [0], marker=('^'), color='blue', markersize=10, label="Transformer", markerfacecolor='blue', lw=0),
+            Line2D([0], [0], marker='^', color='black', markersize=10, label="Load", markerfacecolor='black', lw=0),
+            Line2D([0], [0], marker='s', color='red', markersize=10, label="SwingBus", markerfacecolor='red', lw=0),
+            Line2D([0], [0], marker='s', color='blue', markersize=10, label="WEC Bus", markerfacecolor='blue', lw=0),
+            Line2D([0], [0], marker='s', color='green', markersize=10, label="PV Bus", markerfacecolor='green', lw=0),
+            Line2D([0], [0], marker='s', color='gray', markersize=10, label="PQ Bus", markerfacecolor='gray', lw=0),
+        ]
+
+        # Add the legend at the bottom-right
+        ax.legend(handles=legend_elements, loc="upper left", fontsize=10, frameon=True, edgecolor='black', title="Legend")
+        plt.show()
