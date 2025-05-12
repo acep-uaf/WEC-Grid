@@ -25,13 +25,13 @@ import cmath
 import matplotlib.pyplot as plt
 
 # local libraries
-from WecGrid.cec import cec_class
-from WecGrid.wec import wec_class
-from WecGrid.utilities.util import dbQuery, read_paths
-from WecGrid.database_handler.connection_class import DB_PATH
-from WecGrid.pyPSA import pyPSAWrapper
-from WecGrid.PSSe import PSSeWrapper
-from WecGrid.viz import PSSEVisualizer
+from WECGrid.cec import cec_class
+from WECGrid.wec import wec_class
+from WECGrid.utilities.util import dbQuery, read_paths
+from WECGrid.database_handler.connection_class import DB_PATH
+from WECGrid.pypsa import PYPSAInterface
+from WECGrid.psse import PSSEInterface
+#from WECGrid.viz import PSSEVisualizer
 
 
 # Initialize the PATHS dictionary
@@ -39,7 +39,7 @@ PATHS = read_paths()
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class WecGrid:
+class WECGridEngine:
     """
     Main class for coordinating between PSSE and PyPSA functionality and managing WEC devices.
 
@@ -59,45 +59,37 @@ class WecGrid:
         """
         self.case_file = case  # TODO: need to verify file exist
         self.case_file_name = os.path.basename(case)
-        self.psseObj = None
-        self.pypsaObj = None
-        # self.dbObj = None
-        self.wecObj_list = []  # list of the WEC Model objects for the simulations
-        self.cecObj_list = []  # list of the WEC Model objects for the simulations
-        # these list could probably be combined? ^^^
-
-    def initialize_psse(self, solver_args=None):
+        self.psse = None
+        self.pypsa = None
+        self.start_time = datetime(1997, 11, 3, 0, 0, 0)
+        self.wecObj_list = [] 
+        
+    def use(self, software):
         """
-        Initializes the PSSE solver.
+        Enables one or more supported power system software tools.
 
         Args:
-            solver_args (dict): Optional arguments for the PSSE initialization.
+            software (str or list of str): Name(s) of supported software to initialize.
+                                        Options: "psse", "pypsa"
         """
-        solver_args = solver_args or {}  # Use empty dict if no args are provided
-        self.psseObj = PSSeWrapper(self.case_file, self)
-        self.psseObj.initialize(solver_args)
-        print(
-            f"PSSE initialized with case file: {self.case_file_name}."
-        )  # TODO: this shoould be a check not a print
+        if isinstance(software, str):
+            software = [software]
 
-    def initialize_pypsa(self, solver_args=None, flag=False):
-        """
-        Initializes the PyPSA solver.
+        for name in software:
+            name = name.lower()
+            if name == "psse":
+                self.psse = PSSEInterface(self.case_file, self)
+                self.psse.init_api()
+                print(f"Initialized: PSSE with case {self.case_file_name}")
+            elif name == "pypsa":
+                self.pypsa = PYPSAInterface(self.case_file, self)
+                self.pypsa.initialize()
+                print(f"Initialized: PyPSA with case {self.case_file_name}")
+            else:
+                raise ValueError(f"Unsupported software: '{name}'. Use 'psse' or 'pypsa'.")
 
-        Args:
-            solver_args (dict): Optional arguments for the PyPSA initialization.
-        """
-        solver_args = solver_args or {}  # Use empty dict if no args are provided
-        self.pypsaObj = pyPSAWrapper(self.case_file, self)
-        if flag:
-            self.pypsaObj.initialize_og(solver_args)
-        else:   
-            self.pypsaObj.initialize(solver_args)
-        print(
-            f"PyPSA initialized with case file: {self.case_file_name}."
-        )  # TODO: this shoould be a check not a print
-
-    def create_wec(self, ID, model, farm_size, from_bus, to_bus, run_sim=True, mbase=0.01, config=None):
+    def create_wec(self, ID, model, farm_size, ibus, jbus, run_sim=True, mbase=0.01, config=None):
+        #TODO: need to confirm i and j bus are correct orientation
         """
         Creates a WEC device and adds it to both PSSE and PyPSA models.
 
@@ -107,70 +99,19 @@ class WecGrid:
             from_bus (int): The bus number from which the WEC device is connected.
             to_bus (int): The bus number to which the WEC device is connected.
         """
-
-        # self.psseObj.dataframe.loc[
-        #     self.psseObj.dataframe["BUS_ID"] == bus_location, "Type"
-        # ] = 4  # This updated the Grid Model for the grid to know that the bus now has a WEC/CEC on it.
-        # self.psseObj.wecObj_list = self.wecObj_list
-        # TODO: need to update pyPSA obj too if exists? maybe not
-        
-        # create wecs
         for i in range(farm_size):
             self.wecObj_list.append(
                 wec_class.WEC(
                     ID=ID,
                     model=model,
-                    bus_location=to_bus,
+                    bus_location=ibus,
                     MBASE=mbase,
                     config=config  
                 )
             )
-        
-        if self.pypsaObj is not None:
-            # for i in range(farm_size):
-            #     self.wecObj_list.append(
-            #         wec_class.WEC(
-            #             ID=ID,
-            #             model=model,
-            #             bus_location=to_bus,
-            #             MBASE=mbase,
-            #             config=config  
-            #         )
-            #     )
-            self.pypsaObj.add_wec(model, from_bus, to_bus)
-            #self.pypsaObj.add_wec(model, ID, farm_size, from_bus, to_bus)
+        if self.pypsa is not None:
+            self.pypsa.add_wec(model, ibus, jbus)
             
-
-        if self.psseObj is not None:
-            # get SBASE from PSSE
-            sbase = self.psseObj.get_sbase()
-            #mbase = 0.1 # hard coded for now. for a system with an sbse of 100 MVA, this would be 10 KW (0.01 MVA)
+        if self.psse is not None:
+            self.psse.add_wec(model, ibus, jbus)
             
-            # for i in range(farm_size):
-            #     self.wecObj_list.append(
-            #         wec_class.WEC(
-            #             ID=ID,
-            #             model=model,
-            #             bus_location=to_bus,
-            #             MBASE=mbase,
-            #             config=config  
-            #         )
-            #     )
-            self.psseObj.add_wec(model, from_bus, to_bus)
-
-    def create_cec(self, ID, model, bus_location, run_sim=True):
-        self.cecObj_list.append(cec_class.CEC(ID, model, bus_location, run_sim))
-        # self.psseObj.dataframe.loc[
-        #     self.psseObj.dataframe["BUS_ID"] == bus_location, "Type"
-        # ] = 4  # This updated the Grid Model for the grid to know that the bus now has a WEC/CEC on it.
-        # TODO: need to update pyPSA obj too
-        
-        
-    def generate_load_curve(self, noise_level=0.002, time=None):
-        
-        if self.psseObj is not None:
-            self.psseObj.generate_load_curve(noise_level=noise_level, time=time)
-        
-        if self.pypsaObj is not None:
-            self.pypsaObj.generate_load_curve(noise_level=noise_level, time=time)
- 

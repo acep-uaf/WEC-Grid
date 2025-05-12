@@ -1,3 +1,1 @@
-from .pypsa_wrapper import pyPSAWrapper
-
-__all__ = ["pyPSAWrapper"]
+from .pypsa_interface import PYPSAInterface

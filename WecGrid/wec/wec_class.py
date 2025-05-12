@@ -45,12 +45,8 @@ class WEC:
         # Ensure config is a dictionary
         self.config = config if config is not None else {}
 
-        # Ensure waveSeed is set (use existing value if available, otherwise generate a random one)
-        self.config["waveSeed"] = int(self.config.get(
-            "waveSeed",
-            np.random.randint(np.iinfo(np.int32).min, np.iinfo(np.int32).max, dtype=np.int32)
-        ))
-        
+        #self.config["waveSeed"] = int(self.config.get("waveSeed",np.random.randint(0, 2**32 - 1)))
+                
         if not self.pull_wec_data():
             print(f"Data for WEC {self.ID} not found in the database. Running simulation.")
             self.WEC_Sim()
@@ -115,13 +111,13 @@ class WEC:
         eng.workspace["DB_PATH"] = DB_PATH  # move to front end?
         if self.model == "LUPA":
             eng.eval(
-                "m2g_out = w2gSim_LUPA(wecId,simLength,Tsample,waveHeight,wavePeriod,waveSeed);",
+                "m2g_out = w2gSim_LUPA(wecId,simLength,Tsample,waveHeight,wavePeriod);",
                 nargout=0,
             )
         else:
             
             eng.eval(
-                "m2g_out = w2gSim(wecId,simLength,Tsample,waveHeight,wavePeriod,waveSeed);",
+                "m2g_out = w2gSim(wecId,simLength,Tsample,waveHeight,wavePeriod);",
                 nargout=0,
             )
         eng.eval("WECsim_to_PSSe_dataFormatter", nargout=0)
