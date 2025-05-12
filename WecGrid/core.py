@@ -102,6 +102,7 @@ class WECGridEngine:
         for i in range(farm_size):
             self.wecObj_list.append(
                 wec_class.WEC(
+                    engine=self,
                     ID=ID,
                     model=model,
                     bus_location=ibus,

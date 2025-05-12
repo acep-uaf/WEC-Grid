@@ -30,8 +30,8 @@ class WEC:
         Qmin (float): The minimum Q value, defaults to -9999.
     """
 
-    def __init__(
-        self, ID, model, bus_location, Pmax=9999, Pmin=-9999, Qmax=9999, Qmin=-9999, MBASE=0.1, config=None):
+    def __init__(self, engine, ID, model, bus_location, Pmax=9999, Pmin=-9999, Qmax=9999, Qmin=-9999, MBASE=0.1,config=None):
+        self.engine = engine
         self.ID = ID
         self.bus_location = bus_location
         self.model = model
@@ -50,6 +50,16 @@ class WEC:
         if not self.pull_wec_data():
             print(f"Data for WEC {self.ID} not found in the database. Running simulation.")
             self.WEC_Sim()
+        
+        # add snapshots to dataframe
+        snapshots = pd.date_range(
+                start=self.engine.start_time,  # Add 5 minutes
+                periods= self.dataframe.shape[0],
+                freq="5T",  # 5-minute intervals
+            )
+        self.dataframe["snapshots"] = snapshots
+        
+        
 
     def pull_wec_data(self):
         """
