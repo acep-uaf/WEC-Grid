@@ -20,7 +20,7 @@ class WEC:
     This class represents a WEC (Wave Energy Converter).
 
     Attributes:
-        ID (int): The ID of the WEC.
+        sim_id (int): The ID of the WEC.
         bus_location (str): The location of the bus.
         model (str): The model of the WEC.
         dataframe (DataFrame): The pandas DataFrame holding WEC data.
@@ -30,9 +30,9 @@ class WEC:
         Qmin (float): The minimum Q value, defaults to -9999.
     """
 
-    def __init__(self, engine, ID, model, bus_location, Pmax=9999, Pmin=-9999, Qmax=9999, Qmin=-9999, MBASE=0.1,config=None):
+    def __init__(self, engine, sim_id, model, bus_location, Pmax=9999, Pmin=-9999, Qmax=9999, Qmin=-9999, MBASE=0.1,config=None):
         self.engine = engine
-        self.ID = ID
+        self.ID = sim_id
         self.bus_location = bus_location
         self.model = model
         self.dataframe = pd.DataFrame()
@@ -42,6 +42,7 @@ class WEC:
         self.Qmax = Qmax
         self.Qmin = Qmin
         self.gen_id = ""
+        self.gen_name = ""
         # Ensure config is a dictionary
         self.config = config if config is not None else {}
 
@@ -59,8 +60,6 @@ class WEC:
             )
         self.dataframe["snapshots"] = snapshots
         
-        
-
     def pull_wec_data(self):
         """
         Pulls WEC data from the database. If wec_num is provided, pulls data for that specific wec.
