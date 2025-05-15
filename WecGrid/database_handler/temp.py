@@ -1,21 +1,20 @@
 import sqlite3
 
-DB_PATH = "./WEC-GRID.db"
+DB_PATH = "WEC-GRID.db"
 
-# Tables you want to keep
 keep_tables = {"WEC_output_1"}
+system_tables = {"sqlite_sequence"}  # Do not drop this
 
 with sqlite3.connect(DB_PATH) as conn:
     cursor = conn.cursor()
 
-    # Fetch all table names
+    # Get all table names
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = {row[0] for row in cursor.fetchall()}
+    all_tables = {row[0] for row in cursor.fetchall()}
 
-    # Determine tables to drop
-    drop_tables = tables - keep_tables
+    # Determine tables to drop (exclude both the one we want to keep and system table)
+    drop_tables = all_tables - keep_tables - system_tables
 
-    # Drop each table
     for table in drop_tables:
         print(f"Dropping table: {table}")
         cursor.execute(f"DROP TABLE IF EXISTS {table}")

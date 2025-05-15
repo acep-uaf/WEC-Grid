@@ -96,7 +96,6 @@ class WECGridEngine:
                 timestamp TEXT,
                 bus_id TEXT,
                 p_mw REAL,
-                q_mvar REAL,
                 v_pu REAL,
                 source TEXT,
                 FOREIGN KEY(sim_id) REFERENCES sim_runs(sim_id)
@@ -109,14 +108,12 @@ class WECGridEngine:
                 timestamp TEXT,
                 gen_id TEXT,
                 p_mw REAL,
-                q_mvar REAL,
                 source TEXT,
                 FOREIGN KEY(sim_id) REFERENCES sim_runs(sim_id)
             )
             """)
 
             conn.commit()
-            #print(f"Initialized simulation database at {path}")
         
     def use(self, software):
         """
