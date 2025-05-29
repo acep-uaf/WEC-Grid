@@ -32,7 +32,7 @@ from WECGrid.utilities.util import dbQuery, read_paths
 from WECGrid.database_handler.connection_class import DB_PATH
 from WECGrid.pypsa import PYPSAInterface
 from WECGrid.psse import PSSEInterface
-#from WECGrid.viz import PSSEVisualizer
+from WECGrid.viz import WECGridVisualizer
 
 
 # Initialize the PATHS dictionary
@@ -74,10 +74,15 @@ class WECGridEngine:
         self.software = [] 
         self.generator_compare = None
         self.bus_compare = None
+        self.viz = WECGridVisualizer(self)
         
         self.initialize_simulation_db(DB_PATH)
 
     def initialize_simulation_db(self, path):
+        #TODO: need to move this to DB wrapper handler 
+        #TODO: needs to check if db exists, if not create it with tables, if there, should check if tables exist,
+        #TODO: need a function to print a report of the contents of the database
+        
         with sqlite3.connect(path) as conn:
             cursor = conn.cursor()
 
@@ -115,7 +120,7 @@ class WECGridEngine:
 
             conn.commit()
         
-    def use(self, software):
+    def load(self, software):
         """
         Enables one or more supported power system software tools.
 
@@ -188,13 +193,6 @@ class WECGridEngine:
                 print("WEC components added to PSS®E network.")
             else:
                 print("Failed to add WEC to PSS®E network.")
-
-    def sld(self):
-        
-        if self.psse is not None:
-            self.psse.viz.sld()
-        else:
-            print("PSS®E not initialized. Cannot generate SLD.")
 
     def generate_load_profiles(self):
         """
@@ -269,7 +267,7 @@ class WECGridEngine:
 
     def compare_results(self, plot=True):
         if self.psse is not None and self.pypsa is not None and plot:
-            self.plot_comparison()
+            self.viz.plot_comparison()
 
         def compute_rmse_corr(psse_df, pypsa_df, label_prefix=None, convert_cols=False):
             if convert_cols:
@@ -297,22 +295,22 @@ class WECGridEngine:
 
         # Compute generator comparison
         gen_df = compute_rmse_corr(
-            self.psse.generator_dataframe_t.p,
-            self.pypsa.network.generators_t.p,
+            self.psse.generator_dataframe_t.p.copy(),
+            self.pypsa.network.generators_t.p.copy(),
             label_prefix="P"
         ).rename(columns={"ID": "Generator"})[["Generator", "Parameter", "RMSE"]]
 
         # Compute bus P and V comparison
         bus_p_df = compute_rmse_corr(
-            self.psse.bus_dataframe_t.p,
-            self.pypsa.network.buses_t.p,
+            self.psse.bus_dataframe_t.p.copy(),
+            self.pypsa.network.buses_t.p.copy(),
             label_prefix="P",
             convert_cols=True
         )
 
         bus_v_df = compute_rmse_corr(
-            self.psse.bus_dataframe_t.v_mag_pu,
-            self.pypsa.network.buses_t.v_mag_pu,
+            self.psse.bus_dataframe_t.v_mag_pu.copy(),
+            self.pypsa.network.buses_t.v_mag_pu.copy(),
             label_prefix="V_mag",
             convert_cols=True
         )
@@ -324,191 +322,7 @@ class WECGridEngine:
         # Save to attributes for inspection in notebook
         self.generator_compare = gen_df
         self.bus_compare = bus_df
-                    
-    def plot_comparison(self):
-        fig, axes = plt.subplots(3, 1, figsize=(14, 12), sharex=True)
-        
-        self.plot_generator_comparison(gen_name=None, ax=axes[0], show_title=True, show_legend=False)
-        self.plot_bus_power_comparison(bus_num=None, ax=axes[1], show_title=True, show_legend=False)
-        self.plot_bus_vmag_comparison(bus_num=None, ax=axes[2], show_title=True, show_legend=False)
 
-        handles, labels = [], []
-        for ax in axes:
-            h, l = ax.get_legend_handles_labels()
-            handles.extend(h)
-            labels.extend(l)
-
-        unique = dict(zip(labels, handles))
-        fig.suptitle("PSS®E vs PyPSA: Comparison Results", fontsize=16)
-        fig.legend(unique.values(), unique.keys(), ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-        plt.show()
-        
-    def plot_generator_comparison(self, gen_name=None, ax=None, show_title=True, show_legend=True):
-        psse_gen = self.psse.generator_dataframe_t.p
-        pypsa_gen = self.pypsa.network.generators_t.p
-
-        common_keys = sorted(set(psse_gen.columns).intersection(set(pypsa_gen.columns)))
-        
-        if gen_name is not None:
-            if gen_name not in common_keys:
-                print(f"[WARN] Generator {gen_name} not found in both datasets.")
-                return
-            common_keys = [gen_name]
-
-        if not common_keys:
-            print("[WARN] No common generator names between PSS®E and PyPSA.")
-            return
-
-        create_fig = ax is None
-        if create_fig:
-            fig, ax = plt.subplots(figsize=(14, 6))
-
-        colors = plt.cm.tab10.colors
-        handles = []
-
-        for i, key in enumerate(common_keys):
-            color = colors[i % len(colors)]
-
-            # Plot PSS®E with solid marker
-            psse_line, = ax.plot(
-                psse_gen.index, psse_gen[key],
-                linestyle=':', marker='o', color=color, alpha=1.0,
-                linewidth=1.0, markersize=4, label=key
-            )
-
-            # Plot PyPSA with dashed marker
-            ax.plot(
-                pypsa_gen.index, pypsa_gen[key],
-                linestyle=':', marker='^', color=color, alpha=1.0,
-                linewidth=1.0, markersize=4
-            )
-
-            handles.append(psse_line)
-
-        if show_title:
-            ax.set_title("Generator Active Power Comparison - PSS®E ● PyPSA ▲ ")
-        ax.set_xlabel("Time")
-        ax.set_ylabel("PGEN (MW)")
-        ax.grid(True, linestyle="--", alpha=0.6)
-
-        if show_legend:
-            ax.legend(handles=handles, title="Generator", bbox_to_anchor=(1.05, 1), loc="upper left")
-
-        if create_fig:
-            plt.tight_layout()
-            plt.show()
-            
-    def plot_bus_power_comparison(self, bus_num=None, ax=None, show_title=True, show_legend=True):
-        psse_bus = self.psse.bus_dataframe_t.p
-        pypsa_bus = self.pypsa.network.buses_t.p
-
-        psse_cols = set(map(str, psse_bus.columns))
-        pypsa_cols = set(map(str, pypsa_bus.columns))
-        common_keys = sorted(psse_cols & pypsa_cols, key=lambda x: int(x))
-
-        if bus_num is not None:
-            if str(bus_num) not in common_keys:
-                print(f"[WARN] Bus {bus_num} not found in both datasets.")
-                return
-            common_keys = [str(bus_num)]
-
-        if not common_keys:
-            print("[WARN] No common bus numbers between PSS®E and PyPSA.")
-            return
-
-        create_fig = ax is None
-        if create_fig:
-            fig, ax = plt.subplots(figsize=(14, 6))
-
-        colors = plt.cm.tab10.colors
-        handles = []
-
-        for i, key in enumerate(common_keys):
-            color = colors[i % len(colors)]
-
-            psse_line, = ax.plot(
-                psse_bus.index, psse_bus[int(key)],
-                linestyle=':', marker='o', color=color, alpha=1.0,
-                linewidth=1.0, markersize=4, label=f"Bus {key}"
-            )
-
-            ax.plot(
-                pypsa_bus.index, pypsa_bus[key],
-                linestyle=':', marker='^', color=color, alpha=1.0,
-                linewidth=1.0, markersize=4
-            )
-
-            handles.append(psse_line)
-
-        if show_title:
-            ax.set_title("Bus Active Power Comparison — PSS®E ●  vs  PyPSA ▲")
-        ax.set_xlabel("Time")
-        ax.set_ylabel("P (MW)")
-        ax.grid(True, linestyle="--", alpha=0.6)
-
-        if show_legend and create_fig:
-            fig.legend(handles=handles, title="Bus", ncol=10, loc="upper center", bbox_to_anchor=(0.5, -0.05))
-
-        if create_fig:
-            plt.tight_layout(rect=[0, 0, 1, 0.95])
-            plt.show()
-        
-    def plot_bus_vmag_comparison(self, bus_num=None, ax=None, show_title=True, show_legend=True):
-        psse_bus = self.psse.bus_dataframe_t.v_mag_pu
-        pypsa_bus = self.pypsa.network.buses_t.v_mag_pu
-
-        psse_cols = set(map(str, psse_bus.columns))
-        pypsa_cols = set(map(str, pypsa_bus.columns))
-        common_keys = sorted(psse_cols & pypsa_cols, key=lambda x: int(x))
-
-        if bus_num is not None:
-            if str(bus_num) not in common_keys:
-                print(f"[WARN] Bus {bus_num} not found in both datasets.")
-                return
-            common_keys = [str(bus_num)]
-
-        if not common_keys:
-            print("[WARN] No common bus numbers between PSS®E and PyPSA.")
-            return
-
-        create_fig = ax is None
-        if create_fig:
-            fig, ax = plt.subplots(figsize=(14, 6))
-
-        colors = plt.cm.tab10.colors
-        handles = []
-
-        for i, key in enumerate(common_keys):
-            color = colors[i % len(colors)]
-
-            psse_line, = ax.plot(
-                psse_bus.index, psse_bus[int(key)],
-                linestyle=':', marker='o', color=color, alpha=1.0,
-                linewidth=1.0, markersize=4, label=f"Bus {key}"
-            )
-
-            ax.plot(
-                pypsa_bus.index, pypsa_bus[key],
-                linestyle=':', marker='^', color=color, alpha=1.0,
-                linewidth=1.0, markersize=4
-            )
-
-            handles.append(psse_line)
-
-        if show_title:
-            ax.set_title("Bus Voltage Magnitude Comparison — PSS®E ● vs PyPSA ▲")
-        ax.set_xlabel("Time")
-        ax.set_ylabel("Voltage [pu]")
-        ax.grid(True, linestyle="--", alpha=0.6)
-
-        if show_legend and create_fig:
-            fig.legend(handles=handles, title="Bus", ncol=10, loc="upper center", bbox_to_anchor=(0.5, -0.05))
-
-        if create_fig:
-            plt.tight_layout(rect=[0, 0, 1, 0.95])
-            plt.show()
-                 
     def save_simulation(self, sim_name="Unnamed Run", notes=""):
         timestamp = datetime.now().isoformat()
         with sqlite3.connect(DB_PATH) as conn:

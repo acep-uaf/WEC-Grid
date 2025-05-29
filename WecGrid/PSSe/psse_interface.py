@@ -41,6 +41,7 @@ def silence_stdout():
         sys.stdout = old_stdout
 
 class PSSEInterface:
+    
     def __init__(self, case_file: str, engine: "WECGridEngine"):
         self.case_file = case_file
         self.engine = engine
@@ -784,9 +785,9 @@ class PSSEInterface:
                 print(f"Powerflow not solved for snapshot {snapshot}. PSS®E error code: {ival}")
                 raise Exception("Powerflow not solved")
                 return False
-        if plot:
-            self.viz.plot_all()
         self.collect_gen_data()
         self.collect_bus_data()
+        if plot:
+            self.viz.plot_all()
         return True 
                 

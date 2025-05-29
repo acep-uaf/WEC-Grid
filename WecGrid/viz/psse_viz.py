@@ -25,11 +25,11 @@ class PSSEVisualizer:
     def __init__(self, engine):
         self.engine = engine
     
-    def plot_all(self, bus_num=None, gen_key=None):
+    def plot_all(self, bus_num=None, gen_name=None):
         fig, axes = plt.subplots(3, 1, figsize=(14, 12), sharex=True)
         self.plot_bus_power(bus_num=bus_num, ax=axes[0], show_title=True, show_legend=False)
         self.plot_bus_vmag(bus_num=bus_num, ax=axes[1], show_title=True, show_legend=False)
-        self.plot_generator_power(gen_key=gen_key, ax=axes[2], show_title=True, show_legend=False)
+        self.plot_generator_power(gen_name=gen_name, ax=axes[2], show_title=True, show_legend=False)
 
         handles, labels = [], []
         for ax in axes:
@@ -76,7 +76,7 @@ class PSSEVisualizer:
         ax.grid(True, linestyle="--", alpha=0.6)
 
         if show_legend:
-            ax.legend(title="Bus ID", bbox_to_anchor=(1.05, 1), loc="upper left")
+            ax.legend(title="Bus ID", ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
 
         if create_fig:
             plt.tight_layout()
@@ -123,65 +123,56 @@ class PSSEVisualizer:
         ax.grid(True, linestyle="--", alpha=0.6)
 
         if show_legend:
-            ax.legend(title="Bus ID", bbox_to_anchor=(1.05, 1), loc="upper left")
+            ax.legend(title="Bus ID", ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
 
         if create_fig:
             plt.tight_layout()
             plt.show()
             
-    def plot_generator_power(self, gen_key=None, ax=None, show_title=True, show_legend=True):
-        self.plot_generator_paramter(gen_key, "PGEN_MW", ax=ax, show_title=show_title, show_legend=show_legend)
+    def plot_generator_power(self, gen_name=None, ax=None, show_title=True, show_legend=True):
+        self.plot_generator_parameter(gen_name, "p", ax=ax, show_title=show_title, show_legend=show_legend)
 
     def plot_generator_reactive_power(self, gen_key=None):
-        self.plot_generator_paramter(gen_key, "QGEN_MVAR")
+        self.plot_generator_parameter(gen_key, "QGEN_MVAR")
                 
-    def plot_generator_paramter(self, gen_key=None, parameter=None, ax=None, show_title=True, show_legend=True):
+    def plot_generator_parameter(self, gen_name=None, parameter=None, ax=None, show_title=True, show_legend=True):
+        
+        
+        
         if parameter is None:
             raise ValueError("Parameter must be specified.")
 
-        data, times = [], []
-        for snap in self.engine.snapshot_history:
-            gen_df = snap.generators
-            if gen_df is None or gen_df.empty:
-                continue
-            gen_df = gen_df.copy()
-            gen_df["GEN_KEY"] = list(zip(gen_df["BUS_ID"], gen_df["GEN_ID"]))
-            s = gen_df.set_index("GEN_KEY")[parameter]
-            data.append(s.to_dict())
-            times.append(pd.to_datetime(snap.snapshot))
-
-        df = pd.DataFrame(data, index=pd.DatetimeIndex(times))
-        df.index.name = "Time"
-        df.sort_index(inplace=True)
-
+        if parameter == 'p':
+            df = self.engine.generator_dataframe_t.p.copy()
+            ylabel = "Pgen (MW)"
+        elif parameter == 'q':
+            df = self.engine.generator_dataframe_t.q.copy()
+            ylabel = "Qgen (MVar)"
+        else:
+            raise ValueError("Parameter must be 'p' or 'q'")
+        
+        
+        gen_df = self.engine.generator_dataframe
         create_fig = ax is None
         if create_fig:
             fig, ax = plt.subplots(figsize=(14, 6))
-
-        if gen_key:
-            if gen_key in df.columns:
-                label = f"{gen_key[1]} (Bus {gen_key[0]})"
-                ax.plot(df.index, df[gen_key], label=label, linestyle=':', marker='o', linewidth=1.0, markersize=4)
-            else:
-                print(f"[WARN] Generator {gen_key} not found.")
+        
+        if gen_name is not None:
+            if gen_name not in df.columns:
+                print(f"Warning: generator {gen_name} not found.")
                 return
+            to_plot = [gen_name]
             legend_title = "Generator"
+            title = f"PSS®E: Generator {gen_name} {'Active' if parameter == 'p' else 'Reactive'} Power Over Time"
         else:
+            to_plot = df.columns.tolist()
             legend_title = "Generator (Bus)"
-            for col in df.columns:
-                bus_id, gen_id = col
-                label = f"{gen_id} (Bus {bus_id})"
-                ax.plot(df.index, df[col], label=label, linestyle=':', marker='o', linewidth=1.0, markersize=4)
-
-        if parameter == "PGEN_MW":
-            title = "PSS®E: Generator Active Power Over Time"
-            ylabel = "PGEN (MW)"
-        elif parameter == "QGEN_MVAR":
-            title = "PSS®E: Generator Reactive Power Over Time"
-            ylabel = "QGEN (MVar)"
-        else:
-            title = f"PSS®E: {parameter} Over Time"
-            ylabel = parameter
+            title = f"PSS®E: Generator {'Active' if parameter == 'p' else 'Reactive'} Power Over Time (All Generators)"
+        
+        for col in to_plot:
+            bus = gen_df.at[col, "bus"] if col in gen_df.index else "?"
+            label = f"{col} (Bus {bus})"
+            ax.plot(df.index, df[col], label=label, linestyle=':', marker='o', linewidth=1.0, markersize=4)
 
         if show_title:
             ax.set_title(title)
@@ -195,6 +186,69 @@ class PSSEVisualizer:
         if create_fig:
             plt.tight_layout()
             plt.show()
+        
+        
+        
+        
+        # if parameter is None:
+        #     raise ValueError("Parameter must be specified.")
+
+        # data, times = [], []
+        # for snap in self.engine.snapshot_history:
+        #     gen_df = snap.generators
+        #     if gen_df is None or gen_df.empty:
+        #         continue
+        #     gen_df = gen_df.copy()
+        #     gen_df["GEN_KEY"] = list(zip(gen_df["BUS_ID"], gen_df["GEN_ID"]))
+        #     s = gen_df.set_index("GEN_KEY")[parameter]
+        #     data.append(s.to_dict())
+        #     times.append(pd.to_datetime(snap.snapshot))
+
+        # df = pd.DataFrame(data, index=pd.DatetimeIndex(times))
+        # df.index.name = "Time"
+        # df.sort_index(inplace=True)
+
+        # create_fig = ax is None
+        # if create_fig:
+        #     fig, ax = plt.subplots(figsize=(14, 6))
+
+        # if gen_key:
+        #     if gen_key in df.columns:
+        #         label = f"{gen_key[1]} (Bus {gen_key[0]})"
+        #         ax.plot(df.index, df[gen_key], label=label, linestyle=':', marker='o', linewidth=1.0, markersize=4)
+        #     else:
+        #         print(f"[WARN] Generator {gen_key} not found.")
+        #         return
+        #     legend_title = "Generator"
+        # else:
+        #     legend_title = "Generator (Bus)"
+        #     for col in df.columns:
+        #         bus_id, gen_id = col
+        #         label = f"{gen_id} (Bus {bus_id})"
+        #         ax.plot(df.index, df[col], label=label, linestyle=':', marker='o', linewidth=1.0, markersize=4)
+
+        # if parameter == "PGEN_MW":
+        #     title = "PSS®E: Generator Active Power Over Time"
+        #     ylabel = "PGEN (MW)"
+        # elif parameter == "QGEN_MVAR":
+        #     title = "PSS®E: Generator Reactive Power Over Time"
+        #     ylabel = "QGEN (MVar)"
+        # else:
+        #     title = f"PSS®E: {parameter} Over Time"
+        #     ylabel = parameter
+
+        # if show_title:
+        #     ax.set_title(title)
+        # ax.set_xlabel("Time")
+        # ax.set_ylabel(ylabel)
+        # ax.grid(True, linestyle="--", alpha=0.6)
+
+        # if show_legend:
+        #     ax.legend(title=legend_title, bbox_to_anchor=(1.05, 1), loc="upper left")
+
+        # if create_fig:
+        #     plt.tight_layout()
+        #     plt.show()
 
     def plot_branch_percent(self, branch_name=None, threshold=80.0):
         """
@@ -305,36 +359,7 @@ class PSSEVisualizer:
                 color='blue', length_includes_head=True
             )
         )
-       
-    # def draw_transformer_arrow(self, ax, path):
-    #     """
-    #     Draws an arrow along the transformer connection path.
-    #     The arrow direction follows the second movement segment.
-    #     Adds "^^^" symbol above the arrow at the arrow tip.
-    #     """
-    #     if len(path) < 4:
-    #         return  # Not enough points to draw an arrow
-
-    #     # Select second segment for placing the arrow
-    #     x1, y1 = path[2]
-    #     x2, y2 = path[3]
-
-    #     dx = (x2 - x1) * 0.3  # Scale down arrow length
-    #     dy = (y2 - y1) * 0.3
-
-    #     # **Compute arrow tip**
-    #     arrow_tip_x = x1 + dx
-    #     arrow_tip_y = y1 + dy
-
-    #     # **Draw arrow**
-    #     ax.add_patch(FancyArrow(x1, y1, dx, dy, width=0.005, head_width=0.02, head_length=0.02, color='blue'))
-
-    #     # # **Place "^^^" symbol at arrow tip**
-    #     # if dy == 0:  # Horizontal transformer
-    #     #     ax.text(arrow_tip_x - 0.01, arrow_tip_y + 0.008, "^^^", fontsize=8, fontweight="bold", ha='center', va='center',rotation=90, color='blue')
-    #     # else:  # Vertical transformer
-    #     #     ax.text(arrow_tip_x - 0.005, arrow_tip_y - 0.01, "^^^", fontsize=8, fontweight="bold", ha='center', va='center', rotation=180, color='blue')
-            
+                
     def determine_connection_sides(self, from_bus, to_bus, from_pos, to_pos, bus_connections, used_connections):
         """
         Determines the best connection points for a given bus pair while avoiding overlapping connections.
