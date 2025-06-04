@@ -86,6 +86,14 @@ class PyPSAVisualizer:
         ax.set_xlabel("Time")
         ax.set_ylabel("Active Power [MW]")
         ax.grid(True, linestyle="--", alpha=0.6)
+        
+                # 4) Force x‐limits, hourly ticks, and formatting
+        start_time = p_df.index.min()
+        end_time   = p_df.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
 
         if show_legend:
             # ax.legend(title="Bus ID", ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
@@ -120,6 +128,13 @@ class PyPSAVisualizer:
         #ax.axhline(1.0, color='gray', linestyle='--', linewidth=1, label="Nominal (1.0 pu)")
         #ax.set_ylim(0.9, 1.1)
         ax.grid(True, linestyle="--", alpha=0.6)
+        
+        start_time = vmag_df.index.min()
+        end_time   = vmag_df.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
 
         if show_legend:
             #ax.legend(title="Bus ID", ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
@@ -175,6 +190,14 @@ class PyPSAVisualizer:
         ax.set_xlabel("Time")
         ax.set_ylabel(ylabel)
         ax.grid(True, linestyle="--", alpha=0.6)
+        
+        start_time = df.index.min()
+        end_time   = df.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
+    
 
         if show_legend:
             # ax.legend(title=legend_title, bbox_to_anchor=(1.05, 1), loc="upper left")

@@ -160,10 +160,19 @@ class WECGridVisualizer:
 
         if show_title:
             ax.set_title("Generator Active Power Comparison — PSS®E ● PyPSA ▲")
+            
         ax.set_xlabel("Time")
         ax.set_ylabel("P (MW)")
         ax.grid(True, linestyle="--", alpha=0.6)
 
+        start_time = psse_gen.index.min()
+        end_time   = psse_gen.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
+        
+        
         if show_legend:
             ax.legend(handles=handles, title="Generator", bbox_to_anchor=(1.05, 1), loc="upper left")
 
@@ -206,6 +215,15 @@ class WECGridVisualizer:
         ax.set_xlabel("Time")
         ax.set_ylabel("P (MW)")
         ax.grid(True, linestyle="--", alpha=0.6)
+        
+        
+        start_time = psse_gen.index.min()
+        end_time   = psse_gen.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
+        
 
 
         if show_legend:
@@ -264,6 +282,15 @@ class WECGridVisualizer:
         ax.set_xlabel("Time")
         ax.set_ylabel("P (MW)")
         ax.grid(True, linestyle="--", alpha=0.6)
+        
+        
+        start_time = psse_bus.index.min()
+        end_time   = psse_bus.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
+        
 
         if show_legend and create_fig:
             fig.legend(
@@ -273,6 +300,8 @@ class WECGridVisualizer:
                 loc="upper center",
                 bbox_to_anchor=(0.5, -0.05)
             )
+            
+            
 
         if create_fig:
             plt.tight_layout(rect=[0, 0, 1, 0.95])
@@ -312,6 +341,8 @@ class WECGridVisualizer:
         ax.set_xlabel("Time")
         ax.set_ylabel("P (MW)")
         ax.grid(True, linestyle="--", alpha=0.6)
+        
+        
 
         if show_legend:
             # Place legend inside (e.g., upper right, or “best” location)
@@ -321,6 +352,13 @@ class WECGridVisualizer:
                 loc="upper right",
                 frameon=True
             )
+            
+        start_time = psse_bus.index.min()
+        end_time   = psse_bus.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
 
         if create_fig:
             plt.tight_layout()
@@ -368,6 +406,13 @@ class WECGridVisualizer:
         ax.set_xlabel("Time")
         ax.set_ylabel("Voltage (pu)")
         ax.grid(True, linestyle="--", alpha=0.6)
+        
+        start_time = psse_bus.index.min()
+        end_time   = psse_bus.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
 
         if show_legend and create_fig:
             fig.legend(
@@ -418,6 +463,13 @@ class WECGridVisualizer:
         ax.set_xlabel("Time")
         ax.set_ylabel("Voltage (pu)")
         ax.grid(True, linestyle="--", alpha=0.6)
+        
+        start_time = psse_bus.index.min()
+        end_time   = psse_bus.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
 
         if show_legend:
             # Place legend inside (e.g., upper right, or “best” location)

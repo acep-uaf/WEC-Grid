@@ -99,6 +99,15 @@ class PSSEVisualizer:
 
         if show_title:
             ax.set_title(f"PSS®E: Active Power Over Time" + (f" — Bus {bus_num}" if bus_num else " (All Buses)"))
+            
+        # 4) Force x‐limits, hourly ticks, and formatting
+        start_time = df.index.min()
+        end_time   = df.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
+        
         ax.set_xlabel("Time")
         ax.set_ylabel("PGEN (MW)")
         ax.grid(True, linestyle="--", alpha=0.6)
@@ -147,6 +156,15 @@ class PSSEVisualizer:
             ax.set_title(f"PSS®E: Bus Voltage Magnitude Over Time" + (f" — Bus {bus_num}" if bus_num else " (All Buses)"))
         ax.set_xlabel("Time")
         ax.set_ylabel("Voltage Magnitude [pu]")
+        
+        # 4) Force x‐limits, hourly ticks, and formatting
+        start_time = df.index.min()
+        end_time   = df.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
+        
         #ax.axhline(1.0, color='gray', linestyle='--', linewidth=1, label="Nominal (1.0 pu)")
         #ax.set_ylim(0.9, 1.1)
         ax.grid(True, linestyle="--", alpha=0.6)
@@ -208,6 +226,13 @@ class PSSEVisualizer:
         ax.set_xlabel("Time")
         ax.set_ylabel(ylabel)
         ax.grid(True, linestyle="--", alpha=0.6)
+        # 4) Force x‐limits, hourly ticks, and formatting
+        start_time = df.index.min()
+        end_time   = df.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
 
         if show_legend:
             #ax.legend(title=legend_title, bbox_to_anchor=(1.05, 1), loc="upper left")
@@ -219,67 +244,6 @@ class PSSEVisualizer:
         
         
         
-        
-        # if parameter is None:
-        #     raise ValueError("Parameter must be specified.")
-
-        # data, times = [], []
-        # for snap in self.engine.snapshot_history:
-        #     gen_df = snap.generators
-        #     if gen_df is None or gen_df.empty:
-        #         continue
-        #     gen_df = gen_df.copy()
-        #     gen_df["GEN_KEY"] = list(zip(gen_df["BUS_ID"], gen_df["GEN_ID"]))
-        #     s = gen_df.set_index("GEN_KEY")[parameter]
-        #     data.append(s.to_dict())
-        #     times.append(pd.to_datetime(snap.snapshot))
-
-        # df = pd.DataFrame(data, index=pd.DatetimeIndex(times))
-        # df.index.name = "Time"
-        # df.sort_index(inplace=True)
-
-        # create_fig = ax is None
-        # if create_fig:
-        #     fig, ax = plt.subplots(figsize=(14, 6))
-
-        # if gen_key:
-        #     if gen_key in df.columns:
-        #         label = f"{gen_key[1]} (Bus {gen_key[0]})"
-        #         ax.plot(df.index, df[gen_key], label=label, linestyle=':', marker='o', linewidth=1.0, markersize=4)
-        #     else:
-        #         print(f"[WARN] Generator {gen_key} not found.")
-        #         return
-        #     legend_title = "Generator"
-        # else:
-        #     legend_title = "Generator (Bus)"
-        #     for col in df.columns:
-        #         bus_id, gen_id = col
-        #         label = f"{gen_id} (Bus {bus_id})"
-        #         ax.plot(df.index, df[col], label=label, linestyle=':', marker='o', linewidth=1.0, markersize=4)
-
-        # if parameter == "PGEN_MW":
-        #     title = "PSS®E: Generator Active Power Over Time"
-        #     ylabel = "PGEN (MW)"
-        # elif parameter == "QGEN_MVAR":
-        #     title = "PSS®E: Generator Reactive Power Over Time"
-        #     ylabel = "QGEN (MVar)"
-        # else:
-        #     title = f"PSS®E: {parameter} Over Time"
-        #     ylabel = parameter
-
-        # if show_title:
-        #     ax.set_title(title)
-        # ax.set_xlabel("Time")
-        # ax.set_ylabel(ylabel)
-        # ax.grid(True, linestyle="--", alpha=0.6)
-
-        # if show_legend:
-        #     ax.legend(title=legend_title, bbox_to_anchor=(1.05, 1), loc="upper left")
-
-        # if create_fig:
-        #     plt.tight_layout()
-        #     plt.show()
-
     def plot_branch_percent(self, branch_name=None, threshold=80.0):
         """
         Plot only those PSS®E branches whose percent‐loading exceeds `threshold`
@@ -341,6 +305,14 @@ class PSSEVisualizer:
         # Draw the threshold line if plotting multiple
         if not branch_name:
             plt.axhline(threshold, color="k", ls="--", alpha=0.6)
+            
+        # 4) Force x‐limits, hourly ticks, and formatting
+        start_time = df.index.min()
+        end_time   = df.index.max()
+        ax.set_xlim(start_time, end_time)
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+        ax.tick_params(axis="x", rotation=0, labelsize=9)
 
         plt.title(title)
         plt.xlabel("Time")
