@@ -6,19 +6,13 @@ import math
 import bqplot as bq
 import ipycytoscape
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import pandas as pd
 import numpy as np
 import networkx as nx
 import pandas as pd
 import seaborn as sns
 from ipywidgets import Dropdown, HTML, HBox, Layout, SelectionSlider, VBox, widgets
-
-
-class WECGridVisualizer:
-    def __init__(self, engine):
-        self.engine = engine
-
-
-import matplotlib.pyplot as plt
 
 class WECGridVisualizer:
     def __init__(self, engine):
@@ -30,23 +24,78 @@ class WECGridVisualizer:
         else:
             print("PSS®E not initialized. Cannot generate SLD.")
 
-    def plot_comparison(self):
-        fig, axes = plt.subplots(3, 1, figsize=(14, 12), sharex=True)
+    # def plot_comparison(self):
+    #     fig, axes = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
         
+    #     self._plot_all_generator_comparison(ax=axes[0], show_title=True, show_legend=False)
+    #     self._plot_all_bus_power_comparison(ax=axes[1], show_title=True, show_legend=False)
+    #     self._plot_all_bus_vmag_comparison(ax=axes[2], show_title=True, show_legend=False)
+
+    #     handles, labels = [], []
+    #     for ax in axes:
+    #         h, l = ax.get_legend_handles_labels()
+    #         handles.extend(h)
+    #         labels.extend(l)
+
+    #     unique = dict(zip(labels, handles))
+    #     fig.suptitle("PSS®E vs PyPSA: Comparison Results", fontsize=16)
+    #     fig.legend(unique.values(), unique.keys(), ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
+    #     plt.tight_layout(rect=[0, 0, 1, 0.95])
+    #     plt.show()
+    
+    def plot_comparison(self):
+        """
+        Creates a 3×1 figure comparing:
+          1) Generator active‐power (PSS®E vs PyPSA),
+          2) Bus active‐power (PSS®E vs PyPSA),
+          3) Bus voltage‐pu  (PSS®E vs PyPSA).
+
+        Applies exact x‐limits + hourly ticks + a combined legend on the right.
+        """
+        fig, axes = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+
+        # ─── Draw each panel ───
         self._plot_all_generator_comparison(ax=axes[0], show_title=True, show_legend=False)
         self._plot_all_bus_power_comparison(ax=axes[1], show_title=True, show_legend=False)
         self._plot_all_bus_vmag_comparison(ax=axes[2], show_title=True, show_legend=False)
 
+        # ─── 1) Build a “master” DatetimeIndex from PSSE to fix x‐limits ───
+        # We know _plot_all_generator_comparison() used:
+        #   psse_gen = self.engine.psse.generator_dataframe_t.p
+        # so we grab that DataFrame’s index here:
+        psse_gen_df = self.engine.psse.generator_dataframe_t.p.copy()
+        # Ensure it’s truly datetime:
+        psse_gen_df.index = pd.to_datetime(psse_gen_df.index)
+        start_time = psse_gen_df.index.min()
+        end_time   = psse_gen_df.index.max()
+
+        # ─── 2) Force each subplot to that exact time range + hourly ticks ───
+        for ax in axes:
+            ax.set_xlim(start_time, end_time)
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
+            ax.tick_params(axis="x", rotation=0, labelsize=9)
+
+        # ─── 3) Collect a combined legend from all three axes ───
         handles, labels = [], []
         for ax in axes:
             h, l = ax.get_legend_handles_labels()
             handles.extend(h)
             labels.extend(l)
-
         unique = dict(zip(labels, handles))
-        fig.suptitle("PSS®E vs PyPSA: Comparison Results", fontsize=16)
-        fig.legend(unique.values(), unique.keys(), ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+        # Place one vertical legend on the right
+        fig.legend(
+            unique.values(),
+            unique.keys(),
+            ncol=1,
+            loc="center right",
+            bbox_to_anchor=(1.0, 0.5),
+            frameon=True,
+        )
+
+        # ─── 4) Leave whitespace on the right for that legend ───
+        plt.tight_layout(rect=[0, 0, 0.85, 0.95])
         plt.show()
         
     def plot_generator_comparison(self, *args, **kwargs):
@@ -158,8 +207,15 @@ class WECGridVisualizer:
         ax.set_ylabel("P (MW)")
         ax.grid(True, linestyle="--", alpha=0.6)
 
+
         if show_legend:
-            ax.legend(handles=[p_line, py_line], title=gen_name, bbox_to_anchor=(1.05, 1), loc="upper left")
+            # Place legend inside the axes—for example, upper right corner
+            ax.legend(
+                handles=[p_line, py_line],
+                title=gen_name,
+                loc="upper right",
+                frameon=True
+            )
 
         if create_fig:
             plt.tight_layout()
@@ -258,11 +314,12 @@ class WECGridVisualizer:
         ax.grid(True, linestyle="--", alpha=0.6)
 
         if show_legend:
+            # Place legend inside (e.g., upper right, or “best” location)
             ax.legend(
                 handles=[p_line, py_line],
                 title=f"Bus {bus_num}",
-                bbox_to_anchor=(1.05, 1),
-                loc="upper left"
+                loc="upper right",
+                frameon=True
             )
 
         if create_fig:
@@ -363,11 +420,12 @@ class WECGridVisualizer:
         ax.grid(True, linestyle="--", alpha=0.6)
 
         if show_legend:
+            # Place legend inside (e.g., upper right, or “best” location)
             ax.legend(
                 handles=[p_line, py_line],
                 title=f"Bus {bus_num}",
-                bbox_to_anchor=(1.05, 1),
-                loc="upper left"
+                loc="upper right",
+                frameon=True
             )
 
         if create_fig:

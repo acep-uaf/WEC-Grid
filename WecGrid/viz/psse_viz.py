@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 from matplotlib.patches import Rectangle, Circle
-
+import matplotlib.dates as mdates
 
 from matplotlib.patches import Rectangle, Circle, FancyArrow
 from matplotlib.lines import Line2D
@@ -24,23 +24,51 @@ from ipywidgets import Dropdown, HTML, HBox, Layout, SelectionSlider, VBox, widg
 class PSSEVisualizer:
     def __init__(self, engine):
         self.engine = engine
-    
+
     def plot_all(self, bus_num=None, gen_name=None):
-        fig, axes = plt.subplots(3, 1, figsize=(14, 12), sharex=True)
+        fig, axes = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
         self.plot_bus_power(bus_num=bus_num, ax=axes[0], show_title=True, show_legend=False)
         self.plot_bus_vmag(bus_num=bus_num, ax=axes[1], show_title=True, show_legend=False)
         self.plot_generator_power(gen_name=gen_name, ax=axes[2], show_title=True, show_legend=False)
 
+        # ─── 1) Instead of generator_dataframe_t.index (which doesn't exist),
+        # grab the DataFrame inside TimeSeriesDict (e.g. .p for active power):
+        df_p = self.engine.generator_dataframe_t.p
+        # Ensure it's a real DatetimeIndex (it likely already is, but just to be safe):
+        df_p.index = pd.to_datetime(df_p.index)
+        start_time = df_p.index.min()
+        end_time   = df_p.index.max()
+
+        # ─── 2) Force each subplot to use exactly that time range ───
+        for ax in axes:
+            ax.set_xlim(start_time, end_time)
+
+            # ─── Reapply hour‐only ticks/formatter ───
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+            ax.tick_params(axis='x', rotation=0, labelsize=9)
+
+        # ─── 3) Build the combined legend on the right ───
         handles, labels = [], []
         for ax in axes:
             h, l = ax.get_legend_handles_labels()
             handles.extend(h)
             labels.extend(l)
-
         unique = dict(zip(labels, handles))
-        fig.suptitle("PSS®E: Simulation Results", fontsize=16)
-        fig.legend(unique.values(), unique.keys(), ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+        #fig.suptitle("PSS®E: Simulation Results", fontsize=20)
+        fig.legend(
+            unique.values(),
+            unique.keys(),
+            ncol=1,
+            loc="center right",
+            bbox_to_anchor=(1.0, 0.5),
+            #borderaxespad=0.5,
+            frameon=True,
+        )
+
+        # ─── 4) Leave extra room on the right for the legend ───
+        plt.tight_layout(rect=[0, 0, 0.85, 0.95])
         plt.show()
         
     def plot_bus_power(self, bus_num=None, ax=None, show_title=True, show_legend=True):
@@ -76,7 +104,8 @@ class PSSEVisualizer:
         ax.grid(True, linestyle="--", alpha=0.6)
 
         if show_legend:
-            ax.legend(title="Bus ID", ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
+            # ax.legend(title="Bus ID", ncol=8, loc='upper center', bbox_to_anchor=(0.5, -0.05))
+            ax.legend(title="Bus ID", ncol=8, loc='upper right')
 
         if create_fig:
             plt.tight_layout()
@@ -118,8 +147,8 @@ class PSSEVisualizer:
             ax.set_title(f"PSS®E: Bus Voltage Magnitude Over Time" + (f" — Bus {bus_num}" if bus_num else " (All Buses)"))
         ax.set_xlabel("Time")
         ax.set_ylabel("Voltage Magnitude [pu]")
-        ax.axhline(1.0, color='gray', linestyle='--', linewidth=1, label="Nominal (1.0 pu)")
-        ax.set_ylim(0.9, 1.1)
+        #ax.axhline(1.0, color='gray', linestyle='--', linewidth=1, label="Nominal (1.0 pu)")
+        #ax.set_ylim(0.9, 1.1)
         ax.grid(True, linestyle="--", alpha=0.6)
 
         if show_legend:
@@ -136,9 +165,7 @@ class PSSEVisualizer:
         self.plot_generator_parameter(gen_key, "QGEN_MVAR")
                 
     def plot_generator_parameter(self, gen_name=None, parameter=None, ax=None, show_title=True, show_legend=True):
-        
-        
-        
+            
         if parameter is None:
             raise ValueError("Parameter must be specified.")
 
@@ -170,7 +197,9 @@ class PSSEVisualizer:
             title = f"PSS®E: Generator {'Active' if parameter == 'p' else 'Reactive'} Power Over Time (All Generators)"
         
         for col in to_plot:
-            bus = gen_df.at[col, "bus"] if col in gen_df.index else "?"
+            # Find the row where GEN_ID == col
+            row = gen_df[gen_df["GEN_ID"] == col]
+            bus = row["BUS_ID"].iloc[0] if not row.empty else "?"
             label = f"{col} (Bus {bus})"
             ax.plot(df.index, df[col], label=label, linestyle=':', marker='o', linewidth=1.0, markersize=4)
 
@@ -181,7 +210,8 @@ class PSSEVisualizer:
         ax.grid(True, linestyle="--", alpha=0.6)
 
         if show_legend:
-            ax.legend(title=legend_title, bbox_to_anchor=(1.05, 1), loc="upper left")
+            #ax.legend(title=legend_title, bbox_to_anchor=(1.05, 1), loc="upper left")
+            ax.legend(title=legend_title,loc="upper right")
 
         if create_fig:
             plt.tight_layout()
@@ -316,7 +346,7 @@ class PSSEVisualizer:
         plt.xlabel("Time")
         plt.ylabel("Loading (%)")
         plt.grid(True, linestyle="--", alpha=0.5)
-        plt.legend(title="Branch NAME", bbox_to_anchor=(1.05, 1), loc="upper left")
+        plt.legend(title="Branch NAME", bbox_to_anchor=(1.05, 1), loc="upper right")
         plt.tight_layout()
         plt.ylim(bottom=threshold)
         plt.show()

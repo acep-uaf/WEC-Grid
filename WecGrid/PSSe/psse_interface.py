@@ -183,14 +183,15 @@ class PSSEInterface:
 
         self.bus_dataframe_t = self.TimeSeriesDict(p=p_df, v_mag_pu=vmag_df)
     
-    def pf(self) -> int:
+    def pf(self):
+        #TODO: expand this is report pf output details
+        # 0 is good, anything >= 1 is bad
         ierr = self.psspy.fnsl()
-        if ierr == 0:
-            # ierr == 0 means no error occured 
-            return 1 # return True/Sucess
-        else:
-            print("Error while solving powerflow")
-            return ierr
+        ival = self.psspy.solved()
+        if ierr != 0 or ival != 0:
+            print(f"[ERROR] Powerflow not solved. PSS®E error code: {ierr}, Solved Status: {ival}")
+            return ierr, ival
+        return ierr, ival 
 
     def adjust_reactive_lim(self) -> bool:
         """
@@ -738,56 +739,37 @@ class PSSEInterface:
         self.pf()
         self.take_snapshot(snapshot=self.engine.start_time, metadata={"step": "added wec components"})
         return True
+    
+    def post_sim_collect(self):
+        self.collect_gen_data()
+        self.collect_bus_data()
   
-    def simulate(self, snapshots=None, sim_length=None, load_curve=False, plot=True)->bool:
-        
-        if load_curve:
-            if self.load_profiles is None or self.load_profiles.empty:
-                self.engine.generate_load_profiles()
-            
-            
+    def simulate(self, snapshots=None, load_curve=False, plot=True)->bool:   
+        if load_curve and self.load_profiles.empty:
+            self.engine.generate_load_profiles()
         for snapshot in self.snapshots: 
             for idx, wec_obj in enumerate(self.engine.wecObj_list):
-                bus = wec_obj.bus_location
-                machine_id = wec_obj.gen_id
-                # get pg value
                 pg = float(wec_obj.dataframe.loc[wec_obj.dataframe.snapshots == snapshot].pg)
-                realar_array = [self._f] * 17
-                realar_array[0] = pg
                 ierr = self.psspy.machine_chng_4(
-                            ibus=bus, 
-                            id=wec_obj.gen_id, 
-                            realar=realar_array)
-                if ierr > 0:
-                    raise Exception("Error in adjust activate power")
-        
+                    ibus=wec_obj.bus_location, 
+                    id=wec_obj.gen_id, 
+                    realar=[pg] + [self._f]*16) > 0
+                if ierr > 0: 
+                    raise Exception(f"Error setting generator power at snapshot {snapshot}")
             if load_curve:
                 for bus in self.load_profiles.columns:
                     pl = float(self.load_profiles.loc[snapshot, bus])
-                    #intgar_array = [self._i] * 7
-                    realar_array = [self._f] * 8
-                    realar_array[0] = pl  # active power load in MW
-
                     ierr = self.psspy.load_data_6(
-                        ibus=bus,
-                        realar=realar_array
-                    )
-
-                    if ierr != 0:
-                        print(f"[WARN] Failed to update load at bus {bus} on snapshot {snapshot}")
-                        
-            ierr = self.pf()
-            ival = self.psspy.solved()
-            
-            if ival == 0:
-                self.take_snapshot(snapshot=snapshot, metadata={"Snapshot": snapshot,"Solver output": ierr, "Solved Status": ival})
-            else:
-                print(f"Powerflow not solved for snapshot {snapshot}. PSS®E error code: {ival}")
-                raise Exception("Powerflow not solved")
-                return False
-        self.collect_gen_data()
-        self.collect_bus_data()
-        if plot:
-            self.viz.plot_all()
+                        ibus=bus, 
+                        realar=[pl] + [self._f]*7)
+                if ierr > 0:
+                    raise Exception(f"Error setting load at bus {bus} on snapshot {snapshot}")
+            ierr, ival = self.pf()
+            self.take_snapshot(snapshot=snapshot, 
+                               metadata={"Snapshot": snapshot,
+                                         "Solver output": ierr, 
+                                         "Solved Status": ival})
+        self.post_sim_collect()
+        if plot: self.viz.plot_all()
         return True 
                 
