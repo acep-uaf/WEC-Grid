@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="WecGrid",  # Change to match the desired software name
+    name="WEC-Grid",  # Change to match the desired software name
     version="0.1.0",
     packages=find_packages(),  # Automatically finds WecGrid and submodules
     install_requires=[

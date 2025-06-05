@@ -5,6 +5,7 @@ Provides functionalities to visualize grid structures, WEC model simulations, an
 
 from .psse_viz import PSSEVisualizer
 from .pypsa_viz import PyPSAVisualizer
+from .core_viz import WECGridVisualizer
 
 # Define the public API
-__all__ = ["PSSEVisualizer", "PyPSAVisualizer"]
+__all__ = ["PSSEVisualizer", "PyPSAVisualizer", "WECGridVisualizer"]

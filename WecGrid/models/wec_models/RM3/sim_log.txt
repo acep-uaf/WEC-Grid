@@ -1,0 +1,8 @@
+Starting WEC-Sim for WEC ID 60
+Wave Seed: 2147483647 | Sim Length: 43200.00 sec | Tsample: 300.00 sec | Wave Height: 2.50 m | Wave Period: 8.00 sec
+Initializing WEC-Sim...
+WEC-Sim: An open-source code for simulating wave energy converters
+Version: 5.0.1
+
+Initializing the Simulation Class...
+	Case Dir: C:\Users\alexb\research\WEC-GRID\WecGrid\models\wec_models\RM3 

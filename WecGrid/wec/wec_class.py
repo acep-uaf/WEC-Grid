@@ -4,6 +4,7 @@ WEC Class module file
 
 import os
 import pandas as pd
+import numpy as np
 import matlab.engine
 
 # Updated local imports with relative paths
@@ -19,7 +20,7 @@ class WEC:
     This class represents a WEC (Wave Energy Converter).
 
     Attributes:
-        ID (int): The ID of the WEC.
+        sim_id (int): The ID of the WEC.
         bus_location (str): The location of the bus.
         model (str): The model of the WEC.
         dataframe (DataFrame): The pandas DataFrame holding WEC data.
@@ -29,21 +30,36 @@ class WEC:
         Qmin (float): The minimum Q value, defaults to -9999.
     """
 
-    def __init__(
-        self, ID, model, bus_location, Pmax=9999, Pmin=-9999, Qmax=9999, Qmin=-9999
-    ):
-        self.ID = ID
+    def __init__(self, engine, sim_id, model, bus_location, Pmax=9999, Pmin=-9999, Qmax=9999, Qmin=-9999, MBASE=0.1,config=None):
+        self.engine = engine
+        self.ID = sim_id
         self.bus_location = bus_location
         self.model = model
         self.dataframe = pd.DataFrame()
+        self.MBASE = MBASE # default value for MBASE is 10 KW 
         self.Pmax = Pmax
         self.Pmin = Pmin
         self.Qmax = Qmax
         self.Qmin = Qmin
+        self.gen_id = ""
+        self.gen_name = ""
+        # Ensure config is a dictionary
+        self.config = config if config is not None else {}
 
+        #self.config["waveSeed"] = int(self.config.get("waveSeed",np.random.randint(0, 2**32 - 1)))
+                
         if not self.pull_wec_data():
-            print(f"Data for WEC {self.ID} not found in the database.")
-
+            print(f"Data for WEC {self.ID} not found in the database. Running simulation.")
+            self.WEC_Sim()
+        
+        # add snapshots to dataframe
+        snapshots = pd.date_range(
+                start=self.engine.start_time,  # Add 5 minutes
+                periods= self.dataframe.shape[0],
+                freq="5T",  # 5-minute intervals
+            )
+        self.dataframe["snapshots"] = snapshots
+        
     def pull_wec_data(self):
         """
         Pulls WEC data from the database. If wec_num is provided, pulls data for that specific wec.
@@ -55,6 +71,7 @@ class WEC:
             bool: True if the data pull was successful, False otherwise.
         """
 
+        #print("Pulling WEC data from the database")
         table_check_query = "SELECT name FROM sqlite_master WHERE type='table' AND name='WEC_output_{}'".format(
             self.ID
         )
@@ -70,7 +87,7 @@ class WEC:
         self.dataframe = dbQuery(data_query, return_type="df")
         return True
 
-    def WEC_Sim(self, config):
+    def WEC_Sim(self):
         """
         Description: This function runs the WEC-SIM simulation for the model in the input folder.
         input:
@@ -88,24 +105,28 @@ class WEC:
         drop_table_query = f"DROP TABLE IF EXISTS {table_name};"
         dbQuery(drop_table_query)
 
+        print("Starting MATLAB Engine")
         eng = matlab.engine.start_matlab()
         eng.cd(os.path.join(PATHS["wec_model"], self.model))
         eng.addpath(eng.genpath(PATHS["wec_sim"]), nargout=0)
         print(f"Running {self.model}")
 
         eng.workspace["wecId"] = self.ID
-        for key, value in config.items():
+        for key, value in self.config.items():
             eng.workspace[key] = value
-
+            
+        #eng.workspace["waveSeed"] = self.waveSeed
+        
         eng.workspace["DB_PATH"] = DB_PATH  # move to front end?
         if self.model == "LUPA":
             eng.eval(
-                "m2g_out = w2gSim_LUPA(wecId,simLength,Tsample,waveHeight,wavePeriod,waveSeed);",
+                "m2g_out = w2gSim_LUPA(wecId,simLength,Tsample,waveHeight,wavePeriod);",
                 nargout=0,
             )
         else:
+            
             eng.eval(
-                "m2g_out = w2gSim(wecId,simLength,Tsample,waveHeight,wavePeriod,waveSeed);",
+                "m2g_out = w2gSim(wecId,simLength,Tsample,waveHeight,wavePeriod);",
                 nargout=0,
             )
         eng.eval("WECsim_to_PSSe_dataFormatter", nargout=0)
