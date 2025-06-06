@@ -1,0 +1,20 @@
+# ── docs/_config.yml ──
+
+# Use a GitHub Pages–compatible theme (e.g., minima, cayman, slate, midnight)
+theme: minima
+
+# Basic site metadata:
+title: "WEC-Grid Documentation"
+description: "Open-source framework for coupling WEC models with power system solvers."
+
+# Because the site is hosted at https://acep-uaf.github.io/WEC-Grid/
+baseurl: "/WEC-Grid"
+
+# Exclude files that shouldn’t be built:
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+
+# Markdown parser:
+markdown: kramdown
