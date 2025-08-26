@@ -3,7 +3,8 @@
 
 **WEC-Grid** is an open-source Python library crafted to simulate the integration of Wave Energy Converters (WECs) power grid simulators like [PSS®E](https://new.siemens.com/global/en/products/energy/services/transmission-distribution-smart-grid/consulting-and-planning/pss-software/pss-e.html) & [PyPSA](https://pypsa.org/).
 
-You can find the full documentation [here](https://acep-uaf.github.io/WEC-GRID/).
+**Documentation**: [acep-uaf.github.io/WEC-Grid](https://acep-uaf.github.io/WEC-Grid/)
+
 
 ### Introduction
 
