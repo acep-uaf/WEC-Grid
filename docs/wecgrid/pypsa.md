@@ -1,4 +1,4 @@
 # PyPSAModeler
 
 ## API Reference
-![mkapi](wecgrid.modelers.power_system.pypsa.PyPSAModeler)
+::: wecgrid.modelers.power_system.pypsa.PyPSAModeler

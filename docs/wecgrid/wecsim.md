@@ -1,4 +1,4 @@
 # WECSimRunner
 
 ## API Reference
-![mkapi](wecgrid.modelers.wec_sim.runner.WECSimRunner)
+::: wecgrid.modelers.wec_sim.runner.WECSimRunner

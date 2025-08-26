@@ -12,4 +12,4 @@ explain here what the PowerSystemModeler is and why
 ## API Reference
 
 ### PowerSystemModeler 
-![mkapi](wecgrid.modelers.power_system.base.PowerSystemModeler)
+::: wecgrid.modelers.power_system.base.PowerSystemModeler

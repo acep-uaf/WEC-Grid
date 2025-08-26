@@ -1,7 +1,7 @@
 # GridState
 
 ## API Reference
-![mkapi](wecgrid.modelers.power_system.base.GridState)
+::: wecgrid.modelers.power_system.base.GridState
 
-![mkapi](wecgrid.modelers.power_system.base.AttrDict)
+::: wecgrid.modelers.power_system.base.AttrDict
 

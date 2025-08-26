@@ -1,4 +1,4 @@
 # WECGridPlot
 
 ## API Reference
-![mkapi](wecgrid.util.plot.WECGridPlot)
+::: wecgrid.util.plot.WECGridPlot

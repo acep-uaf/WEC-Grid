@@ -1,4 +1,4 @@
 # WECGridDB
 
 ## API Reference
-![mkapi](wecgrid.util.database.WECGridDB)
+::: wecgrid.util.database.WECGridDB

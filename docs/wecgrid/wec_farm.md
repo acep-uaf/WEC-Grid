@@ -1,4 +1,4 @@
 # WECFarm
 
 ## API Reference
-![mkapi](wecgrid.wec.farm.WECFarm)
+::: (wecgrid.wec.farm.WECFarm

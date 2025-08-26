@@ -12,12 +12,12 @@ plugins:
   #     puml_url: https://www.plantuml.com/plantuml/
   #     num_workers: 8
 
-  - mkapi:
-      src_dirs: [src]
-      filters: [
-        "!^_",        # Exclude private methods
-        "!^test_",    # Exclude test functions
-      ]
+  - mkdocstrings:
+      # src_dirs: [src]
+      # filters: [
+      #   "!^_",        # Exclude private methods
+      #   "!^test_",    # Exclude test functions
+      # ]
   - mkdocs-jupyter:
       include: ["*.ipynb"] 
       execute: false
