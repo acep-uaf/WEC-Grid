@@ -1,8 +1,11 @@
-mkdocs
+# Documentation build requirements
+mkdocs>=1.5.0
 mkdocs-ivory
 mkdocs-jupyter
+mkdocstrings[python]>=0.20.0
 mkapi
-pymdown-extensions
-markdown-include
+plantuml-markdown
 jupyter
 nbconvert
+pymdown-extensions
+markdown-include
