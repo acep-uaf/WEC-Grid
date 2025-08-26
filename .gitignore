@@ -147,6 +147,7 @@ src/wecgrid/database/database_config.json
 .*
 !/.gitignore
 !/.gitattributes  # if you use this file
+!/.github
 
 .*.*
 
