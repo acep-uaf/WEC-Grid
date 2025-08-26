@@ -1,5 +1,5 @@
 mkdocs==1.6.1
-mkdocs-ivory==0.6.0
+mkdocs-ivory==0.4.6
 mkdocs-jupyter==0.24.8
 mkdocstrings[python]==0.24.3
 mkapi==2.4.0
