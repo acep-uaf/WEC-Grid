@@ -1,8 +1,8 @@
 mkdocs==1.6.1
 mkdocs-ivory==0.4.6
-mkdocs-jupyter==0.24.8
+mkdocs-jupyter==0.25.1
 mkdocstrings[python]==0.24.3
-mkapi==4.4.5
+mkapi
 pymdown-extensions==10.8.1
 markdown-include==0.8.1
 jupyter==1.0.0
