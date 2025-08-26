@@ -1,10 +1,10 @@
 site_name: WEC-Grid
 site_description: Integrating Wave Energy Converter Models into Power System Simulations
-repo_url: https://github.com/acep/WEC-GRID
+repo_url: https://github.com/acep-uaf/WEC-GRID
 theme:
   name: ivory
-  favicon: images/logo.png  # Browser tab icon
-  logo: images/logo.png     # Main site logo
+  favicon: images/logo.jpeg  # Browser tab icon
+  logo: images/logo.jpeg     # Main site logo
   nav_style: dark
 
 plugins:

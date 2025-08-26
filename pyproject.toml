@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wecgrid"
-version = "0.1.0"
+version = "1.0.0"
 description = "WEC-Grid: A tool for integrating Wave Energy Converter models into power system simulations"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -18,7 +18,9 @@ dependencies = [
     "pypsa==0.20.1",
     "grg-pssedata==0.1.4",
     "networkx==2.6.3",
-    "pyomo==6.4.2"
+    "pyomo==6.4.2",
+    "jupyter",
+
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
