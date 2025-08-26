@@ -1,11 +1,9 @@
-# Documentation build requirements
-mkdocs>=1.5.0
-mkdocs-ivory
-mkdocs-jupyter
-mkdocstrings[python]>=0.20.0
-mkapi
-plantuml-markdown
-jupyter
-nbconvert
-pymdown-extensions
-markdown-include
+mkdocs==1.6.1
+mkdocs-ivory==0.6.0
+mkdocs-jupyter==0.24.8
+mkdocstrings[python]==0.24.3
+mkapi==2.4.0
+pymdown-extensions==10.8.1
+markdown-include==0.8.1
+jupyter==1.0.0
+nbconvert==7.16.4
