@@ -1,10 +1,9 @@
 site_name: WEC-Grid
 site_description: Integrating Wave Energy Converter Models into Power System Simulations
-repo_url: https://github.com/acep-uaf/WEC-GRID
+repo_url: https://github.com/acep-uaf/WEC-Grid
 theme:
   name: ivory
-  favicon: images/logo.jpeg  # Browser tab icon
-  logo: images/logo.jpeg     # Main site logo
+  logo: assets/logo.png     # Main site logo
   nav_style: dark
 
 plugins:
@@ -13,30 +12,16 @@ plugins:
   #     puml_url: https://www.plantuml.com/plantuml/
   #     num_workers: 8
 
-  # Temporarily disabled due to AST parsing error
-  # - mkapi:
-  #     src_dirs: [src]
-  #     filters: [
-  #       "!^_",        # Exclude private methods
-  #       "!^test_",    # Exclude test functions
-  #     ]
+  - mkapi:
+      src_dirs: [src]
+      filters: [
+        "!^_",        # Exclude private methods
+        "!^test_",    # Exclude test functions
+      ]
   - mkdocs-jupyter:
       include: ["*.ipynb"] 
       execute: false
       include_source: True
-  # Temporarily disabled to reduce warnings during initial setup
-  # - mkdocstrings:
-  #     handlers:
-  #       python:
-  #         paths: [src]
-  #         options:
-  #           show_source: false
-  #           docstring_style: google
-  #           show_signature_annotations: false
-  #           show_if_no_docstring: false
-  #           filters: ["!^_"]
-  #           ignore_init_summary: true
-  #           merge_init_into_class: true
 nav:
   - Getting Started:
       - Introduction: index.md
@@ -44,14 +29,21 @@ nav:
       - Installation: install.md
   - WECGrid:
     - Engine: wecgrid/engine.md
-    - Power System Modelers: wecgrid/base.md
-    - PSS/E: wecgrid/psse.md
-    - PyPSA: wecgrid/pypsa.md
-    - WEC-Sim Runner: wecgrid/wecsim.md
-    - WEC Components: wecgrid/wec.md
-    - Database: wecgrid/database.md
-    - Time: wecgrid/time.md
-    - Plot: wecgrid/plot.md
+    - Modelers:
+      - Power System:
+        - Base: wecgrid/base.md
+        - Grid State: wecgrid/grid.md
+        - PSS/E: wecgrid/psse.md
+        - PyPSA: wecgrid/pypsa.md
+      - WEC-Sim:
+        - Runner: wecgrid/wecsim.md
+    - WEC:
+      - WEC Farm: wecgrid/wec_farm.md
+      - WEC Device: wecgrid/wec_device.md
+    - Util:
+      - Database: wecgrid/database.md
+      - Time: wecgrid/time.md
+      - Plot: wecgrid/plot.md
   - Examples & Data:
     - Jupyter notebooks:
       - Example 1: examples/jupyter_notebooks/example1.ipynb
@@ -62,7 +54,6 @@ nav:
       - Grid Models: examples/data/grid-models.md
       - WEC Models: examples/data/wec-models.md
       - Database: examples/data/database.md
-      # WECGrid.db lives here
   - Reference:
       - API Reference: reference/api.md
       - Troubleshooting: reference/troubleshooting.md

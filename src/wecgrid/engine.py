@@ -17,8 +17,7 @@ import pandas as pd
 
 # Local
 from wecgrid.modelers import PSSEModeler, PyPSAModeler
-from wecgrid.plot import WECGridPlot
-from wecgrid.util import WECGridDB, WECGridTime
+from wecgrid.util import WECGridDB, WECGridTime, WECGridPlot
 from wecgrid.wec import WECFarm, WECSimRunner
 
 

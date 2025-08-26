@@ -1,28 +1,15 @@
 # PowerSystemModeler
 
-Backend power system analysis tools providing unified interface across different solvers.
+explain here what the PowerSystemModeler is and why
 
-## Supported Backends
 
-- **PSS®E**: Industry-standard commercial power system analysis
+## Supported Modelers
+
+- **PSS®E35**: Industry-standard commercial power system analysis
 - **PyPSA**: Open-source Python-based optimization framework
 
-<!-- ## Basic Usage
 
-```python
-# Same API regardless of backend
-engine.load(["psse"])    # or ["pypsa"] or both
-engine.case("IEEE_30_bus")
-engine.simulate()
+## API Reference
 
-# Cross-platform validation
-engine.load(["psse", "pypsa"])
-engine.simulate()
-engine.compare_results()
-``` -->
-
-<!-- ## API Reference
-
-![mkapi](wecgrid.modelers.power_system_modeler.PowerSystemModeler)
-
-![mkapi](wecgrid.modelers.grid_state.GridState) -->
+### PowerSystemModeler 
+![mkapi](wecgrid.modelers.power_system.base.PowerSystemModeler)

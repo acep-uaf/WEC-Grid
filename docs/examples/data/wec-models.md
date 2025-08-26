@@ -18,6 +18,13 @@ WEC-Grid includes validated wave energy converter models from academic research,
 - Representative of commercial point absorber designs
 - Well-documented hydrodynamic coefficients
 
+
+<div style="clear: both;"></div>
+<div>
+  <img src="../../../assets/RM3_powerw.png" alt="RM3 simulation output from WEC-Grid">
+</div>
+<div style="clear: both;"></div>
+
 ### LUPA Model
 - **Description**: [Add description of LUPA model]
 - **Type**: [Add type information]
@@ -41,6 +48,12 @@ Publication [1] B. Bosma, C. Beringer, M. Leary, B. Robertson. “Design and mod
 
 LUPA v1.0 [1] Bret Bosma. (2022, April), LUPA (Version v1.0), DOI
 
+<div style="clear: both;"></div>
+<div>
+  <img src="../../../assets/lupa_powerw.png" alt="LUPA simulation output from WEC-Grid">
+</div>
+<div style="clear: both;"></div>
+
 ## Model Integration
 
 WEC models in WEC-Grid provide:
@@ -59,6 +72,12 @@ The standard academic models have been enhanced for grid integration:
 - **Array modeling**: Support for multiple device deployments
 - **Environmental coupling**: Integration with wave resource data
 
+
+
+<div style="clear: both;"></div>
+<div>
+  <img src="../../../assets/lupa_simulink.png" alt="Wave-to-Wire Model">
+</div>
 
 need to talk about the custom PTOsim stuff 
 

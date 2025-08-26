@@ -24,7 +24,7 @@ def test_wecgrid_time():
 
 def test_wecgrid_plot():
     """Test plotting module can be imported."""
-    from wecgrid.plot.plot import WECGridPlot
+    from wecgrid.util.plot import WECGridPlot
     assert WECGridPlot is not None
 
 

@@ -15,7 +15,8 @@ consistent time-zone handling, and ``WECGridDB`` for simple database tasks.
 
 from .time import WECGridTime
 from .database import WECGridDB
+from .plot import WECGridPlot
 
 
-__all__ = ["WECGridTime", "WECGridDB"]
+__all__ = ["WECGridTime", "WECGridDB", "WECGridPlot"]
 
