@@ -19,7 +19,7 @@ dependencies = [
     "grg-pssedata==0.1.4",
     "networkx==2.6.3",
     "pyomo==6.4.2",
-    "tqdm"
+    "tqdm",
     "jupyter",
 
 ]
