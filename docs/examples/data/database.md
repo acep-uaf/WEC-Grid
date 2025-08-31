@@ -1,8 +1,17 @@
-# Here is some infomation about the Pre-Load Data base 
+# Database 
 
+## Pre-Load Database Information
 
-Download here ./WECGrid.db
+### PSS/E Simulations
 
+RTS-GMLC
 
+### WEC-Sim Run
 
+RM3
 
+LUPa 
+
+## Pre-Load Database Download
+
+You can download the database file here: [WECGrid.db](./WECGrid.db)

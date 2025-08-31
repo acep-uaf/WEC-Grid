@@ -24,7 +24,7 @@ Currently in development. Please cite the software directly.
 
 ## Third-Party Acknowledgments
 
-<!-- WEC-Grid builds upon several open-source projects:
+WEC-Grid builds upon several open-source projects:
 
 - **WEC-Sim** – Wave Energy Converter Simulator
 - **PyPSA** – Python for Power System Analysis
@@ -32,12 +32,9 @@ Currently in development. Please cite the software directly.
 - **Pandas** – Data analysis and manipulation library
 - **NumPy** – Numerical computing library
 - **Matplotlib** – Plotting library -->
-<!-- 
+
 ## Contact
 
 For questions about WEC-Grid or collaboration opportunities:
-
 - **Primary Contact**: barajale@oregonstate.edu
-- **Institution**: Alaska Center for Energy and Power
-- **GitHub**: https://github.com/acep-uaf/WEC-GRID -->
 

@@ -19,4 +19,3 @@ from .plot import WECGridPlot
 
 
 __all__ = ["WECGridTime", "WECGridDB", "WECGridPlot"]
-

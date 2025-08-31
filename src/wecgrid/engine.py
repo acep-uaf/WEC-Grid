@@ -85,7 +85,7 @@ class Engine:
 
     def __repr__(self) -> str:
         """String representation of Engine.
-        
+
         Returns:
             str: Tree-style summary
         """
@@ -99,6 +99,7 @@ class Engine:
             f"\n"
             f"Sbase: {self.sbase if self.sbase else 'Not Loaded'} MVA"
         )
+
     def case(self, case_file: str):
         """Specify the power system case file for subsequent loading.
 
@@ -376,9 +377,7 @@ class Engine:
         return prof
 
     def simulate(
-        self,
-        num_steps: Optional[int] = None,
-        load_curve: bool = False
+        self, num_steps: Optional[int] = None, load_curve: bool = False
     ) -> None:
         """Execute time-series power system simulation across loaded backends.
 
