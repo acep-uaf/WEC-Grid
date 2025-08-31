@@ -57,7 +57,7 @@ class Engine:
         - need a way to map GridState componet names to modeler component names
     """
 
-    def __init__(self, database_path: Optional[str] = None):
+    def __init__(self):
         """Initialize the WEC-Grid Engine with default configuration.
 
         Creates engine instance ready for case loading and simulation setup.
@@ -69,19 +69,19 @@ class Engine:
         self.psse: Optional[PSSEModeler] = None
         self.pypsa: Optional[PyPSAModeler] = None
         self.wec_farms: List[WECFarm] = []
-        self.database = WECGridDB(self, database_path)
+        self.database = WECGridDB(self)
         self.plot = WECGridPlot(self)
         self.wecsim: WECSimRunner = WECSimRunner(self.database)
         self.sbase: Optional[float] = None
 
-    print(r"""
+    # print(r"""
 
-     __     __     ______     ______     ______     ______     __     _____
-    /\ \  _ \ \   /\  ___\   /\  ___\   /\  ___\   /\  == \   /\ \   /\  __-.
-    \ \ \/ ".\ \  \ \  __\   \ \ \____  \ \ \__ \  \ \  __<   \ \ \  \ \ \/\ \
-     \ \__/".~\_\  \ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\  \ \____-
-      \/_/   \/_/   \/_____/   \/_____/   \/_____/   \/_/ /_/   \/_/   \/____/
-                """)
+    #  __     __     ______     ______     ______     ______     __     _____
+    # /\ \  _ \ \   /\  ___\   /\  ___\   /\  ___\   /\  == \   /\ \   /\  __-.
+    # \ \ \/ ".\ \  \ \  __\   \ \ \____  \ \ \__ \  \ \  __<   \ \ \  \ \ \/\ \
+    #  \ \__/".~\_\  \ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\  \ \____-
+    #   \/_/   \/_/   \/_____/   \/_____/   \/_____/   \/_/ /_/   \/_/   \/____/
+    #             """)
 
     def __repr__(self) -> str:
         """String representation of Engine.
@@ -378,7 +378,7 @@ class Engine:
     def simulate(
         self,
         num_steps: Optional[int] = None,
-        load_curve: bool = False,
+        load_curve: bool = False
     ) -> None:
         """Execute time-series power system simulation across loaded backends.
 
@@ -387,6 +387,8 @@ class Engine:
                 the simulation uses the full available data length, constrained by
                 WEC time-series if present.
             load_curve (bool): Enable time-varying load profiles. Defaults to ``False``.
+            strict_convergence (bool): Stop simulation on first convergence failure.
+                Defaults to ``False`` (robust mode continues and reports failed steps).
 
         Raises:
             ValueError: If no power system modelers are loaded.
@@ -394,12 +396,14 @@ class Engine:
         Example:
             >>> engine.simulate(num_steps=144)
             >>> engine.simulate(load_curve=True)
+            >>> engine.simulate(strict_convergence=True)  # Operational mode
 
         Notes:
             - All backends use identical time snapshots for comparison
             - WEC data length constrains maximum simulation length
             - Load curves use reduced amplitude (10%) for realism
             - Results accessible via ``engine.psse.grid`` and ``engine.pypsa.grid``
+            - Strict mode provides traditional power system analysis behavior
 
         TODO:
             - Address multi-farm data length inconsistencies

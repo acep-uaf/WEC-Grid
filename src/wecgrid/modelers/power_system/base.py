@@ -61,6 +61,76 @@ class AttrDict(dict):
         self[name] = value
 
 
+# @dataclass
+# class SolveReport:
+#     simulation_time: float = 0.0
+#     iter_time = [] # float 
+#     converged = [] # bool 
+#     pf_solve_time = [] # float 
+#     pf_solve_iter = [] 
+#     snapshot_time = [] # float
+#     snapshot = [] # time index
+#     message = [] # str 
+
+
+@dataclass
+class SolveReport:
+    simulation_time: float = 0.0
+    case: str = ""
+    software: str = ""
+    iter_time: list = field(default_factory=list)  # float 
+    converged: list = field(default_factory=list)  # bool 
+    pf_solve_time: list = field(default_factory=list)  # float 
+    pf_solve_iter: list = field(default_factory=list)  # int
+    snapshot_time: list = field(default_factory=list)  # float
+    snapshot: list = field(default_factory=list)  # time index
+    message: list = field(default_factory=list)  # str
+    
+    def __repr__(self) -> str:
+        return (
+            f"SolveReport:\n"
+            f"├─ Converged: {'Failed' if not all(self.converged) else 'Successful'}\n"
+            f"├─ Simulation Time: {self.simulation_time:.2f} s\n"
+            f"├─ Num Steps: {len(self.snapshot)}\n"
+            f"├─ Case: {self.case}\n"
+            f"└─ Modeler: {self.software}"
+        )
+    
+    def add_iteration_time(self, time_val: float):
+        """Add iteration time for current snapshot."""
+        self.iter_time.append(time_val)
+    
+    def add_pf_solve_data(self, solve_time: float, iterations: int, converged: bool, msg: str):
+        """Add power flow solve data for current snapshot."""
+        self.converged.append(converged)
+        self.pf_solve_time.append(solve_time)
+        self.pf_solve_iter.append(iterations)
+        self.message.append(msg)
+    
+    def add_snapshot_data(self, snapshot_time: float):
+        """Add snapshot timing"""
+        self.snapshot_time.append(snapshot_time)
+        
+    def add_snapshot(self, snapshot_id):
+        self.snapshot.append(snapshot_id)
+    
+    @property
+    def as_dataframe(self) -> pd.DataFrame:
+        """Convert to DataFrame for analysis (optional convenience method)."""
+        # Pad shorter lists with None to match longest list
+        max_len = max(len(getattr(self, attr)) for attr in 
+                     ['iter_time', 'converged', 'pf_solve_time', 'pf_solve_iter', 
+                      'snapshot_time', 'snapshot', 'message'])
+        
+        data = {}
+        for attr in ['iter_time', 'converged', 'pf_solve_time', 'pf_solve_iter', 
+                     'snapshot_time', 'snapshot', 'message']:
+            values = getattr(self, attr)
+            # Pad with None if shorter than max_len
+            data[attr] = values + [None] * (max_len - len(values))
+        
+        return pd.DataFrame(data)
+    
 @dataclass
 class GridState:
     """Standardized container for power system snapshot and time-series data.
@@ -385,7 +455,9 @@ class PowerSystemModeler(ABC):
         """
         self.engine = engine
         self.grid = GridState()
+        self.report = SolveReport()
         self.grid.case = engine.case_name
+        self.report.case = engine.case_name
         
         self.sbase: Optional[float] = None
         

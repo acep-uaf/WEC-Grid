@@ -76,6 +76,7 @@ class PyPSAModeler(PowerSystemModeler):
         super().__init__(engine)
         self.network: Optional[pypsa.Network] = None
         self.grid.software = "pypsa"
+        self.report.software = "pypsa"
         self.grid.case = engine.case_name
     
 
@@ -130,7 +131,7 @@ class PyPSAModeler(PowerSystemModeler):
         #print("PyPSA software initialized")
         return True
         
-    def solve_powerflow(self) -> bool:
+    def solve_powerflow(self, log: bool = False) -> bool:
         """Run power flow solution and check convergence.
         
         Executes the PyPSA power flow solver with suppressed logging output
@@ -160,25 +161,32 @@ class PyPSAModeler(PowerSystemModeler):
         logger.setLevel(logging.WARNING)
 
         try:
-            # Optional: suppress stdout too, just in case
+        # Optional: suppress stdout too, just in case
             with io.StringIO() as buf, contextlib.redirect_stdout(buf):
+                # === Power Flow Solution ===
+                pf_start = time.time()
                 results = self.network.pf()
+                pf_time = time.time() - pf_start
 
         except Exception as e:
-            print("[PyPSA ERROR]: Power flow calculation failed.")
-            print("Error details:", e)
-            return False
-
-        # Restore logging level
-        logger.setLevel(previous_level)
-        # Check convergence
-        if not results.converged.all().bool():
-            print("[PyPSA WARNING]: Some snapshots failed to converge.")
-            failed = results.converged[~results.converged[0]].index.tolist()
-            print("Non-converged snapshots:", failed)
-            return False
-        else:
-            return True
+            if log:
+                self.report.add_pf_solve_data(
+                    solve_time=pf_time,
+                    iterations=0,
+                    converged=0,
+                    msg=e
+            )
+            return 0
+            
+            
+        if log:
+            self.report.add_pf_solve_data(
+                    solve_time=pf_time,
+                    iterations=results.n_iter.iloc[0][0],
+                    converged=1,
+                    msg="converged"
+            )
+        return 1
         
     def import_raw_to_pypsa(self) -> bool:
         """Import PSS®E case file and build PyPSA Network.
@@ -654,15 +662,6 @@ class PyPSAModeler(PowerSystemModeler):
             bool: True if the simulation completes successfully.
         """
         
-        # Initialize timing storage
-        if not hasattr(self, '_timing_data'):
-            self._timing_data = {
-                'simulation_total': 0.0,
-                'iteration_times': [],
-                'solve_powerflow_times': [],
-                'take_snapshot_times': []
-            }
-        
         # Create clean bus-to-load mapping
         bus_to_load = {}
         for load_idx, bus_num in self.network.loads['bus'].items():
@@ -683,59 +682,44 @@ class PyPSAModeler(PowerSystemModeler):
                 
             wec_generators[farm.farm_id] = gen_name
         
-        #print(f"Starting simulation: {len(self.engine.time.snapshots)} snapshots, {len(wec_generators)} WEC farms")
-        
         # Main simulation loop
         sim_start = time.time()
-        
-        try:
-            for snapshot in tqdm(self.engine.time.snapshots, desc="PyPSA Simulating", unit="step"):
-                iter_start = time.time()
+    
+        for snapshot in tqdm(self.engine.time.snapshots, desc="PyPSA Simulating", unit="step"):
+            self.report.add_snapshot(snapshot)
+            iter_start = time.time()
+            
+            # Update WEC generators
+            for farm in self.engine.wec_farms:
+                gen_name = wec_generators[farm.farm_id]
+                power_pu = farm.power_at_snapshot(snapshot)
+                power_mw = power_pu * self.sbase  # Convert pu -> MW
+                #print(f"{farm.farm_name}: Seting {gen_name} - {power_mw} MW")
+                self.network.generators.at[gen_name, "p_set"] = power_mw
+            
+            # Update loads if provided
+            if load_curve is not None and snapshot in load_curve.index:
+                for bus_str in load_curve.columns:
+                    if str(bus_str) in bus_to_load:
+                        load_name = bus_to_load[str(bus_str)]
+                        load_pu = load_curve.loc[snapshot, bus_str]
+                        if not pd.isna(load_pu):
+                            load_mw = float(load_pu) * self.sbase
+                            self.network.loads.at[load_name, "p_set"] = load_mw
+            
+            # Solve power flow
+            results = self.solve_powerflow(log=True)
+            if results:
+                snap_start = time.time()
+                self.take_snapshot(timestamp=snapshot)  
+                self.report.add_snapshot_data(time.time() - snap_start)
+            else:
+                raise Exception(f"Powerflow failed at snapshot {snapshot}")
                 
-                # Update WEC generators
-                for farm in self.engine.wec_farms:
-                    gen_name = wec_generators[farm.farm_id]
-                    power_pu = farm.power_at_snapshot(snapshot)
-                    power_mw = power_pu * self.sbase  # Convert pu -> MW
-                    #print(f"{farm.farm_name}: Seting {gen_name} - {power_mw} MW")
-                    self.network.generators.at[gen_name, "p_set"] = power_mw
-                
-                # Update loads if provided
-                if load_curve is not None and snapshot in load_curve.index:
-                    for bus_str in load_curve.columns:
-                        if str(bus_str) in bus_to_load:
-                            load_name = bus_to_load[str(bus_str)]
-                            load_pu = load_curve.loc[snapshot, bus_str]
-                            if not pd.isna(load_pu):
-                                load_mw = float(load_pu) * self.sbase
-                                self.network.loads.at[load_name, "p_set"] = load_mw
-                
-                # Solve power flow
-                pf_start = time.time()
-                if self.solve_powerflow():
-                    pf_end = time.time()
-                    self._timing_data['solve_powerflow_times'].append(pf_end - pf_start)
-                    
-                    snap_start = time.time()
-                    self.take_snapshot(timestamp=snapshot)
-                    snap_end = time.time()
-                    self._timing_data['take_snapshot_times'].append(snap_end - snap_start)
-                else:
-                    print(f"Power flow failed at snapshot {snapshot}")
-                    return False
-                
-                iter_end = time.time()
-                self._timing_data['iteration_times'].append(iter_end - iter_start)
-                
-        except Exception as e:
-            print(f"Simulation failed: {e}")
-            return False
-        
-        finally:
-            sim_end = time.time()
-            self._timing_data['simulation_total'] = sim_end - sim_start
-            print(f"Simulation complete: {self._timing_data['simulation_total']:.2f}s")
-        
+            self.report.add_iteration_time(time.time()-iter_start)
+
+        # log simulation end
+        self.report.simulation_time =  time.time() - sim_start
         return True
     
     

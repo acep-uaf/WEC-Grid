@@ -1,5 +1,5 @@
 <div style="clear: both;"></div>
-# WEC-Grid
+
 <div style="float: left; margin-right: 20px; margin-bottom: 20px; width: 150px;">
   <img src="assets/WEC-Grid_logo.png" alt="WEC-Grid Logo" style="width: 100%; height: auto;">
 </div>

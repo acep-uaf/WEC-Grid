@@ -2,8 +2,10 @@
 
 WEC-Grid includes validated wave energy converter models from academic research, providing realistic device characteristics for integration studies.
 
+## Available Models
+
 ### RM3 Reference Model
-<!-- - **Description**: Two-body point absorber developed by Sandia National Laboratories
+- **Description**: Two-body point absorber developed by Sandia National Laboratories
 - **Type**: Point absorber with vertical motion
 - **Power Rating**: 1 MW nominal
 - **Applications**: Offshore deployment scenarios
@@ -15,16 +17,16 @@ WEC-Grid includes validated wave energy converter models from academic research,
 - Power take-off through relative motion
 - Representative of commercial point absorber designs
 - Well-documented hydrodynamic coefficients
- -->
+
 
 <div style="clear: both;"></div>
 <div>
-  <img src="../../../assets/rm3_powerw.png" alt="RM3 simulation output from WEC-Grid">
+  <img src="../../../assets/RM3_powerw.png" alt="RM3 simulation output from WEC-Grid">
 </div>
 <div style="clear: both;"></div>
 
 ### LUPA Model
-<!-- - **Description**: [Add description of LUPA model]
+- **Description**: [Add description of LUPA model]
 - **Type**: [Add type information]
 - **Power Rating**: [Add power rating]
 - **Applications**: [Add application scenarios]
@@ -44,7 +46,7 @@ for examples the LUPA was scaled up.
 Citing LUPA
 Publication [1] B. Bosma, C. Beringer, M. Leary, B. Robertson. “Design and modeling of a laboratory scale WEC point absorber” in Proceedings of the 14th European Wave and Tidal Energy Conference, EWTEC 2021, Plymouth, UK, 2021.
 
-LUPA v1.0 [1] Bret Bosma. (2022, April), LUPA (Version v1.0), DOI -->
+LUPA v1.0 [1] Bret Bosma. (2022, April), LUPA (Version v1.0), DOI
 
 <div style="clear: both;"></div>
 <div>
@@ -52,15 +54,32 @@ LUPA v1.0 [1] Bret Bosma. (2022, April), LUPA (Version v1.0), DOI -->
 </div>
 <div style="clear: both;"></div>
 
+## Model Integration
 
-## Wave-to-Wire Modifications
+WEC models in WEC-Grid provide:
+
+- **Hydrodynamic modeling**: Integration with WEC-Sim for device-level physics
+- **Power conversion**: Realistic power take-off system modeling
+- **Grid interface**: Appropriate electrical characteristics for grid connection
+- **Scalability**: Support for single devices and arrays
+
+## Custom Modifications
+
+The standard academic models have been enhanced for grid integration:
+
+- **Electrical interface modeling**: Added grid-connection components
+- **Control system integration**: Incorporated grid-friendly control strategies
+- **Array modeling**: Support for multiple device deployments
+- **Environmental coupling**: Integration with wave resource data
+
+
 
 <div style="clear: both;"></div>
 <div>
   <img src="../../../assets/lupa_simulink.png" alt="Wave-to-Wire Model">
 </div>
 
-<!-- need to talk about the custom PTOsim stuff 
+need to talk about the custom PTOsim stuff 
 
 
 for lupa
@@ -131,4 +150,4 @@ All WEC models included in WEC-Grid have been validated against:
 
 ## References
 
-[Include proper citations for each WEC model and any custom modifications] -->
+[Include proper citations for each WEC model and any custom modifications]

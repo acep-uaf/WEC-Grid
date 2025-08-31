@@ -51,18 +51,18 @@ def save_database_config(db_path):
     with open(config_file, 'w') as f:
         json.dump(config, f, indent=2)
 
-# def _show_database_setup_message():
-#     """Show simple setup message for missing database."""
-#     print("\n" + "="*60)
-#     print("WEC-Grid Database Setup Required")
-#     print("="*60)
-#     print("No database path is configured.")
-#     print("\nPreloaded database can be downloaded here:")
-#     print("link")
-#     print("\nOptions to configure database:")
-#     print('1. Use existing database: engine.database.set_database_path(r"path/to/WEC-GRID.db")')
-#     print('2. Create new database: engine.database.initialize_database(r"path/to/new_database.db")')
-#     print("="*60 + "\n")
+def _show_database_setup_message():
+    """Show simple setup message for missing database."""
+    print("\n" + "="*60)
+    print("WEC-Grid Database Setup Required")
+    print("="*60)
+    print("No database path is configured.")
+    print("\nPreloaded database can be downloaded here:")
+    print("https://github.com/acep-uaf/wecgrid-database")
+    print("\nOptions to configure database:")
+    print('1. Use existing database: engine.database.set_database_path(r"path/to/WEC-GRID.db")')
+    print('2. Create new database: engine.database.initialize_database(r"path/to/new_database.db")')
+    print("="*60 + "\n")
 
 class WECGridDB:
     """SQLite database interface for WEC-Grid simulation data management.
@@ -121,41 +121,20 @@ class WECGridDB:
         Users are guided through setup process with clear instructions.
         All database operations are transaction-safe with automatic rollback on errors.
     """
-
-    def __init__(self, engine, database_path: Optional[str] = None):
+    
+    def __init__(self, engine):
         """Initialize database handler.
         
         Args:
             engine: WEC-GRID engine instance
         """
         self.engine = engine
-
-        if database_path is None:  # Get database path from config
-            self.db_path = get_database_config()
-        else:
-            self.db_path = database_path
-
+        
+        # Get database path from config
+        self.db_path = get_database_config()
         if self.db_path is None:
-            print("\n" + "="*60)
-            print("WEC-Grid Database Setup Required")
-            print("="*60)
-            print("No database path is configured.")
-            print("\nPreloaded database can be downloaded here:")
-            print("link")
-            print("\nOptions to configure database:")
-            print('1. Use existing database: WECGridDB.set_database_path(r"path/to/WEC-GRID.db")')
-            print('2. Create new database: WECGridDB.initialize_database(r"path/to/new_database.db")')
-            print("="*60 + "\n")
-            option = input("Please enter your an option:")
-            if option == '1':
-                path = input("Enter the path to the existing database:")
-                self.set_database_path(path)
-                self.check_and_initialize()
-    
-            elif option == '2':
-                path = input("Enter the path to the new database:")
-                self.initialize_database(path)
-                self.check_and_initialize()
+            _show_database_setup_message()
+            print("Warning: Database not configured. Use engine.database.set_database_path() to configure.")
             return  # Allow user to continue and set path later
         
         #print(f"Using database: {self.db_path}")

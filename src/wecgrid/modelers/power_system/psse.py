@@ -81,34 +81,9 @@ class PSSEModeler(PowerSystemModeler):
         """
         super().__init__(engine)
         self.grid.software = "psse"
+        self.report.software = "psse"
         self.grid.case = engine.case_name
 
-    # def __repr__(self) -> str:
-    #     """String representation of PSS®E model with grid summary.
-        
-    #     Returns:
-    #         str: Tree-style summary with case name, component counts, and system base [MVA].
-                
-    #     Example:
-    #         >>> print(modeler)
-    #         psse:
-    #         ├─ case: IEEE_14_bus.sav
-    #         ├─ buses: 14
-    #         ├─ generators: 5
-    #         └─ lines: 20
-    #         Sbase: 100.0 MVA
-    #     """
-    #     return (
-    #         f"psse:\n"
-    #         f"├─ case: {self.engine.case_name}\n"
-    #         f"├─ buses: {len(self.grid.bus)}\n"
-    #         f"├─ generators: {len(self.grid.gen)}\n"
-    #         f"├─ loads: {len(self.grid.load)}\n"
-    #         f"└─ lines: {len(self.grid.line)}"
-    #         f"\n"
-    #         f"Sbase: {self.sbase} MVA"
-    #     )
-        
     def init_api(self) -> bool:
         """Initialize the PSS®E environment and load the case.
         
@@ -182,25 +157,37 @@ class PSSEModeler(PowerSystemModeler):
         print("PSS®E software initialized")
         return True
 
-    def solve_powerflow(self) -> bool:
+    def solve_powerflow(self, log: bool = False):
         """Run power flow solution and check convergence.
         
         Executes the PSS®E power flow solver using the Newton-Raphson method
         and verifies that the solution converged successfully.
         
+        Args:
+            return_details (bool): If True, return detailed dict. If False, return bool.
+        
         Returns:
-            bool: True if power flow converged, False otherwise.
+            bool or dict: Bool for simple convergence check, dict with details for simulation.
             
         Notes:
             The following PSS®E API calls are used:
             
             - ``fnsl()``: Full Newton-Raphson power flow solution
             - ``solved()``: Check if power flow solution converged (0 = converged)
+            - ``iterat()``: Get iteration count from last solution attempt
         """
+        # === Power Flow Solution ===
+        pf_start = time.time()
         ierr = self.psspy.fnsl()
-        ival = self.psspy.solved()
+        pf_time = time.time() - pf_start
         
-        if ierr != 0 or ival != 0:
+        # === Power Flow Details ===
+        ival = self.psspy.solved()
+        iterations = self.psspy.iterat()
+
+        converged = (ierr == 0 and ival == 0)
+        
+        if not converged:
             # Define error code descriptions
             ierr_descriptions = {
                 0: "No error occurred",
@@ -229,13 +216,22 @@ class PSSEModeler(PowerSystemModeler):
             ierr_desc = ierr_descriptions.get(ierr, f"Unknown error code: {ierr}")
             ival_desc = ival_descriptions.get(ival, f"Unknown convergence status: {ival}")
             
-            print(f"[ERROR] Powerflow not solved.")
-            print(f"  PSS®E Error Code {ierr}: {ierr_desc}")
-            print(f"  Convergence Status {ival}: {ival_desc}")
-            #TODO error handling here 
-            return False
-        return True
-        #TODO not sure if I should be calling take_snapshot here or in simulate? maybe both?
+            error_message = f"PSS®E Error {ierr}: {ierr_desc} | Status {ival}: {ival_desc}"
+            
+            # print(f"[ERROR] Powerflow not solved.")
+            # print(f"  PSS®E Error Code {ierr}: {ierr_desc}")
+            # print(f"  Convergence Status {ival}: {ival_desc}")
+        else:
+            error_message = "Converged successfully"
+        
+        if log:
+            self.report.add_pf_solve_data(
+                solve_time=pf_time,
+                iterations=iterations,
+                converged=converged,
+                msg =  error_message
+            )
+        return converged
 
     def adjust_reactive_lim(self) -> bool:
         """Remove reactive power limits from all generators.
@@ -401,20 +397,11 @@ class PSSEModeler(PowerSystemModeler):
                 - Q: Reactive power load [MVAr]
             - ``fnsl()``: Solve power flow at each time step
         """
-        # Initialize timing storage
-        if not hasattr(self, '_timing_data'):
-            self._timing_data = {
-                'simulation_total': 0.0,
-                'iteration_times': [],
-                'solve_powerflow_times': [],
-                'take_snapshot_times': []
-            }
-
         # log simulation start 
         sim_start = time.time()
         
         for snapshot in tqdm(self.engine.time.snapshots, desc="PSS®E Simulating", unit="step"):
-        #for snapshot in self.engine.time.snapshots:
+            self.report.add_snapshot(snapshot)
             # log itr i start 
             iter_start = time.time()
             
@@ -436,44 +423,20 @@ class PSSEModeler(PowerSystemModeler):
                 if ierr > 0:
                     raise Exception(f"Error setting load at bus {bus} on snapshot {snapshot}")
             
-            # log solve pf time start
-            pf_start = time.time()
-            if self.solve_powerflow():
-                # log solve pf time end
-                pf_end = time.time()
-                self._timing_data['solve_powerflow_times'].append(pf_end - pf_start)
-                
-                # log take snapshot time start
+            results = self.solve_powerflow(log=True)
+            if results:
                 snap_start = time.time()
-                self.take_snapshot(timestamp=snapshot)
-                # log take snapshot time end
-                snap_end = time.time()
-                self._timing_data['take_snapshot_times'].append(snap_end - snap_start)
+                self.take_snapshot(timestamp=snapshot)  
+                self.report.add_snapshot_data(time.time() - snap_start)
             else:
                 raise Exception(f"Powerflow failed at snapshot {snapshot}")
             
-            # log itr i end
-            iter_end = time.time()
-            self._timing_data['iteration_times'].append(iter_end - iter_start)
+            self.report.add_iteration_time(time.time()-iter_start)
             
         # log simulation end
-        sim_end = time.time()
-        self._timing_data['simulation_total'] = sim_end - sim_start
-        return True
+        self.report.simulation_time =  time.time() - sim_start
+        return True      
 
-    def get_timing_data(self) -> Dict[str, Any]:
-        """Get timing data collected during simulation.
-        
-        Returns:
-            Dict containing timing information:
-                - simulation_total: Total simulation time [seconds]
-                - iteration_times: List of iteration times [seconds]
-                - solve_powerflow_times: List of power flow solve times [seconds]
-                - take_snapshot_times: List of snapshot capture times [seconds]
-        """
-        if not hasattr(self, '_timing_data'):
-            return {}
-        return self._timing_data.copy()
 
     def take_snapshot(self, timestamp: datetime) -> None:
         """Take a snapshot of the current grid state.
