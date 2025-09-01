@@ -1,7 +1,7 @@
 <div style="clear: both;"></div>
 
 <div style="float: left; margin-right: 20px; margin-bottom: 20px; width: 150px;">
-  <img src="./assets/WEC-Grid_logo.png" alt="WEC-Grid Logo" style="width: 100%; height: auto;">
+  <img src="assets/WEC-Grid_logo.png" alt="WEC-Grid Logo" style="width: 100%; height: auto;">
 </div>
 
 **WEC-Grid** is an open-source software framework that integrates Wave Energy Converter (WEC) models into power system simulations, enabling preliminary integration studies of renewable wave energy with grid steady-state analysis.
