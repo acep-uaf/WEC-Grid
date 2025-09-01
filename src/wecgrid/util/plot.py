@@ -6,7 +6,11 @@ results, supporting cross-platform comparison between PSS®E and PyPSA modeling 
 """
 
 # Standard library
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..modelers.power_system.base import GridState
+    from .database import WECGridDB
 
 # Third-party
 import matplotlib.dates as mdates
@@ -41,7 +45,7 @@ class WECGridPlot:
         self.engine = engine
         self._standalone_grids = {}  # Store GridState objects for standalone usage
 
-    def add_grid(self, software: str, grid_state):
+    def add_grid(self, software: str, grid_state: "GridState"):
         """Add a GridState object for standalone plotting.
 
         Allows plotting of simulation data without requiring the original modeling
@@ -60,7 +64,7 @@ class WECGridPlot:
         self._standalone_grids[software] = grid_state
 
     @classmethod
-    def from_database(cls, database, grid_sim_id: int, software: str = None):
+    def from_database(cls, database: "WECGridDB", grid_sim_id: int, software: str = None) -> "WECGridPlot":
         """Create a standalone plotter from database simulation data.
 
         Convenience method to create a plotter with GridState data pulled from
@@ -209,7 +213,7 @@ class WECGridPlot:
         software: str = "pypsa",
         parameter: str = "p",
         gen: Optional[List[str]] = None,
-    ):
+    ) -> Tuple[Any, Any]:
         """Plot a generator parameter.
 
         Args:
@@ -242,7 +246,7 @@ class WECGridPlot:
         software: str = "pypsa",
         parameter: str = "p",
         bus: Optional[List[str]] = None,
-    ):
+    ) -> Tuple[Any, Any]:
         """Plot a bus parameter.
 
         Args:
@@ -281,7 +285,7 @@ class WECGridPlot:
         software: str = "pypsa",
         parameter: str = "p",
         load: Optional[List[str]] = None,
-    ):
+    ) -> Tuple[Any, Any]:
         """Plot a load parameter.
 
         Args:
@@ -314,7 +318,7 @@ class WECGridPlot:
         software: str = "pypsa",
         parameter: str = "line_pct",
         line: Optional[List[str]] = None,
-    ):
+    ) -> Tuple[Any, Any]:
         """Plot a line parameter.
 
         Args:
@@ -341,7 +345,7 @@ class WECGridPlot:
 
     def sld(
         self, software: str = "pypsa", figsize=(14, 10), title=None, save_path=None
-    ):
+    ) -> Any:
         """Generate single-line diagram using GridState data.
 
         Creates a single-line diagram visualization using the standardized GridState
@@ -353,7 +357,6 @@ class WECGridPlot:
             figsize (tuple): Figure size as (width, height)
             title (str, optional): Custom title for the diagram
             save_path (str, optional): Path to save the figure
-            show (bool): Whether to display the figure (default: False)
 
         Returns:
             matplotlib.figure.Figure: The generated SLD figure

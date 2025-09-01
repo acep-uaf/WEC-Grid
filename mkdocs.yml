@@ -8,20 +8,20 @@ theme:
 
 plugins:
   - search
-  # - plantuml:
-  #     puml_url: https://www.plantuml.com/plantuml/
-  #     num_workers: 8
 
   - mkdocstrings:
-      # src_dirs: [src]
-      # filters: [
-      #   "!^_",        # Exclude private methods
-      #   "!^test_",    # Exclude test functions
-      # ]
+      handlers:
+        python:
+          paths: [src]
+          options:
+            filters:
+              - "!^_"        # Exclude private methods
+              - "!^test_"    # Exclude test functions
   - mkdocs-jupyter:
       include: ["*.ipynb"] 
-      execute: false
+      execute: False
       include_source: True
+      ignore_h1_titles: True
 nav:
   - Getting Started:
       - Introduction: index.md
@@ -38,6 +38,7 @@ nav:
       - WEC-Sim:
         - Runner: wecgrid/wecsim.md
     - WEC:
+      - WEC Module: wecgrid/wec.md
       - WEC Farm: wecgrid/wec_farm.md
       - WEC Device: wecgrid/wec_device.md
     - Util:
@@ -49,7 +50,7 @@ nav:
       - Example 1: examples/jupyter_notebooks/example1.ipynb
       - Example 2: examples/jupyter_notebooks/example2.ipynb
       - Example 3: examples/jupyter_notebooks/example3.ipynb
-      - Example 4 : examples/jupyter_notebooks/example4.ipynb
+      - Example 4: examples/jupyter_notebooks/example4.ipynb
     - Data:
       - Grid Models: examples/data/grid-models.md
       - WEC Models: examples/data/wec-models.md
