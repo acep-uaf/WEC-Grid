@@ -8,6 +8,9 @@ theme:
 
 plugins:
   - search
+  # - plantuml:
+  #     puml_url: https://www.plantuml.com/plantuml/
+  #     num_workers: 8
 
   - mkdocstrings:
       handlers:
@@ -21,7 +24,6 @@ plugins:
       include: ["*.ipynb"] 
       execute: False
       include_source: True
-      ignore_h1_titles: True
 nav:
   - Getting Started:
       - Introduction: index.md

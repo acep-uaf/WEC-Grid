@@ -386,6 +386,8 @@ class Engine:
                 the simulation uses the full available data length, constrained by
                 WEC time-series if present.
             load_curve (bool): Enable time-varying load profiles. Defaults to ``False``.
+            strict_convergence (bool): Stop simulation on first convergence failure.
+                Defaults to ``False`` (robust mode continues and reports failed steps).
 
         Raises:
             ValueError: If no power system modelers are loaded.
@@ -393,12 +395,14 @@ class Engine:
         Example:
             >>> engine.simulate(num_steps=144)
             >>> engine.simulate(load_curve=True)
+            >>> engine.simulate(strict_convergence=True)  # Operational mode
 
         Notes:
             - All backends use identical time snapshots for comparison
             - WEC data length constrains maximum simulation length
             - Load curves use reduced amplitude (10%) for realism
             - Results accessible via ``engine.psse.grid`` and ``engine.pypsa.grid``
+            - Strict mode provides traditional power system analysis behavior
 
         TODO:
             - Address multi-farm data length inconsistencies

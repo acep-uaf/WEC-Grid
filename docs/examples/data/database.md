@@ -31,7 +31,7 @@
 - Wave seed: randomized  
 
 <div style="clear: both; text-align: center;">
-  <img src="../../assets/rm3_powerw.png" alt="WEC-SIM RM3 Results" style="width: 70%; height: auto;">
+  <img src="assets/rm3_powerw.png" alt="WEC-SIM RM3 Results" style="width: 70%; height: auto;">
 </div>
 
 
@@ -46,7 +46,7 @@
 - Wave seed: randomized  
 
 <div style="clear: both; text-align: center;">
-  <img src="../../assets/lupa_powerw.png" alt="WEC-SIM LUPA Results" style="width: 70%; height: auto;">
+  <img src="assets/lupa_powerw.png" alt="WEC-SIM LUPA Results" style="width: 70%; height: auto;">
 </div>
 
 

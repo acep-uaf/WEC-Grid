@@ -160,17 +160,17 @@ class PSSEModeler(PowerSystemModeler):
         print("PSS®E software initialized")
         return True
 
-    def solve_powerflow(self, log: bool = False) -> bool:
+    def solve_powerflow(self, log: bool = False):
         """Run power flow solution and check convergence.
 
         Executes the PSS®E power flow solver using the Newton-Raphson method
         and verifies that the solution converged successfully.
 
         Args:
-            log (bool): If True, enable detailed logging output.
+            return_details (bool): If True, return detailed dict. If False, return bool.
 
         Returns:
-            bool: True if power flow converged successfully.
+            bool or dict: Bool for simple convergence check, dict with details for simulation.
 
         Notes:
             The following PSS®E API calls are used:

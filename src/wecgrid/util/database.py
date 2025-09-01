@@ -12,16 +12,10 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union, Dict, Any
+from typing import List, Optional
 
 # Third-party
 import pandas as pd
-
-# Local imports
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ..modelers.power_system.base import GridState
 
 
 def get_database_config():
@@ -154,7 +148,7 @@ class WECGridDB:
         # print(f"Using database: {self.db_path}")
         self.check_and_initialize()
 
-    def check_and_initialize(self) -> bool:
+    def check_and_initialize(self):
         """Check if database exists and has correct schema, initialize if needed.
 
         Validates that all required tables exist with proper structure.
@@ -586,7 +580,7 @@ class WECGridDB:
                 "CREATE INDEX IF NOT EXISTS idx_wec_integration ON wec_integrations(grid_sim_id, wec_sim_id)"
             )
 
-    def clean_database(self) -> bool:
+    def clean_database(self):
         """Delete the current database and reinitialize with fresh schema.
 
         WARNING: This will permanently delete all stored simulation data.
@@ -627,9 +621,7 @@ class WECGridDB:
             print(f"Error reinitializing database: {e}")
             return False
 
-    def query(
-        self, sql: str, params: tuple = None, return_type: str = "raw"
-    ) -> Union[List[tuple], pd.DataFrame, List[Dict[str, Any]]]:
+    def query(self, sql: str, params: tuple = None, return_type: str = "raw"):
         """Execute SQL query with flexible result formatting.
 
         Args:
@@ -1072,7 +1064,7 @@ class WECGridDB:
         return None
 
     def store_gridstate_data(
-        self, grid_sim_id: int, timestamp: str, grid_state: "GridState", software: str
+        self, grid_sim_id: int, timestamp: str, grid_state, software: str
     ):
         """Store GridState data to appropriate software-specific tables.
 
@@ -1248,7 +1240,7 @@ class WECGridDB:
             return_type="df",
         )
 
-    def pull_sim(self, grid_sim_id: int, software: str = None) -> "GridState":
+    def pull_sim(self, grid_sim_id: int, software: str = None):
         """Pull simulation data from database and reconstruct GridState object.
 
         Retrieves all time-series data for a specific simulation and recreates
