@@ -24,6 +24,9 @@ plugins:
       include: ["*.ipynb"] 
       execute: False
       include_source: True
+
+markdown_extensions:
+  - attr_list
 nav:
   - Getting Started:
       - Introduction: index.md
