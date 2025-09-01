@@ -19,6 +19,7 @@ import pandas as pd
 
 # Local imports
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ..modelers.power_system.base import GridState
 
@@ -626,7 +627,9 @@ class WECGridDB:
             print(f"Error reinitializing database: {e}")
             return False
 
-    def query(self, sql: str, params: tuple = None, return_type: str = "raw") -> Union[List[tuple], pd.DataFrame, List[Dict[str, Any]]]:
+    def query(
+        self, sql: str, params: tuple = None, return_type: str = "raw"
+    ) -> Union[List[tuple], pd.DataFrame, List[Dict[str, Any]]]:
         """Execute SQL query with flexible result formatting.
 
         Args:

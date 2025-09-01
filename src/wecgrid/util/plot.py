@@ -64,7 +64,9 @@ class WECGridPlot:
         self._standalone_grids[software] = grid_state
 
     @classmethod
-    def from_database(cls, database: "WECGridDB", grid_sim_id: int, software: str = None) -> "WECGridPlot":
+    def from_database(
+        cls, database: "WECGridDB", grid_sim_id: int, software: str = None
+    ) -> "WECGridPlot":
         """Create a standalone plotter from database simulation data.
 
         Convenience method to create a plotter with GridState data pulled from
