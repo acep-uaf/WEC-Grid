@@ -377,7 +377,7 @@ class Engine:
         return prof
 
     def simulate(
-        self, num_steps: Optional[int] = None, load_curve: bool = False
+        self, num_steps: Optional[int] = None, load_curve: bool = False, strict_convergence: bool = False
     ) -> None:
         """Execute time-series power system simulation across loaded backends.
 

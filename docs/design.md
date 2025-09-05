@@ -7,10 +7,18 @@ Engine is the core component responsible for managing the interactions between t
 We have our modelers Power System Modelers (PyPSA & PSSE )and Wave Energy Converter Modeler (WEC-SIM)
 
 
-<div style="clear: both; text-align: center;">
-  <img src="assets/WEC_Grid_sequence.png" alt="UML Sequence Diagram" style="width: 30%; height: auto;">
-</div>
 
 <div style="clear: both; text-align: center;">
-  <img src="assets/WEC_Grid_workflow.png" alt="UML Workflow Diagram" style="width: 30%; height: auto;">
+  <img src="../assets/WEC-Grid_uml_class.png" alt="UML Class Diagram" style="width: 100%; height: auto;">
+</div>
+
+
+<div style="clear: both; text-align: center;">
+  <img src="../assets/WEC-Grid_sequence.png" alt="UML Sequence Diagram" style="width: 100%; height: auto;">
+</div>
+
+
+
+<div style="clear: both; text-align: center;">
+  <img src="../assets/WEC_Grid_workflow.png" alt="UML Workflow Diagram" style="width: 100%; height: auto;">
 </div>

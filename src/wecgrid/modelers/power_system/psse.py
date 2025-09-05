@@ -9,7 +9,7 @@ import sys
 import time
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 # Third-party
 import pandas as pd
@@ -160,7 +160,7 @@ class PSSEModeler(PowerSystemModeler):
         print("PSS®E software initialized")
         return True
 
-    def solve_powerflow(self, log: bool = False):
+    def solve_powerflow(self, log: bool = False, return_details: bool = False) -> Union[bool, Dict[str, Any]]:
         """Run power flow solution and check convergence.
 
         Executes the PSS®E power flow solver using the Newton-Raphson method

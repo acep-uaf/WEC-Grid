@@ -5,7 +5,7 @@ WEC-Grid includes two pre-configured wave energy converter models for simulation
 ## Wave to Wire Model 
 
 <div style="clear: both; text-align: center;">
-  <img src="../../assets/lupa_simulink.png" alt="Wave-to-Wire" style="width: 70%; height: auto;">
+  <img src="../../../assets/lupa_simulink.png" alt="Wave-to-Wire" style="width: 100%; height: auto;">
 </div>
 
 In the available models below we have a custom Wave-to-Wire model that captures the full energy conversion chain from ocean waves to grid-delivered electricity.  

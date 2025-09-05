@@ -1,5 +1,12 @@
 # Database 
 
+## Schema
+
+<div style="clear: both; text-align: center;">
+  <img src="../../../assets/database_diagram.png" alt="Database Table Diagram" style="width: 100%; height: auto;">
+</div>
+
+
 ## Pre-Load Database Information
 
 ### Grid Simulation
@@ -31,7 +38,7 @@
 - Wave seed: randomized  
 
 <div style="clear: both; text-align: center;">
-  <img src="assets/rm3_powerw.png" alt="WEC-SIM RM3 Results" style="width: 70%; height: auto;">
+  <img src="../../../assets/rm3_powerw.png" alt="WEC-SIM RM3 Results" style="width: 70%; height: auto;">
 </div>
 
 
@@ -46,10 +53,10 @@
 - Wave seed: randomized  
 
 <div style="clear: both; text-align: center;">
-  <img src="assets/lupa_powerw.png" alt="WEC-SIM LUPA Results" style="width: 70%; height: auto;">
+  <img src="../../../assets/lupa_powerw.png" alt="WEC-SIM LUPA Results" style="width: 70%; height: auto;">
 </div>
 
 
 ## Pre-Load Database Download
 
-You can download the database file here: [WECGrid.db](../../../examples/WECGrid.db)
+You can download the database file here: [WECGrid.db](WECGrid.db)

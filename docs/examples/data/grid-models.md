@@ -40,5 +40,5 @@ WEC-Grid includes several IEEE standard test systems that provide well-character
 
 ### IEEE 300
 - **Description**: Large-scale test case developed by the IEEE Test Systems Task Force under Mike Adibi's direction in 1993 with 300 buses, 69 generators, 306 lines, 197 loads, and 105 transformers.
-- **Download**: [IEEE 300](../jupyter_notebooks/grid_models/IEEE_300_bus.RAW)
+- **Download**: [IEEE 300](../jupyter_notebooks/grid_models/IEEE_300_bus.raw)
 - **Citation**: [Power System Test Case Archive (University of Washington)](https://labs.ece.uw.edu/pstca/pf300/pg_tca300bus.htm)
