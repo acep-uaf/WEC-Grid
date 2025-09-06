@@ -1,6 +1,6 @@
 # Documentation build requirements
 mkdocs>=1.5.0
-mkdocs-ivory
+mkdocs-windmill
 mkdocs-jupyter
 mkdocstrings[python]>=0.20.0
 mkapi
