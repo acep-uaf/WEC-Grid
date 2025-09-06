@@ -1,0 +1,211 @@
+{
+  "meta": {
+    "timestamp": "2025-09-05T14:18:24.231898",
+    "case": "..\\grid_models\\IEEE_39_bus.RAW",
+    "backends": [
+      "pypsa"
+    ],
+    "runs": 10,
+    "warmup_steps": 10,
+    "sampler_interval_s": 0.2,
+    "isolate": false,
+    "buses_base": 39,
+    "generators_base": 10,
+    "buses_effective": 42,
+    "generators_effective": 13,
+    "wec_enabled": true,
+    "total_wec_farms": 3,
+    "total_wec_devices": 30,
+    "wec_farms": [
+      {
+        "farm_name": "RM3-FARM",
+        "size": 10,
+        "wec_sim_id": 1,
+        "bus_location": 40,
+        "connecting_bus": 39
+      },
+      {
+        "farm_name": "RM3-FARM-B",
+        "size": 10,
+        "wec_sim_id": 1,
+        "bus_location": 41,
+        "connecting_bus": 25
+      },
+      {
+        "farm_name": "RM3-FARM-C",
+        "size": 10,
+        "wec_sim_id": 1,
+        "bus_location": 42,
+        "connecting_bus": 29
+      }
+    ],
+    "env": {
+      "python": "3.7.1",
+      "platform": "Windows-10-10.0.19041-SP0",
+      "os": "Windows",
+      "processor": "Intel64 Family 6 Model 69 Stepping 1, GenuineIntel",
+      "logical_cpus": 4,
+      "physical_cores": 2,
+      "cpu_freq_mhz": 2601.0,
+      "ram_total_gb": 7.88,
+      "MKL_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "versions": {
+      "numpy": "1.21.6",
+      "pandas": "1.3.5",
+      "psutil": "5.9.0",
+      "pypsa": "0.20.1",
+      "wecgrid": null,
+      "wecgrid_git": "9695fd7"
+    }
+  },
+  "summary": {
+    "runs": 10,
+    "buses_base": 39,
+    "generators_base": 10,
+    "buses_effective": 42,
+    "generators_effective": 13,
+    "wec_enabled": true,
+    "total_wec_farms": 3,
+    "total_wec_devices": 30,
+    "wall_time_s_mean": 131.16835746000004,
+    "wall_time_s_std": 4.510606119473621,
+    "wall_time_s_p95": 134.1313153,
+    "peak_rss_gb_mean": 0.1916271209716797,
+    "peak_rss_gb_std": 0.0007957378946640014,
+    "peak_rss_gb_p95": 0.19264984130859375,
+    "avg_cpu_pct_mean": 99.4306094542258,
+    "avg_cpu_pct_std": 0.31941131866689626,
+    "avg_cpu_pct_p95": 99.67367521367524,
+    "time_per_bus_s_mean": 3.123056130000001,
+    "time_per_bus_s_std": 0.10739538379699098,
+    "time_per_gen_s_mean": 10.089873650769235,
+    "time_per_gen_s_std": 0.34696970149797085,
+    "time_per_wec_device_s_mean": 4.372278582000001,
+    "time_per_wec_device_s_std": 0.15035353731578746
+  },
+  "runs": [
+    {
+      "wall_time_s": 134.1313153,
+      "peak_rss_gb": 0.19134902954101562,
+      "avg_cpu_pct": 99.2527027027027,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 3.1936027452380955,
+      "time_per_gen_s": 10.317793484615386,
+      "time_per_wec_device_s": 4.471043843333334,
+      "run": 1
+    },
+    {
+      "wall_time_s": 131.75630829999997,
+      "peak_rss_gb": 0.19075775146484375,
+      "avg_cpu_pct": 99.56288659793817,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 3.137054959523809,
+      "time_per_gen_s": 10.135100638461536,
+      "time_per_wec_device_s": 4.391876943333332,
+      "run": 2
+    },
+    {
+      "wall_time_s": 132.01286699999997,
+      "peak_rss_gb": 0.19183349609375,
+      "avg_cpu_pct": 99.60447504302932,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 3.143163499999999,
+      "time_per_gen_s": 10.15483592307692,
+      "time_per_wec_device_s": 4.400428899999999,
+      "run": 3
+    },
+    {
+      "wall_time_s": 131.60313240000005,
+      "peak_rss_gb": 0.1907806396484375,
+      "avg_cpu_pct": 99.77142857142869,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 3.1334079142857156,
+      "time_per_gen_s": 10.12331787692308,
+      "time_per_wec_device_s": 4.386771080000002,
+      "run": 4
+    },
+    {
+      "wall_time_s": 132.41940590000002,
+      "peak_rss_gb": 0.19043350219726562,
+      "avg_cpu_pct": 99.67367521367524,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 3.152842997619048,
+      "time_per_gen_s": 10.186108146153847,
+      "time_per_wec_device_s": 4.413980196666667,
+      "run": 5
+    },
+    {
+      "wall_time_s": 136.00281040000004,
+      "peak_rss_gb": 0.191253662109375,
+      "avg_cpu_pct": 98.64657762938229,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 3.2381621523809536,
+      "time_per_gen_s": 10.46175464615385,
+      "time_per_wec_device_s": 4.533427013333335,
+      "run": 6
+    },
+    {
+      "wall_time_s": 131.97644920000005,
+      "peak_rss_gb": 0.19264984130859375,
+      "avg_cpu_pct": 99.6250859106529,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 3.142296409523811,
+      "time_per_gen_s": 10.152034553846157,
+      "time_per_wec_device_s": 4.3992149733333346,
+      "run": 7
+    },
+    {
+      "wall_time_s": 133.10449790000007,
+      "peak_rss_gb": 0.1921539306640625,
+      "avg_cpu_pct": 99.54778156996586,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 3.1691547119047634,
+      "time_per_gen_s": 10.238807530769236,
+      "time_per_wec_device_s": 4.436816596666669,
+      "run": 8
+    },
+    {
+      "wall_time_s": 130.28789560000018,
+      "peak_rss_gb": 0.19286346435546875,
+      "avg_cpu_pct": 99.12282229965147,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 3.102092752380957,
+      "time_per_gen_s": 10.02214581538463,
+      "time_per_wec_device_s": 4.34292985333334,
+      "run": 9
+    },
+    {
+      "wall_time_s": 118.38889259999996,
+      "peak_rss_gb": 0.19219589233398438,
+      "avg_cpu_pct": 99.49865900383139,
+      "p95_cpu_pct": 100.3,
+      "buses": 42,
+      "generators": 13,
+      "time_per_bus_s": 2.8187831571428563,
+      "time_per_gen_s": 9.10683789230769,
+      "time_per_wec_device_s": 3.9462964199999986,
+      "run": 10
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+[
+  {
+
+   "farm_name": "RM3-FARM",
+   "size": 10,
+   "wec_sim_id": 1,
+   "bus_location": 40,
+   "connecting_bus": 39
+
+},
+
+  {
+    "farm_name": "RM3-FARM-B",
+    "size": 10,
+    "wec_sim_id": 1,
+    "bus_location": 41,
+    "connecting_bus": 25
+  },
+  {
+    "farm_name": "RM3-FARM-C",
+    "size": 10,
+    "wec_sim_id": 1,
+    "bus_location": 42,
+    "connecting_bus": 29
+  }
+]

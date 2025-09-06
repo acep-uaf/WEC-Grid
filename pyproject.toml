@@ -37,8 +37,6 @@ classifiers = [
 psse = [
     "pssepath==0.3.0",
 ]
-matlab = ["matlabengine"]
-wecsim = ["matlabengine"]
 dev = [
     "pytest>=6.0",
     "pytest-cov",

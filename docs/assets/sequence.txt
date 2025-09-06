@@ -1,0 +1,25 @@
+---
+config:
+  theme: redux
+---
+sequenceDiagram
+actor U as User
+participant E as Engine
+participant DB as WECGridDB
+participant S as WECsimRunner
+participant W as WECFarm
+participant M as PowerSystemModeler
+participant P as WECGridPlot
+U->>E: Engine()
+U->>DB: set_database_path(path)
+U->>S: simulate()
+S->>DB: store WEC power
+U->>E: load()
+U->>E: case()
+U->>E: apply_wec()
+E->>M: add_wec_farm()
+E->>M: simulate() ⟶ solve power flow per snapshot
+M-->>E: GridState + SolveReport
+E->>DB: save_sim(GridState)
+U->>P: wec_analysis() / sld() / compare_modelers()
+P-->>U: Figures/plots

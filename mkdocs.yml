@@ -2,16 +2,20 @@ site_name: WEC-Grid
 site_description: Integrating Wave Energy Converter Models into Power System Simulations
 repo_url: https://github.com/acep-uaf/WEC-Grid
 theme:
-  name: readthedocs
+  name: windmill
   logo: assets/WEC-Grid_logo.png     # Main site logo
   nav_style: dark
 
+extra:
+  logo: assets/WEC-Grid_logo.png
+  version: 1.0.0
+  history_buttons: True
+  article_nav_top: True
+  article_nav_bottom: True
+
 plugins:
   - search
-  #- git-revision-date-localized
-  # - plantuml:
-  #     puml_url: https://www.plantuml.com/plantuml/
-  #     num_workers: 8
+
 
   - mkdocstrings:
       handlers:
@@ -30,7 +34,7 @@ nav:
   - Getting Started:
       - Software Design: design.md
       - Installation: install.md
-  - WECGrid:
+  - WEC-Grid:
     - Engine: wecgrid/engine.md
     - Modelers:
       - Power System:

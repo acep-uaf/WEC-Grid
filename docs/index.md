@@ -1,23 +1,25 @@
-**WEC-Grid** is an open-source software framework that integrates Wave Energy Converter (WEC) models into power system simulations, enabling preliminary integration studies of renewable wave energy with grid steady-state analysis.
+<!-- # WEC-Grid -->
 
-<!-- 
-<div style="float: left; margin-right: 20px; margin-bottom: 20px; width: 150px;">
+<div style="clear: both; text-align: center;">
   <img src="assets/WEC-Grid_logo.png" alt="WEC-Grid Logo" style="width: 100%; height: auto;">
 </div>
 
-<div style="clear: both;"></div> -->
+**WEC-Grid** is an open-source software framework that integrates **Wave Energy Converter (WEC)** models into power system simulations. It enables researchers and practitioners to perform preliminary integration studies of renewable wave energy with grid steady-state analysis.
 
 ## Overview
 
-Wave energy integration into power grids faces a critical modeling gap: current power system tools (such as PSS®E, PyPSA) and marine hydrodynamic simulators (WEC-Sim) operate independently, hampering collaboration between marine energy and power system communities.
+Wave energy integration into power grids faces a critical modeling challenge: current power system tools (such as **PSS®E** and **PyPSA**) and marine hydrodynamic simulators (such as **WEC-Sim**) operate independently. This separation hampers collaboration between marine energy and power system communities.
 
-WEC-Grid bridges this gap by providing a unified modeling approach that accurately represents interactions between hydrodynamic behaviors and electrical power systems.
+**WEC-Grid** bridges this gap by providing a **unified modeling approach** that accurately represents interactions between hydrodynamic behaviors and electrical power systems. The framework lowers technical barriers, supports reproducible workflows, and fosters cross-domain collaboration.
 
 ## Support
 - **Documentation**: [acep-uaf.github.io/WEC-Grid](https://acep-uaf.github.io/WEC-Grid/)
-- **Repository**: [github.com/acep-uaf/WEC-GRID](https://github.com/acep-uaf/WEC-GRID)
+- **Repository**: [github.com/acep-uaf/WEC-Grid](https://github.com/acep-uaf/WEC-Grid)
 - **Contact**: barajale@oregonstate.edu
+## Contributors
+- **Alexander Barajas-Ritchie** - [https://github.com/barajale](https://github.com/barajale)
+- **Eduardo Cotilla-Sanchez** - [https://github.com/ecotillasanchez](https://github.com/ecotillasanchez)
+- **Derek Jackson** - [https://github.com/jacksder](https://github.com/jacksder)
 
 ## Acknowledgments
-
-This work is supported by the U.S. Department of Energy Office of Energy Efficiency and Renewable Energy, Water Power Technology Office (Grant #DE-EE0009445), University of Alaska Fairbanks, and Pacific Northwest National Laboratory.
+This work is supported by the **U.S. Department of Energy Office of Energy Efficiency and Renewable Energy**, Water Power Technology Office (Grant #DE-EE0009445), **University of Alaska Fairbanks**, and **Pacific Northwest National Laboratory**.

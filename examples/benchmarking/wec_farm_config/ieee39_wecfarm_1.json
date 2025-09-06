@@ -1,0 +1,11 @@
+[
+  {
+
+   "farm_name": "RM3-FARM",
+   "size": 10,
+   "wec_sim_id": 1,
+   "bus_location": 40,
+   "connecting_bus": 39
+
+}
+]

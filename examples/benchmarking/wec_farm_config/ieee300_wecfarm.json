@@ -1,0 +1,9 @@
+[
+  {
+    "farm_name": "RM3-FARM-A",
+    "size": 1,
+    "wec_sim_id": 1,
+    "bus_location": 9534,
+    "connecting_bus": 7049
+  }
+]
