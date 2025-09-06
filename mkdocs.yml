@@ -6,8 +6,20 @@ theme:
   logo: assets/WEC-Grid_logo.png     # Main site logo
   nav_style: dark
 
+markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra_css:
+  - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css
+
+
 extra:
-  logo: assets/WEC-Grid_logo.png
+  logo: assets/WEC-Grid_mini_white_circle.png
   version: 1.0.0
   history_buttons: True
   article_nav_top: True
@@ -63,5 +75,6 @@ nav:
       - WEC Models: examples/data/wec-models.md
       - Database: examples/data/database.md
   - Reference:
+      - Performance Metrics: reference/performance_metrics.md
       - Troubleshooting: reference/troubleshooting.md
       - Citation: reference/citation.md
