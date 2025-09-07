@@ -102,7 +102,6 @@ nav:
       - Example 2: examples/jupyter_notebooks/example2.ipynb
       - Example 3: examples/jupyter_notebooks/example3.ipynb
       - Example 4: examples/jupyter_notebooks/example4.ipynb
-      - WEC-Sim: examples/jupyter_notebooks/wec-sim.ipynb
   - Data:
     - Grid Models: data/grid-models.md
     - WEC Models: data/wec-models.md
