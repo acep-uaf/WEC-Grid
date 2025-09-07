@@ -49,11 +49,7 @@ jobs:
     
     - name: Sync example notebooks into docs
       run: |
-        python sync_example.py
-        echo "After sync:"
-        ls -la docs/examples/jupyter_notebooks || true
-        ls -la docs/examples || true
-        find docs/examples -maxdepth 2 -type f -name "*.ipynb" -print
+        python .github/workflows/sync_example.py
 
     - name: Build documentation
       run: |
