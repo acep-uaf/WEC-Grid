@@ -1,11 +1,4 @@
-"""
-Wave Energy Converter Farm modeling for power system integration.
-
-This module provides the WECFarm class for managing collections of Wave Energy
-Converter (WEC) devices within power system simulations. WEC farms aggregate
-multiple identical devices at a common grid connection point, providing realistic
-renewable energy profiles for grid integration studies.
-"""
+"""Wave Energy Converter farms composed of identical devices."""
 
 from typing import List, Dict, Any
 import pandas as pd
@@ -15,47 +8,21 @@ from ..modelers.wec_sim.runner import WECSimRunner
 
 
 class WECFarm:
-    """Collection of Wave Energy Converter devices at a common grid connection.
-
-    Manages multiple identical WEC devices sharing a grid connection bus.
-    Aggregates device power outputs and coordinates time-series data for
-    power system integration studies.
+    """Group of identical WEC devices connected to one bus.
 
     Attributes:
-        farm_name (str): Human-readable farm identifier.
-        database: Database interface for WEC simulation data.
-        time: Time manager for simulation synchronization.
-        wec_sim_id (int): Database simulation ID for WEC data retrieval.
-        model (str): WEC device model type (e.g., "RM3").
-        bus_location (int): Grid bus number for farm connection.
-        connecting_bus (int): Network topology connection bus.
-        id (str): Unique generator identifier for power system integration.
-        size (int): Number of identical WEC devices in farm.
-        config (Dict): Configuration parameters for the farm.
-        wec_devices (List[WECDevice]): Collection of individual WEC devices.
-        BASE (float): Base power rating [MVA] for per-unit calculations.
-
-    Example:
-        >>> farm = WECFarm(
-        ...     farm_name="Oregon Coast Farm",
-        ...     database=db,
-        ...     time=time_mgr,
-        ...     sim_id=101,
-        ...     model="RM3",
-        ...     bus_location=14,
-        ...     size=5
-        ... )
-        >>> total_power = farm.power_at_snapshot(timestamp)
-
-    Notes:
-        - All devices use identical power profiles from WEC-Sim data
-        - Power scales linearly with farm size
-        - Requires WEC-Sim simulation data in database
-        - Base power typically 100 MVA for utility-scale installations
-
-    TODO:
-        - Add heterogeneous device support for different models
-        - Implement smart farm control and optimization
+        farm_name: Human-readable identifier for the farm.
+        database: Database interface used to fetch WEC-Sim results.
+        time: Time manager providing simulation snapshots.
+        wec_sim_id: Simulation ID used for database queries.
+        model: WEC device model name.
+        bus_location: Bus number where the farm connects.
+        connecting_bus: Bus used to link the farm into the network.
+        gen_name: Generator name in the grid model.
+        size: Number of devices in the farm.
+        wec_devices: Created ``WECDevice`` instances.
+        sbase: Base power in MVA for per-unit values.
+        scaling_factor: Linear multiplier applied to device power.
     """
 
     def __init__(
@@ -72,39 +39,24 @@ class WECFarm:
         sbase: float = 100.0,
         scaling_factor: float = 1.0,
     ):
-        """Initialize WEC farm with specified configuration.
+        """Initialize the farm and load associated WEC-Sim data.
 
         Args:
-            farm_name (str): Human-readable WEC farm identifier.
-            database: Database interface for WEC simulation data access.
-            time: Time management object for simulation synchronization.
-            wec_sim_id (int): Database simulation ID for WEC data retrieval.
-            bus_location (int): Grid bus number for farm connection.
-            connecting_bus (int, optional): Network topology connection bus. Defaults to 1.
-            gen_name (str, optional): Generator name for power system integration. Defaults to ''.
-            size (int, optional): Number of WEC devices in farm. Defaults to 1.
-            farm_id (int, optional): Unique farm identifier. Defaults to None.
-            sbase (float, optional): Base power rating [MVA] for per-unit calculations. Defaults to 100.0.
-            scaling_factor (float, optional): Linear power scaling factor for aggregated output. Defaults to 1.0.
+            farm_name: Label for the farm.
+            database: Interface used to query WEC-Sim results.
+            time: Time manager providing simulation snapshots.
+            wec_sim_id: Identifier of the WEC simulation to load.
+            bus_location: Bus number where the farm connects.
+            connecting_bus: Bus used to link the farm into the network.
+            gen_name: Generator name in the grid model.
+            size: Number of devices in the farm.
+            farm_id: Optional integer identifier for the farm.
+            sbase: Base power in MVA for per-unit values.
+            scaling_factor: Linear multiplier applied to device power.
 
         Raises:
-            RuntimeError: If WEC simulation data not found in database.
-            ValueError: If database query returns empty results.
-
-        Example:
-            >>> farm = WECFarm(
-            ...     farm_name="Newport Array",
-            ...     database=db,
-            ...     time=time_mgr,
-            ...     wec_sim_id=101,
-            ...     bus_location=14,
-            ...     size=5
-            ... )
-
-        Notes:
-            - Creates identical WECDevice objects for all farm devices
-            - Retrieves WEC-Sim data from database using wec_sim_id
-            - Sets up per-unit base power from simulation data
+            RuntimeError: If WEC simulation data is missing.
+            ValueError: If the database returns empty results.
         """
 
         self.farm_name: str = farm_name
@@ -130,135 +82,26 @@ class WECFarm:
         self._prepare_farm()
 
     def __repr__(self) -> str:
-        """Return a formatted string representation of the WEC farm configuration.
-
-        Provides a hierarchical display of key farm parameters for debugging,
-        logging, and user information. The format is designed for readability
-        and includes essential configuration details.
-
-        Returns:
-            str: Formatted multi-line string with farm configuration details.
-                Includes farm name, size, model, grid connections, simulation ID,
-                and base power rating in a tree-like structure.
-
-        Example:
-            >>> farm = WECFarm("Test Farm", db, time_mgr, 101, "RM3", 14, size=5)
-            >>> print(farm)
-            WECFarm:
-            ├─ name: 'Test Farm'
-            ├─ size: 5
-            ├─ model: 'RM3'
-            ├─ bus_location: 14
-            ├─ connecting_bus: 1
-            └─ wec_sim_id: 101
-
-            Base: 100.0 MVA
-
-        Display Format:
-            - **Tree structure**: Uses Unicode box-drawing characters
-            - **Key parameters**: Farm name, device count, model type
-            - **Grid connections**: Bus locations for power system integration
-            - **Simulation link**: Database simulation identifier
-            - **Base power**: MVA rating for per-unit calculations
-
-        Use Cases:
-            - **Interactive debugging**: Quick farm configuration inspection
-            - **Logging output**: Structured information for log files
-            - **Jupyter notebooks**: Clean display in research environments
-            - **Configuration validation**: Verify farm setup parameters
-
-        Notes:
-            - Size displays actual number of created devices (len(wec_devices))
-            - Farm name shown in quotes to distinguish from other identifiers
-            - Base power extracted from WEC simulation data during initialization
-            - Unicode characters may not display properly in all terminals
-        """
-        return f"""WECFarm:
-        ├─ name: {self.farm_name!r}
-        ├─ size: {len(self.wec_devices)}
-        ├─ model: {self.model!r}
-        ├─ bus_location: {self.bus_location}
-        ├─ connecting_bus: {self.connecting_bus}
-        └─ sim_id: {self.wec_sim_id}
-
-        Base: {self.sbase} MVA
-
-    """
+        """Return a compact string describing the farm."""
+        return (
+            f"WECFarm:\n"
+            f"├─ name: {self.farm_name!r}\n"
+            f"├─ size: {len(self.wec_devices)}\n"
+            f"├─ model: {self.model!r}\n"
+            f"├─ bus_location: {self.bus_location}\n"
+            f"├─ connecting_bus: {self.connecting_bus}\n"
+            f"└─ sim_id: {self.wec_sim_id}\n\n"
+            f"Base: {self.sbase} MVA\n"
+        )
 
     def _prepare_farm(self):
-        """Load WEC simulation data from database and create individual device objects.
+        """Load WEC-Sim data and create device objects.
 
-        Internal method that handles the core initialization logic for the WEC farm.
-        Validates database content, retrieves simulation results, processes time
-        indexing, and instantiates the specified number of WEC device objects.
-
-        Returns:
-            None: Populates self.wec_devices with configured WECDevice objects.
+        Queries the database for the selected simulation, down-samples the
+        power data and instantiates ``size`` ``WECDevice`` objects.
 
         Raises:
-            RuntimeError: If WEC simulation data not found or loading fails.
-                Provides guidance on running WEC-Sim simulations first.
-            ValueError: If database returns empty or invalid data.
-            KeyError: If required columns missing from simulation data.
-
-        Data Loading Process:
-            1. **Table Existence Check**: Verify simulation tables exist in database
-            2. **Grid Data Retrieval**: Load downsampled results for power system integration
-            3. **Full Data Retrieval**: Load high-resolution results for detailed analysis
-            4. **Time Index Creation**: Generate pandas datetime index for time series
-            5. **Base Power Extraction**: Get MVA rating from simulation data
-            6. **Device Instantiation**: Create specified number of WECDevice objects
-
-        Database Table Schema:
-            **Integration table** (`WECSIM_{model}_{sim_id}`):
-            - time: Simulation time [s]
-            - p: Active power output [MW]
-            - q: Reactive power output [MVAr] (typically zero)
-            - base: Base power rating [MVA]
-
-            **Full resolution table** (`WECSIM_{model}_{sim_id}_full`):
-            - time: Simulation time [s] (high frequency)
-            - p: Active power output [MW]
-            - eta: Wave surface elevation [m]
-            - Additional WEC-Sim variables
-
-        Time Series Processing:
-            - **5-minute intervals**: Standard grid integration time step
-            - **Datetime indexing**: Converts simulation seconds to timestamp format
-            - **Start time alignment**: Uses time manager's configured start time
-            - **Pandas integration**: Creates DataFrame index for efficient querying
-
-        Device Creation:
-            Each WECDevice configured with:
-            - **Unique naming**: "{model}_{sim_id}_{index}" pattern
-            - **Shared data**: Copy of power time series for each device
-            - **Common parameters**: Bus location, base power, model type
-            - **Individual objects**: Separate instance for potential customization
-
-        Error Handling:
-            - **Missing tables**: Clear error message with WEC-Sim guidance
-            - **Empty data**: Validation of successful data retrieval
-            - **Data integrity**: Checks for required columns and valid values
-            - **Graceful failure**: Informative error messages for troubleshooting
-
-        Performance Considerations:
-            - **Single query**: Minimizes database access for efficiency
-            - **Data copying**: Each device gets independent DataFrame copy
-            - **Memory usage**: Scales with farm size and simulation duration
-            - **Time indexing**: One-time conversion for all devices
-
-        Notes:
-            - Called automatically during farm initialization
-            - Assumes WEC-Sim simulation completed successfully
-            - Base power typically 100 MVA for utility-scale installations
-            - All devices share identical power profiles (homogeneous farm)
-            - TODO: Add data validation and integrity checks
-            - TODO: Support for custom time intervals beyond 5 minutes
-
-        See Also:
-            WECDevice: Individual device objects created by this method
-            WECSimRunner: Generates the simulation data loaded here
-            WECGridTime: Provides time configuration for indexing
+            RuntimeError: If simulation data is missing or invalid.
         """
         # First get model type from wec_simulations table using wec_sim_id
         model_query = "SELECT model_type FROM wec_simulations WHERE wec_sim_id = ?"
@@ -344,95 +187,19 @@ class WECFarm:
     def down_sample(
         self, wec_df: pd.DataFrame, new_sample_period: float, timeshift: int = 0
     ) -> pd.DataFrame:
-        """Downsample WEC time-series data to a coarser time resolution.
-
-        Converts high-frequency WEC simulation data to lower frequency suitable for
-        power system integration studies. Averages data over specified time windows
-        to maintain energy conservation while reducing computational overhead.
-
-        Based on MATLAB DownSampleTS function with pandas DataFrame implementation.
+        """Downsample WEC time series.
 
         Args:
-            wec_df (pd.DataFrame): Original high-frequency WEC data with 'time' column.
-                Must contain time series data with consistent time step.
-            new_sample_period (float): New sampling period [seconds] for downsampled data.
-                Typically 300s (5 minutes) for grid integration studies.
-            timeshift (int, optional): Time alignment option. Defaults to 0.
-                - 0: Samples at end of averaging period
-                - 1: Samples centered within averaging period
+            wec_df: Input data with a ``time`` column in seconds.
+            new_sample_period: Desired sampling period in seconds.
+            timeshift: ``0`` for end-aligned timestamps or ``1`` for centered.
 
         Returns:
-            pd.DataFrame: Downsampled DataFrame with same columns as input.
-                Time column adjusted to new sampling frequency.
-                Data columns contain averaged values over sampling windows.
+            pd.DataFrame: Downsampled data with the same columns.
 
         Raises:
-            ValueError: If new_sample_period is smaller than original time step.
-            KeyError: If 'time' column not found in input DataFrame.
-
-        Example:
-            >>> # Downsample 0.1s WEC data to 5-minute intervals
-            >>> df_original = pd.DataFrame({
-            ...     'time': np.arange(0, 1000, 0.1),  # 0.1s timestep
-            ...     'p': np.random.rand(10000),        # Power data
-            ...     'eta': np.random.rand(10000)       # Wave elevation
-            ... })
-            >>> df_downsampled = farm.down_sample(df_original, 300.0)  # 5min
-            >>> print(f"Original: {len(df_original)} points")
-            >>> print(f"Downsampled: {len(df_downsampled)} points")
-            Original: 10000 points
-            Downsampled: 33 points
-
-        Averaging Process:
-            1. **Calculate sample ratio**: How many original points per new point
-            2. **Determine new time grid**: Based on sample period and alignment
-            3. **Window averaging**: Mean value over each time window
-            4. **Energy conservation**: Maintains total energy content
-
-        Time Alignment Options:
-            **timeshift = 0** (End-aligned):
-            - New timestamps at end of averaging window
-            - t_new = [T, 2T, 3T, ...] where T = new_sample_period
-
-            **timeshift = 1** (Center-aligned):
-            - New timestamps at center of averaging window
-            - t_new = [T/2, T+T/2, 2T+T/2, ...] where T = new_sample_period
-
-        Data Processing:
-            - **First window**: Averages from start to first sample point
-            - **Subsequent windows**: Averages over fixed-width windows
-            - **Missing data**: Handles partial windows at end of series
-            - **Column preservation**: Maintains all non-time columns
-
-        Performance Considerations:
-            - **Memory efficient**: Uses vectorized pandas operations
-            - **Flexible windows**: Handles non-integer sample ratios
-            - **Large datasets**: Suitable for long WEC simulations
-            - **Numerical stability**: Robust averaging implementation
-
-        Grid Integration Usage:
-            - **PSS®E studies**: 5-minute resolution for stability analysis
-            - **Economic dispatch**: Hourly or 15-minute intervals
-            - **Load forecasting**: Daily or weekly aggregation
-            - **Resource assessment**: Monthly or seasonal averages
-
-        Wave Energy Applications:
-            - **Power smoothing**: Reduces high-frequency fluctuations
-            - **Grid compliance**: Matches utility data requirements
-            - **Forecast validation**: Aligns with meteorological predictions
-            - **Storage sizing**: Determines energy storage requirements
-
-        Notes:
-            - Preserves energy content through proper averaging
-            - Original time step must be consistent (fixed timestep)
-            - New sample period should be multiple of original timestep
-            - Returns DataFrame with same structure as input
-            - Time column values updated to new sampling frequency
-
-        See Also:
-            _prepare_farm: Uses this method for WEC data preprocessing
-            WECGridTime: Provides target sampling frequencies
-            pandas.DataFrame.resample: Alternative pandas resampling method
+            ValueError: If ``new_sample_period`` is smaller than the original step.
+            KeyError: If the ``time`` column is missing.
         """
         if "time" not in wec_df.columns:
             raise KeyError("DataFrame must contain 'time' column for downsampling")
@@ -505,94 +272,16 @@ class WECFarm:
         return pd.DataFrame(downsampled_data)
 
     def power_at_snapshot(self, timestamp: pd.Timestamp) -> float:
-        """Calculate total farm power output at a specific simulation time.
-
-        Aggregates active power output from all WEC devices in the farm at the
-        specified timestamp. This method provides the primary interface for
-        power system integration, enabling time-varying renewable generation
-        modeling in grid simulations.
+        """Return total active power at a simulation time.
 
         Args:
-            timestamp (pd.Timestamp): Simulation time to query for power output.
-                Must exist in the device DataFrame time index. Typically corresponds
-                to grid simulation snapshots at 5-minute intervals.
+            timestamp: Time at which to read device power.
 
         Returns:
-            float: Total active power output from all farm devices in per-unit on
-                the farm's ``sbase``. Sum of individual device outputs at the
-                specified time. Returns 0.0 if no valid data available at
-                timestamp.
+            float: Sum of device powers in per unit on ``sbase``.
 
         Raises:
-            KeyError: If timestamp not found in device data index.
-            AttributeError: If device DataFrame not properly initialized.
-
-        Example:
-            >>> # Get power at specific simulation time
-            >>> timestamp = pd.Timestamp("2023-01-01 12:00:00")
-            >>> power_pu = farm.power_at_snapshot(timestamp)
-            >>> print(f"Farm output at noon: {power_pu:.4f} pu")
-            Farm output at noon: 0.1575 pu
-
-            >>> # Time series power extraction
-            >>> time_series = []
-            >>> for snapshot in time_manager.snapshots:
-            ...     power_pu = farm.power_at_snapshot(snapshot)
-            ...     time_series.append(power_pu)
-            >>>
-            >>> import matplotlib.pyplot as plt
-            >>> plt.plot(time_manager.snapshots, time_series)
-            >>> plt.ylabel("Farm Power Output [pu]")
-
-        Power Aggregation:
-            - **Linear summation**: Total = Σ(device_power[i] at timestamp)
-            - **Homogeneous devices**: All devices have identical power profiles
-            - **Realistic scaling**: Based on actual WEC device physics
-            - **Wave correlation**: Devices respond to same ocean conditions
-
-        Data Requirements:
-            - **Valid timestamp**: Must exist in device DataFrame index
-            - **Initialized devices**: All WECDevice objects must be properly created
-            - **Power column**: Device data must contain "p" column for active power
-            - **Time alignment**: Timestamp must match grid simulation schedule
-
-        Error Handling:
-            - **Missing data warning**: Prints warning for devices with no data
-            - **Graceful degradation**: Continues calculation with available devices
-            - **Zero fallback**: Returns 0.0 if no devices have valid data
-            - **Timestamp validation**: Checks for existence in device index
-
-        Performance Considerations:
-            - **O(n) complexity**: Scales linearly with number of devices
-            - **DataFrame lookup**: Efficient pandas indexing for time queries
-            - **Memory efficiency**: No data copying, direct access to device data
-            - **Repeated calls**: Suitable for time-series iteration
-
-        Grid Integration Usage:
-            - **PSS®E integration**: Provides generator output at each time step
-            - **PyPSA integration**: Supplies renewable generation time series
-            - **Load flow studies**: Time-varying injection for stability analysis
-            - **Economic dispatch**: Variable renewable generation modeling
-
-        Wave Energy Characteristics:
-            - **Intermittent output**: Power varies with wave conditions
-            - **Predictable patterns**: Follows ocean wave statistics
-            - **Seasonal variation**: Higher output in winter storm seasons
-            - **Capacity factor**: Typically 20-40% for ocean wave resources
-
-        Notes:
-            - Output is in per-unit on the farm's ``sbase``; multiply by
-              ``sbase`` for MW
-            - Power output includes WEC device efficiency and control effects
-            - All devices share identical profiles (same wave field assumption)
-            - Negative power values possible during reactive conditions
-            - Zero output during calm conditions or device maintenance
-            - Farm total limited by grid connection capacity
-
-        See Also:
-            WECDevice.dataframe: Individual device power time series
-            Engine.simulate: Uses this method for grid integration
-            WECGridPlotter.plot_wec_analysis: Visualizes farm power output
+            KeyError: If ``timestamp`` is not present in the device data.
         """
         total_power = 0.0
         for device in self.wec_devices:
