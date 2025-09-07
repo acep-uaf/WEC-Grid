@@ -18,9 +18,24 @@ import matplotlib.pyplot as plt
 # Local
 from wecgrid.util import WECGridDB
 
-# Configuration file path
-_CURR_DIR = os.path.dirname(os.path.abspath(__file__))
-_CONFIG_FILE = os.path.join(_CURR_DIR, "wecsim_config.json")
+from pathlib import Path
+
+
+def _user_config_dir() -> Path:
+    """Return a user-writable config directory for WEC-Grid.
+
+    Uses ``platformdirs`` if available, otherwise falls back to ``~/.wecgrid``.
+    """
+    try:
+        from platformdirs import user_config_dir  # type: ignore
+
+        return Path(user_config_dir(appname="wecgrid", appauthor=False))
+    except Exception:
+        return Path.home() / ".wecgrid"
+
+
+# Configuration file path (user-specific)
+_CONFIG_FILE = _user_config_dir() / "wecsim_config.json"
 
 
 class WECSimRunner:
@@ -58,9 +73,15 @@ class WECSimRunner:
         self.matlab_engine = None
 
     def _load_config(self) -> None:
-        """Load WEC-Sim configuration from JSON file."""
+        """Load WEC-Sim configuration from env var or JSON file."""
+        # Highest priority: environment variable
+        env_path = os.getenv("WECGRID_WECSIM_PATH")
+        if env_path:
+            self.wec_sim_path = env_path
+            return
+
         try:
-            if os.path.exists(_CONFIG_FILE):
+            if _CONFIG_FILE.exists():
                 with open(_CONFIG_FILE, "r") as f:
                     config = json.load(f)
                     self.wec_sim_path = config.get("wec_sim_path")
@@ -68,8 +89,9 @@ class WECSimRunner:
             print(f"Warning: Could not load WEC-Sim config: {e}")
 
     def _save_config(self) -> None:
-        """Save WEC-Sim configuration to JSON file."""
+        """Save WEC-Sim configuration to user JSON file."""
         try:
+            _CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
             config = {"wec_sim_path": self.wec_sim_path}
             with open(_CONFIG_FILE, "w") as f:
                 json.dump(config, f, indent=2)
@@ -106,10 +128,11 @@ class WECSimRunner:
         Prints the currently configured WEC-Sim path along with the location of
         the configuration file used to persist this setting.
         """
-        print(f"WEC-Sim Configuration:")
+        print("WEC-Sim Configuration:")
         print(f"  Path: {self.wec_sim_path or 'Not configured'}")
         print(f"  Config file: {_CONFIG_FILE}")
-        print(f"  Config exists: {os.path.exists(_CONFIG_FILE)}")
+        print(f"  Config exists: {_CONFIG_FILE.exists()}")
+        print("  Env var: WECGRID_WECSIM_PATH (overrides config if set)")
 
     def start_matlab(self) -> bool:
         """Initialize MATLAB engine and configure WEC-Sim framework paths.

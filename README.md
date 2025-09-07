@@ -1,21 +1,13 @@
 
-## WEC-Grid: Integrating Wave Energy Converters into Power Grid Simulations
+# WEC-Grid: Integrating Wave Energy Converters into Power Grid Simulations
+
+<div style="clear: both; text-align: center;">
+  <img src="./docs/assets/WEC-Grid_mini_white.png" alt="WEC-Grid Logo" style="width: 80%; height: auto;">
+</div>
 
 **WEC-Grid** is an open-source Python library crafted to simulate the integration of Wave Energy Converters (WECs) power grid simulators like [PSS®E](https://new.siemens.com/global/en/products/energy/services/transmission-distribution-smart-grid/consulting-and-planning/pss-software/pss-e.html) & [PyPSA](https://pypsa.org/).
 
 **Documentation**: [acep-uaf.github.io/WEC-Grid](https://acep-uaf.github.io/WEC-Grid/)
-
-
-### Introduction
-
-<!-- Amidst the global shift towards sustainable energy solutions, Wave Energy Converters (WECs) emerge as groundbreaking innovations. These tools harbor the potential to tap into the energy reserves of our oceans. Yet, to weave them into intricate systems like microgrids, a profound modeling, testing, and analysis regimen is indispensable. WEC-Grid, presented through this Jupyter notebook, is a beacon of both demonstration and guidance, capitalizing on an open-source software to transcend these integration impediments. -->
-
-### Overview
-
-
-<!-- WEC-Grid is in its nascent stages, yet it presents a Python Jupyter Notebook that successfully establishes a PSSe API connection. It can solve both static AC & DC power flows, injecting data from a WEC device. Additionally, WEC-Grid comes equipped with rudimentary formatting tools for data analytics. The modular design ensures support for a selected power flow solving software and WEC devices.
-
-For the current implementations, WEC-Grid is compatible with PSSe and [WEC-SIM](https://wec-sim.github.io/WEC-Sim/). The widespread application of PSSe in the power systems industry, coupled with its robust API, makes it an ideal choice. -->
 
 ---
 
@@ -78,3 +70,21 @@ For the current implementations, WEC-Grid is compatible with PSSe and [WEC-SIM](
    ```bash
    pytest -v
    ```
+
+---
+
+### Configuration
+
+You can configure paths via code or environment variables.
+
+- Database path
+  - Quick (env var): set `WECGRID_DB_PATH` to your SQLite database
+    - Windows (PowerShell): `$env:WECGRID_DB_PATH = "C:\\path\\to\\WECGrid.db"`
+    - macOS/Linux (bash/zsh): `export WECGRID_DB_PATH=~/path/to/WECGrid.db`
+  - Persistent (code): `engine.database.set_database_path("/path/to/WECGrid.db")`
+    - This writes a JSON config into your user config directory (e.g., `~/.wecgrid/database_config.json`).
+
+- WEC‑Sim path (MATLAB install)
+  - Quick (env var): set `WECGRID_WECSIM_PATH` to the WEC‑Sim folder
+  - Persistent (code): `engine.wecsim.set_wec_sim_path("/path/to/WEC-Sim")`
+    - Stored in your user config directory (e.g., `~/.wecgrid/wecsim_config.json`).

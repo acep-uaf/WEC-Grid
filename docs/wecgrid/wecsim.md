@@ -159,6 +159,18 @@ wecsim.set_wec_sim_path("/path/to/WEC-Sim")
 wecsim.show_config()  # Verify configuration
 ```
 
+Alternatively, configure via environment variable (overrides config file):
+
+```text
+# Windows PowerShell
+$env:WECGRID_WECSIM_PATH = "C:\\path\\to\\WEC-Sim"
+
+# macOS/Linux
+export WECGRID_WECSIM_PATH=~/path/to/WEC-Sim
+```
+
+WECSimRunner stores persistent configuration in a user‑writable directory (e.g., `~/.wecgrid/wecsim_config.json`).
+
 ### Model Directory Structure
 ```
 model_path/

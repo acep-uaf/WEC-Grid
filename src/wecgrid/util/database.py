@@ -1,4 +1,10 @@
-"""Database utilities for WEC-Grid."""
+"""Database utilities for WEC-Grid.
+
+Configuration resolution order for database path:
+- Environment variable ``WECGRID_DB_PATH`` (if set)
+- User config file at ``<user-config>/wecgrid/database_config.json``
+- Otherwise, user is prompted to configure a path via API methods
+"""
 
 # Standard library
 import json
@@ -17,20 +23,44 @@ if TYPE_CHECKING:
 import pandas as pd
 
 
+def _user_config_dir() -> Path:
+    """Return a user-writable config directory for WEC-Grid.
+
+    Uses ``platformdirs`` if available, otherwise falls back to ``~/.wecgrid``.
+    """
+    try:
+        from platformdirs import user_config_dir  # type: ignore
+
+        return Path(user_config_dir(appname="wecgrid", appauthor=False))
+    except Exception:
+        return Path.home() / ".wecgrid"
+
+
+def _db_config_file() -> Path:
+    return _user_config_dir() / "database_config.json"
+
+
 def get_database_config():
-    """Load database configuration from JSON file.
+    """Resolve database path from env var or user config file.
+
+    Resolution order:
+    1) ``WECGRID_DB_PATH`` environment variable
+    2) ``<user-config>/wecgrid/database_config.json``
 
     Returns:
-        str or None: Database path if found and valid, None otherwise.
+        str | None: Database path, or None if not configured.
     """
-    config_file = Path(__file__).parent / "database_config.json"
+    env_path = os.getenv("WECGRID_DB_PATH")
+    if env_path:
+        return str(Path(env_path).expanduser().absolute())
 
+    config_file = _db_config_file()
     if config_file.exists():
         try:
             with open(config_file, "r") as f:
                 config = json.load(f)
                 db_path = config.get("database_path")
-                if db_path and os.path.exists(db_path):
+                if db_path:
                     return str(Path(db_path).absolute())
         except (json.JSONDecodeError, KeyError) as e:
             print(f"Error reading database config: {e}")
@@ -39,14 +69,15 @@ def get_database_config():
 
 
 def save_database_config(db_path):
-    """Save database path to configuration file.
+    """Persist database path in user config directory.
 
     Args:
         db_path (str): Path to database file.
     """
-    config_file = Path(__file__).parent / "database_config.json"
+    cfg_dir = _user_config_dir()
+    cfg_dir.mkdir(parents=True, exist_ok=True)
+    config_file = _db_config_file()
     config = {"database_path": str(Path(db_path).absolute())}
-
     with open(config_file, "w") as f:
         json.dump(config, f, indent=2)
 
@@ -66,6 +97,10 @@ def _show_database_setup_message():
     print(
         '2. Create new database: engine.database.initialize_database(r"path/to/new_database.db")'
     )
+    print(
+        '3. Or set env var WECGRID_DB_PATH to point to your database file'
+    )
+    print(f"Config file (user): {_db_config_file()}\n")
     print("=" * 60 + "\n")
 
 

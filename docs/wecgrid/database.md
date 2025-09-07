@@ -220,12 +220,24 @@ from wecgrid import Engine
 # Initialize engine with database configuration
 engine = Engine()
 
-# First-time setup: configure database path
+# First-time setup: configure database path (persists to user config)
 engine.database.set_database_path(r"C:\path\to\WECGrid.db")
 
 # Or initialize new database with schema
 engine.database.initialize_database(r"C:\path\to\new_database.db")
 ```
+
+Alternatively, set an environment variable to point to the database (no code needed):
+
+```text
+# Windows PowerShell
+$env:WECGRID_DB_PATH = "C:\path\to\WECGrid.db"
+
+# macOS/Linux
+export WECGRID_DB_PATH=~/path/to/WECGrid.db
+```
+
+Note: WEC‑Grid stores persistent configuration in a user‑writable directory (e.g., `~/.wecgrid/`).
 
 ### Storing Simulation Results
 
@@ -296,9 +308,9 @@ voltage_diff = abs(psse_buses['v_mag'] - pypsa_buses['v_mag'])
 - **Indexing**: Composite indexes optimize time-series query performance
 
 ### Configuration Management
-- **JSON Configuration**: Database path stored in `database_config.json`
-- **First-Time Setup**: User-guided configuration process
-- **Path Flexibility**: Support for absolute paths and relative workspace locations
+- **Environment Variable**: `WECGRID_DB_PATH` can set the database path
+- **User Config**: `database_config.json` stored in your user config dir (e.g., `~/.wecgrid/`)
+- **First-Time Setup**: User-guided configuration via `set_database_path()` or `initialize_database()`
 
 ---
 
@@ -365,4 +377,3 @@ recent_power = engine.database.query(
 - **[PSS®E Integration](psse.md)**: Commercial power system backend
 - **[PyPSA Integration](pypsa.md)**: Open-source power system backend
 - **[WEC Integration](wec.md)**: WEC farm and device data management
-
