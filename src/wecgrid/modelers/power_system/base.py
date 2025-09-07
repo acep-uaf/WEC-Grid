@@ -64,6 +64,23 @@ class AttrDict(dict):
 
 @dataclass
 class SolveReport:
+    """Performance tracking for WEC-Grid simulation runs.
+
+    Captures timing metrics, convergence status, and solver performance
+    across all simulation snapshots for analysis and benchmarking.
+
+    Attributes:
+        simulation_time (float): Total simulation duration in seconds.
+        case (str): Power system case name or identifier.
+        software (str): Backend modeler name ("psse", "pypsa").
+        iter_time (List[float]): Per-snapshot iteration timing.
+        converged (List[bool]): Power flow convergence status per snapshot.
+        pf_solve_time (List[float]): Power flow solver timing per snapshot.
+        pf_solve_iter (List[int]): Solver iteration count per snapshot.
+        snapshot_time (List[float]): Grid state capture timing per snapshot.
+        snapshot (List): Timestamp identifiers for each snapshot.
+        message (List[str]): Solver status messages per snapshot.
+    """
     simulation_time: float = 0.0
     case: str = ""
     software: str = ""
@@ -86,28 +103,53 @@ class SolveReport:
         )
 
     def add_iteration_time(self, time_val: float):
-        """Add iteration time for current snapshot."""
+        """Record iteration timing for current simulation snapshot.
+        
+        Args:
+            time_val (float): Iteration execution time in seconds.
+        """
         self.iter_time.append(time_val)
 
     def add_pf_solve_data(
         self, solve_time: float, iterations: int, converged: bool, msg: str
     ):
-        """Add power flow solve data for current snapshot."""
+        """Record power flow solver performance data for current snapshot.
+        
+        Args:
+            solve_time (float): Power flow solution time in seconds.
+            iterations (int): Number of solver iterations required.
+            converged (bool): Whether power flow converged successfully.
+            msg (str): Solver status or error message.
+        """
         self.converged.append(converged)
         self.pf_solve_time.append(solve_time)
         self.pf_solve_iter.append(iterations)
         self.message.append(msg)
 
     def add_snapshot_data(self, snapshot_time: float):
-        """Add snapshot timing"""
+        """Record grid state snapshot capture timing.
+        
+        Args:
+            snapshot_time (float): Time required to capture grid state in seconds.
+        """
         self.snapshot_time.append(snapshot_time)
 
     def add_snapshot(self, snapshot_id):
+        """Record snapshot identifier for simulation tracking.
+        
+        Args:
+            snapshot_id: Timestamp or identifier for the simulation snapshot.
+        """
         self.snapshot.append(snapshot_id)
 
     @property
     def dataframe(self) -> pd.DataFrame:
-        """Convert to DataFrame for analysis (optional convenience method)."""
+        """Convert performance metrics to DataFrame for analysis.
+        
+        Returns:
+            pd.DataFrame: Performance data with columns for timing, convergence,
+                and solver statistics. Missing values padded with None.
+        """
         # Pad shorter lists with None to match longest list
         max_len = max(
             len(getattr(self, attr))
@@ -143,18 +185,19 @@ class SolveReport:
 class GridState:
     """Standardized container for power system snapshot and time-series data.
 
-    The GridState class provides a unified data structure for storing power system
-    component states across different simulation backends (PSS®E, PyPSA, etc.). It
-    maintains both current snapshot data and historical time-series data for buses,
-    generators, lines, and loads using standardized DataFrame schemas.
+    Provides unified data structure for storing power system component states
+    across different simulation backends (PSS®E, PyPSA, etc.). Maintains both
+    current snapshot data and historical time-series data using standardized
+    DataFrame schemas to enable cross-platform validation and comparison.
 
-    This class enables cross-platform validation and comparison between different
-    power system analysis tools by enforcing consistent data formats and units.
     All electrical quantities are stored in per-unit values based on system MVA.
+    Component IDs and naming follow WEC-Grid conventions for consistency across
+    different power system analysis tools.
 
     Attributes:
-        software (str): Backend software name ("psse", "pypsa", etc.).
-        bus (pd.DataFrame): Current bus state with voltage, power injection data.
+        software (str): Backend software identifier ("psse", "pypsa", etc.).
+        case (str): Power system case name or identifier.
+        bus (pd.DataFrame): Current bus state with voltage and power injection data.
         gen (pd.DataFrame): Current generator state with power output data.
         line (pd.DataFrame): Current transmission line state with loading data.
         load (pd.DataFrame): Current load state with power consumption data.
@@ -163,25 +206,12 @@ class GridState:
         line_t (AttrDict): Time-series line data organized by variable name.
         load_t (AttrDict): Time-series load data organized by variable name.
 
-    Example:
-        >>> grid = GridState()
-        >>> # Update with current snapshot
-        >>> grid.update("bus", timestamp, bus_dataframe)
-        >>> # Access current state
-        >>> print(f"Number of buses: {len(grid.bus)}")
-        >>> # Access time-series data
-        >>> voltage_history = grid.bus_t.v_mag  # All bus voltages over time
-
     Notes:
         - All power values are in per-unit on system base MVA
         - Voltage magnitudes are in per-unit, angles in degrees
         - Line loading is expressed as percentage of thermal rating
         - Component IDs must be consistent across all DataFrames
         - Time-series data is automatically maintained when snapshots are updated
-
-    DataFrame Schemas:
-        Each component DataFrame follows a standardized schema as documented
-        in the individual update method and property descriptions.
     """
 
     software: str = ""
@@ -255,105 +285,26 @@ class GridState:
         )
 
     def update(self, component: str, timestamp: pd.Timestamp, df: pd.DataFrame):
-        """
-        Update snapshot and time-series data for a power system component.
+        """Update snapshot and time-series data for a power system component.
 
-        This method updates both the current snapshot DataFrame and the historical
-        time-series data for the specified component type. It expects DataFrames
-        with standardized WEC-Grid schemas and proper `df.attrs['df_type']` attributes.
+        Updates both current snapshot DataFrame and historical time-series data
+        for the specified component type. Expects DataFrames with standardized
+        WEC-Grid schemas and proper `df.attrs['df_type']` attributes.
 
         Args:
-            component (str):
-                Component type ("bus", "gen", "line", "load").
-            timestamp (pd.Timestamp):
-                Timestamp for this snapshot.
-            df (pd.DataFrame):
-                Component data with `df.attrs['df_type']` set to one of
-                {"BUS", "GEN", "LINE", "LOAD"}.
+            component (str): Component type ("bus", "gen", "line", "load").
+            timestamp (pd.Timestamp): Timestamp for this snapshot.
+            df (pd.DataFrame): Component data with `df.attrs['df_type']` set to
+                one of {"BUS", "GEN", "LINE", "LOAD"}.
 
         Raises:
-            ValueError:
-                If component is not recognized, `df_type` is invalid, or required
-                ID columns are missing.
+            ValueError: If component is not recognized, `df_type` is invalid,
+                or required ID columns are missing.
 
-        ----------------------------------------------------------------------
-        DataFrame Schemas
-        ----------------------------------------------------------------------
-        Component ID:
-            for the component attribute the ID will be an incrementing ID number starting from 1 in order of bus number
-
-        Component Names:
-            for the component_name attribute the name will be the corresponding component label and ID (e.g., "Bus_1", "Gen_1").
-
-        **Bus DataFrame** (`df_type="BUS"`)
-
-        | Column    | Description                                 | Type   | Units            | Base Used              |
-        |-----------|---------------------------------------------|--------|------------------|------------------------|
-        | bus       | Bus number (unique identifier)              | int    | —                | —                      |
-        | bus_name  | Bus name/label (e.g., "Bus_1", "Bus_2")     | str    | —                | —                      |
-        | type      | Bus type: "Slack", "PV", "PQ"               | str    | —                | —                      |
-        | p         | Net active power injection (Gen − Load)     | float  | pu               | **S_base** (MVA)       |
-        | q         | Net reactive power injection (Gen − Load)   | float  | pu               | **S_base** (MVA)       |
-        | v_mag     | Voltage magnitude                           | float  | pu               | **V_base** (kV LL)     |
-        | angle_deg | Voltage angle                               | float  | degrees          | —                      |
-        | vbase     | Bus nominal voltage (line-to-line)          | float  | kV               | —                      |
-
-        **Generator DataFrame** (`df_type="GEN"`)
-
-        | Column     | Description                                 | Type   | Units            | Base Used              |
-        |------------|---------------------------------------------|--------|------------------|------------------------|
-        | gen        | Generator ID                                | int    | —                | —                      |
-        | gen_name   | Generator name (e.g., "Gen_1")              | str    | —                | —                      |
-        | bus        | Connected bus number                        | int    | —                | —                      |
-        | p          | Active power output                         | float  | pu               | **S_base** (MVA)       |
-        | q          | Reactive power output                       | float  | pu               | **S_base** (MVA)       |
-        | Mbase      | Generator nameplate MVA rating              | float  | MVA              | **Mbase** (machine)    |
-        | status     | Generator status (1=online, 0=offline)      | int    | —                | —                      |
-
-        **Load DataFrame** (`df_type="LOAD"`)
-
-        | Column     | Description                                 | Type   | Units            | Base Used              |
-        |------------|---------------------------------------------|--------|------------------|------------------------|
-        | load       | Load ID                                     | int    | —                | —                      |
-        | load_name  | Load name (e.g., "Load_1")                  | str    | —                | —                      |
-        | bus        | Connected bus number                        | int    | —                | —                      |
-        | p          | Active power demand                         | float  | pu               | **S_base** (MVA)       |
-        | q          | Reactive power demand                       | float  | pu               | **S_base** (MVA)       |
-        | status     | Load status (1=connected, 0=offline)        | int    | —                | —                      |
-
-        **Line DataFrame** (`df_type="LINE"`)
-
-        | Column     | Description                                 | Type   | Units            | Base Used              |
-        |------------|---------------------------------------------|--------|------------------|------------------------|
-        | line       | Line ID                                     | int    | —                | —                      |
-        | line_name  | Line name (e.g., "Line_1_2")                | str    | —                | —                      |
-        | ibus       | From bus number                             | int    | —                | —                      |
-        | jbus       | To bus number                               | int    | —                | —                      |
-        | line_pct   | Percentage of thermal rating in use         | float  | %                | —                      |
-        | status     | Line status (1=online, 0=offline)           | int    | —                | —                      |
-
-        ----------------------------------------------------------------------
-        Base Usage Summary
-        ----------------------------------------------------------------------
-        - **S_base (System Power Base):**
-        All `p` and `q` values across buses, generators, and loads are in per-unit
-        on the single, case-wide power base (e.g., 100 MVA):
-
-        - **V_base (Bus Voltage Base):**
-        Each bus has a nominal voltage in kV (line-to-line)
-
-        - **Mbase (Machine Base):**
-        Per-generator nameplate MVA rating used for manufacturer parameters.
-
-        Example:
-            >>> # Update bus data at current time
-            >>> bus_df = create_bus_dataframe()  # with proper schema
-            >>> bus_df.attrs['df_type'] = 'BUS'
-            >>> grid.update("bus", pd.Timestamp.now(), bus_df)
-
-            >>> # Access updated data
-            >>> current_buses = grid.bus
-            >>> voltage_timeseries = grid.bus_t.v_mag
+        Note:
+            All power values must be in per-unit on system MVA base.
+            Component DataFrames must include proper ID columns and naming.
+            Time-series data is automatically indexed by component names.
         """
 
         if df is None or df.empty:
@@ -448,12 +399,8 @@ class PowerSystemModeler(ABC):
     Attributes:
         engine: Reference to simulation engine.
         grid (GridState): Time-series data for buses, generators, lines, loads.
+        report (SolveReport): Performance tracking for simulation runs.
         sbase (float, optional): System base power [MVA].
-
-    Example:
-        >>> from wecgrid.modelers import PSSEModeler, PyPSAModeler
-        >>> psse_model = PSSEModeler(engine)
-        >>> pypsa_model = PyPSAModeler(engine)
 
     Notes:
         - Abstract class - use concrete implementations (PSSEModeler, PyPSAModeler)
@@ -567,17 +514,9 @@ class PowerSystemModeler(ABC):
             ValueError: If case file invalid or cannot be loaded.
 
         Notes:
-            Implementation should:
-
-            - Initialize backend API/environment
-            - Load case file (.sav, .raw, etc.)
-            - Set system base MVA (self.sbase)
-            - Perform initial power flow solution
-            - Take initial grid state snapshot
-
-        Example:
-            >>> if modeler.init_api():
-            ...     print("Backend initialized successfully")
+            Implementation should initialize backend API/environment, load case
+            file (.sav, .raw, etc.), set system base MVA (self.sbase), perform
+            initial power flow solution, and take initial grid state snapshot.
         """
         pass
 
@@ -589,16 +528,9 @@ class PowerSystemModeler(ABC):
             bool: True if power flow converged, False otherwise.
 
         Notes:
-            Implementation should:
-
-            - Call backend's power flow solver
-            - Check convergence status
-            - Handle solver-specific parameters
-            - Suppress verbose output if needed
-
-        Example:
-            >>> if modeler.solve_powerflow():
-            ...     print("Power flow converged")
+            Implementation should call backend's power flow solver, check
+            convergence status, handle solver-specific parameters, and
+            suppress verbose output if needed.
         """
         pass
 
@@ -616,17 +548,10 @@ class PowerSystemModeler(ABC):
             ValueError: If WEC farm parameters invalid.
 
         Notes:
-            Implementation should:
-
-            - Create new bus for WEC connection
-            - Add WEC generator with power characteristics
-            - Create transmission line to existing grid
-            - Update grid state after modifications
-            - Solve power flow to validate changes
-
-        Example:
-            >>> if modeler.add_wec_farm(wec_farm):
-            ...     print("WEC farm added successfully")
+            Implementation should create new bus for WEC connection, add WEC
+            generator with power characteristics, create transmission line to
+            existing grid, update grid state after modifications, and solve
+            power flow to validate changes.
         """
         pass
 
@@ -645,21 +570,10 @@ class PowerSystemModeler(ABC):
             Exception: If error updating components or solving power flow.
 
         Notes:
-            Implementation should:
-
-            - Iterate through all time snapshots from engine.time
-            - Update WEC generator power outputs [MW] from farm data
-            - Update bus loads [MW] if load_curve provided
-            - Solve power flow at each time step
-            - Capture grid state snapshots for analysis
-            - Handle convergence failures gracefully
-
-        Example:
-            >>> # Constant loads
-            >>> modeler.simulate()
-            >>>
-            >>> # Time-varying loads
-            >>> modeler.simulate(load_curve=load_df)
+            Implementation should iterate through all time snapshots from engine.time,
+            update WEC generator power outputs [MW] from farm data, update bus loads
+            [MW] if load_curve provided, solve power flow at each time step, capture
+            grid state snapshots for analysis, and handle convergence failures gracefully.
         """
         pass
 
@@ -671,17 +585,11 @@ class PowerSystemModeler(ABC):
             timestamp (datetime): Timestamp for the snapshot.
 
         Notes:
-            Implementation should:
-
-            - Extract bus data: voltages [p.u.], [degrees], power [MW], [MVAr]
-            - Extract generator data: power outputs [MW], [MVAr], status
-            - Extract line data: power flows [MW], [MVAr], loading [%]
-            - Extract load data: power consumption [MW], [MVAr]
-            - Convert to standardized WEC-GRID schema
-            - Store in self.grid with timestamp indexing
-
-        Example:
-            >>> modeler.take_snapshot(datetime.now())
+            Implementation should extract bus data (voltages [p.u.], [degrees], power
+            [MW], [MVAr]), generator data (power outputs [MW], [MVAr], status), line
+            data (power flows [MW], [MVAr], loading [%]), and load data (power
+            consumption [MW], [MVAr]), convert to standardized WEC-GRID schema,
+            and store in self.grid with timestamp indexing.
         """
         pass
 

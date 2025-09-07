@@ -1,7 +1,7 @@
 # Grid Models
-WEC-Grid includes several IEEE standard test systems that provide well-characterized power grid models for research and validation.
 
-## Available Models
+WEC-Grid includes several IEEE standard test systems that provide well-characterized power grid models for research and validation studies.
+
 
 ### IEEE 14-Bus System
 - **Description**: Simple approximation of the American Electric Power system as of February 1962 with 14 buses, 5 generators, 17 lines, 11 loads, and 3 transformers. Does not include line limits and has low base voltages compared to modern systems.
@@ -33,12 +33,12 @@ WEC-Grid includes several IEEE standard test systems that provide well-character
 - **Download**: [RTS-GMLC](../jupyter_notebooks/grid_models/RTS-GMLC_Hooman.raw)
 - **Citation**: [RTS-GMLC 96 Github](https://github.com/GridMod/RTS-GMLC)
 
-### IEEE 118
+### IEEE 118-Bus System
 - **Description**: Approximation of the American Electric Power system (U.S. Midwest) as of December 1962 with 118 buses, 54 generators, 177 lines, 99 loads, and 9 transformers.
 - **Download**: [IEEE 118](../jupyter_notebooks/grid_models/IEEE_118_bus.RAW)
 - **Citation**: [Power System Test Case Archive (University of Washington)](https://labs.ece.uw.edu/pstca/pf118/pg_tca118bus.htm)
 
-### IEEE 300
+### IEEE 300-Bus System
 - **Description**: Large-scale test case developed by the IEEE Test Systems Task Force under Mike Adibi's direction in 1993 with 300 buses, 69 generators, 306 lines, 197 loads, and 105 transformers.
 - **Download**: [IEEE 300](../jupyter_notebooks/grid_models/IEEE_300_bus.raw)
 - **Citation**: [Power System Test Case Archive (University of Washington)](https://labs.ece.uw.edu/pstca/pf300/pg_tca300bus.htm)

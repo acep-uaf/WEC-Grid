@@ -12,10 +12,6 @@ Wave energy integration into power grids faces a critical modeling challenge: cu
 
 **WEC-Grid** bridges this gap by providing a **unified modeling approach** that accurately represents interactions between hydrodynamic behaviors and electrical power systems. The framework lowers technical barriers, supports reproducible workflows, and fosters cross-domain collaboration.
 
-## Support
-- **Documentation**: [acep-uaf.github.io/WEC-Grid](https://acep-uaf.github.io/WEC-Grid/)
-- **Repository**: [github.com/acep-uaf/WEC-Grid](https://github.com/acep-uaf/WEC-Grid)
-- **Contact**: barajale@oregonstate.edu
 ## Contributors
 - **Alexander Barajas-Ritchie** - [https://github.com/barajale](https://github.com/barajale)
 - **Eduardo Cotilla-Sanchez** - [https://github.com/ecotillasanchez](https://github.com/ecotillasanchez)
@@ -23,3 +19,5 @@ Wave energy integration into power grids faces a critical modeling challenge: cu
 
 ## Acknowledgments
 This work is supported by the **U.S. Department of Energy Office of Energy Efficiency and Renewable Energy**, Water Power Technology Office (Grant #DE-EE0009445), **University of Alaska Fairbanks**, and **Pacific Northwest National Laboratory**.
+
+**Github Repo**: [github.com/acep-uaf/WEC-Grid](https://github.com/acep-uaf/WEC-Grid)

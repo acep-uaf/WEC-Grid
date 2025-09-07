@@ -1,22 +1,45 @@
 site_name: WEC-Grid
 site_description: Integrating Wave Energy Converter Models into Power System Simulations
 repo_url: https://github.com/acep-uaf/WEC-Grid
+
 theme:
   name: windmill
-  logo: assets/WEC-Grid_logo.png     # Main site logo
+  logo: assets/WEC-Grid_logo.png
   nav_style: dark
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
 
 markdown_extensions:
+  - admonition
+  - footnotes
+  - attr_list
+  - pymdownx.details
+  - pymdownx.mark
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.arithmatex:
       generic: true
+  - pymdownx.snippets
 
 extra_javascript:
+  - javascripts/mathjax-config.js         # <-- add this (your config)
   - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js
 
-extra_css:
-  - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css
-
+# Remove KaTeX CSS if you’re using MathJax:
+# extra_css:
+#   - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css
 
 extra:
   logo: assets/WEC-Grid_mini_white_circle.png
@@ -27,20 +50,26 @@ extra:
 
 plugins:
   - search
-
-
+  - autorefs
   - mkdocstrings:
       handlers:
         python:
           paths: [src]
           options:
-            filters:
-              - "!^_"        # Exclude private methods
-              - "!^test_"    # Exclude test functions
-  - mkdocs-jupyter:
-      include: ["*.ipynb"] 
-      execute: False
-      include_source: True
+            docstring_style: google
+            merge_init_into_class: true
+            show_if_no_docstring: false
+            show_signature: true
+            separate_signature: true
+            show_signature_annotations: true
+            show_source: true
+            show_inheritance: true
+            show_bases: false
+            inherited_members: true
+            members_order: source
+            filters: ["!^_"]
+            show_object_full_path: true
+
 nav:
   - Home: index.md
   - Getting Started:
@@ -50,16 +79,14 @@ nav:
     - Engine: wecgrid/engine.md
     - Modelers:
       - Power System:
-        - Base: wecgrid/base.md
-        - Grid State: wecgrid/grid.md
-        - PSS/E: wecgrid/psse.md
+        - Base Class: wecgrid/base.md
+        #- Grid State: wecgrid/grid.md
+        - PSS®E: wecgrid/psse.md
         - PyPSA: wecgrid/pypsa.md
-      - WEC-Sim:
-        - Runner: wecgrid/wecsim.md
+      - Wave Energy Converter:
+        - WEC-Sim: wecgrid/wecsim.md
     - WEC:
-      - WEC Module: wecgrid/wec.md
-      - WEC Farm: wecgrid/wec_farm.md
-      - WEC Device: wecgrid/wec_device.md
+      - WEC Farm / Device: wecgrid/wec.md
     - Util:
       - Database: wecgrid/database.md
       - Time: wecgrid/time.md
@@ -73,7 +100,7 @@ nav:
     - Data:
       - Grid Models: examples/data/grid-models.md
       - WEC Models: examples/data/wec-models.md
-      - Database: examples/data/database.md
+      - Preloaded Database: examples/data/loaded_database.md
   - Reference:
       - Performance Metrics: reference/performance_metrics.md
       - Troubleshooting: reference/troubleshooting.md

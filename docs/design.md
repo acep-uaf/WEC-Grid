@@ -1,5 +1,3 @@
-# Software Design
-
 **WEC-Grid** is an open-source software framework that bridges **Wave Energy Converter (WEC) modeling** and **electrical power system modeling**. It enables researchers and practitioners to perform quasi–steady-state integration studies, capturing interactions between hydrodynamic WEC simulations (via WEC-Sim) and grid analysis tools (PSS®E and PyPSA).  
 
 The system is modular, extensible, and built to support flexibility across grid scenarios, farm layouts, and solver configurations. It provides standardized APIs, a relational database backend, and visualization capabilities.
@@ -19,20 +17,19 @@ At the highest level, **WEC-Grid** employs a **bridge pattern**:
 </div> -->
 
 ---
-
 ## Class Design
 
 The UML class diagram highlights the modular structure:
 
 - **Engine**: entry point API, exposes `load()`, `apply_wec()`, `simulate()`, and manages solvers.  
-- **Modelers**:  
-  - `PowerSystemModeler` (abstract base) with implementations for `PSSERunner` and `PyPSARunner`.  
-  - `WECsimRunner` interfaces with MATLAB/WEC-Sim.  
+- **Modelers**
+    + `PowerSystemModeler` (abstract base) with implementations for `PSSERunner` and `PyPSARunner`.
+    + `WECsimRunner` interfaces with MATLAB/WEC-Sim.  
 - **WECFarm / WECDevice**: represent farms of WECs, their bus locations, and simulation identifiers.  
 - **Utilities**:  
-  - `WECGridDB` for SQLite persistence,  
-  - `WECGridTime` for aligned simulation timesteps,  
-  - `WECGridPlot` for visualization.  
+    + `WECGridDB` for SQLite persistence,  
+    + `WECGridTime` for aligned simulation timesteps,  
+    + `WECGridPlot` for visualization.  
 
 <div style="clear: both; text-align: center;">
   <img src="../assets/WEC-Grid_uml_class.png" alt="UML Class Diagram" style="width: 100%; height: auto;">
@@ -82,7 +79,3 @@ This schema supports efficient querying, comparison, and long-term storage.
 - **Scalability**: supports microgrids to large systems, configurable timestep and scenario setup.  
 
 ---
-
-## Examples
-
-Practical examples demonstrating WEC-Grid usage, including IEEE 30-bus integration with RM3 WEC farms, are available in the [examples section of the documentation](https://acep-uaf.github.io/WEC-Grid/).

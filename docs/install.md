@@ -17,7 +17,7 @@
 ## Install WEC-Grid
 
 1. Clone the repository:
-   ```bash
+   ```
    git clone https://github.com/acep-uaf/WEC-Grid
    ```
 2. Navigate into the project directory:
@@ -49,7 +49,10 @@
    ```bash
    pip install wecgrid[psse]   # PSS®E API support
    ```
-
+**Common Issue** Update your `pip` if you encounter installation errors:
+```bash
+python -m pip install --upgrade pip
+```
 ---
 
 ## WEC-Sim / MATLAB Setup
@@ -77,7 +80,7 @@
 ### Common Issues
 - **Bad magic number error**: This typically means the Python version you are using is not compatible with your installed version of PSS®E. See [this forum post](https://psspy.org/psse-help-forum/question/9494/im-trying-to-use-psspy-and-always-i-get-the-same-error-bad-magic-number-in-psspy-bx03xf3rn-someone-can-help-me-to-fix-this-error/) for more details.
 
-Version compatibility:
+### PSS®E and Python Version compatibility:
 - **PSS®E 32**: Requires Python 2.5 (32-bit).
 - **PSS®E 33**: Requires Python 2.7 (32-bit).
 - **PSS®E 34**: Supports Python 2.7, 3.4, 3.7 (all 32-bit).
