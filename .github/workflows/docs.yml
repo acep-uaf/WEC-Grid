@@ -46,6 +46,14 @@ jobs:
         pip install -r .github/workflows/requirements.txt
         # Install project dependencies that might be needed for API docs
         pip install -e .
+    
+    - name: Sync example notebooks into docs
+      run: |
+        python sync_example.py
+        echo "After sync:"
+        ls -la docs/examples/jupyter_notebooks || true
+        ls -la docs/examples || true
+        find docs/examples -maxdepth 2 -type f -name "*.ipynb" -print
 
     - name: Build documentation
       run: |

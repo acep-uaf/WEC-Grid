@@ -152,3 +152,7 @@ src/wecgrid/database/database_config.json
 .*.*
 
 *.egg-info/
+
+
+docs/examples/jupyter_notebooks/
+docs/examples/WECGrid.db
