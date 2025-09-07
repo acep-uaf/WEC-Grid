@@ -24,14 +24,14 @@ For the current implementations, WEC-Grid is compatible with PSSe and [WEC-SIM](
 #### Optional (but encouraged) Software / Packages
 
 1. **Install Miniconda**
-   - Miniconda is a minimal installer for conda. It is recommended to manage your Python environments. Helpful for specifying python and other package verisons.
+   - Miniconda is a minimal installer for conda. It is recommended to manage your Python environments. Helpful for specifying python and other package versions.
    - Download and install [Miniconda (64-bit)](https://docs.conda.io/en/latest/miniconda.html) for Python environment management.
 
 2. **MATLAB**
    - MATLAB 2021b for running our wave energy converter simulations via WEC-SIM. [Download MATLAB](https://www.mathworks.com/products/matlab.html). This is the only tested and supported version of MATLAB currently. Hold off on installing the MATLAB Engine API for Python until your conda environment is set up.
 
 3. **WEC-SIM**
-   - Install WEC-SIM (UNKNOWN). [Get WEC-SIM](https://wec-sim.github.io/WEC-Sim/).
+   - Install WEC-SIM. [Get WEC-SIM](https://wec-sim.github.io/WEC-Sim/).
    - Expose MATLAB to Python by installing the MATLAB Engine API for Python. Follow instructions [here](https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html). Instructions are also provided below.
 
 4. **PSSe API**
@@ -72,11 +72,9 @@ For the current implementations, WEC-Grid is compatible with PSSe and [WEC-SIM](
    ```
 6. (Optional) Install extra dependencies
    ```bash
-   pip install wecgrid[psse]    # PSS\u00aeE API support
-   pip install wecgrid[matlab]  # MATLAB engine integration
-   pip install wecgrid[wecsim]  # WEC-Sim interface
+   pip install wecgrid[psse]    # PSS®E path helper support
    ```
 7. Run tests
    ```bash
-   pytest /test -v
+   pytest -v
    ```
