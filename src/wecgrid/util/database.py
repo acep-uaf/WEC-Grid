@@ -89,7 +89,7 @@ def _show_database_setup_message():
     print("=" * 60)
     print("No database path is configured.")
     print("\nPreloaded database can be downloaded here:")
-    print("https://github.com/acep-uaf/wecgrid-database")
+    print("https://github.com/acep-uaf/WEC-Grid/blob/v1.0.0/examples/WECGrid.db")
     print("\nOptions to configure database:")
     print(
         '1. Use existing database: engine.database.set_database_path(r"path/to/WEC-GRID.db")'
@@ -100,7 +100,8 @@ def _show_database_setup_message():
     print(
         '3. Or set env var WECGRID_DB_PATH to point to your database file'
     )
-    print(f"Config file (user): {_db_config_file()}\n")
+    print(f"Config file (user): {_db_config_file()}")
+    print("=" * 60 + "\n")
     print("=" * 60 + "\n")
 
 

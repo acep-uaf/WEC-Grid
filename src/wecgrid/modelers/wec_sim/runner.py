@@ -147,7 +147,8 @@ class WECSimRunner:
             print("WEC-Sim Path not set")
             print("=" * 60)
             print(
-                "Please set the WEC-Sim path here or using the wecsim.set_wec_sim_path() method."
+                "Please set the WEC-Sim path using wecsim.set_wec_sim_path(), "
+                "or set env var WECGRID_WECSIM_PATH."
             )
             path = input("Enter the WEC-Sim path: ")
             self.set_wec_sim_path(path)
