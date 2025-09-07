@@ -31,7 +31,8 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
-    "Topic :: Scientific/Engineering :: Energy",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: MIT License",
 ]
 
 [project.optional-dependencies]
@@ -58,4 +59,3 @@ wecgrid = [
     "util/*.json",
     "modelers/wec_sim/*.json",
 ]
-
