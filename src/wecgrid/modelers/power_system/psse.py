@@ -245,21 +245,16 @@ class PSSEModeler(PowerSystemModeler):
             ValueError: If the WEC farm cannot be added due to invalid parameters.
 
         Notes:
-            The following PSS®E API calls are used:
+            Uses these PSS®E API calls:
 
-            - ``busdat()``: Get base voltage of connecting bus
-                Returns: Base voltage [kV]
-            - ``bus_data_4()``: Add new WEC bus (PV type)
-                - Base voltage [kV]
-            - ``plant_data_4()``: Add plant data to WEC bus
-            - ``machine_data_4()``: Add WEC generator to bus
-                - PG: Active power generation [MW]
-            - ``branch_data_3()``: Add transmission line from WEC bus to grid
-                - R: Resistance [pu]
-                - X: Reactance [pu]
-                - RATEA: Rating A [MVA]
+            - ``busdat()``: Get base voltage of connecting bus [kV].
+            - ``bus_data_4()``: Create new PV bus for the WEC.
+            - ``plant_data_4()``: Add plant data to the WEC bus.
+            - ``machine_data_4()``: Add a generator (W{farm_id}) at the bus.
+            - ``branch_data_3()``: Add a line between the WEC bus and grid (R/X set; rating not set).
+
         TODO:
-            Fix the hardcoded line R, X, and RATEA values
+            Expose the line R/X and rating as configuration.
         """
 
         ierr, rval = self.psspy.busdat(farm.connecting_bus, "BASE")

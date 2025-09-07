@@ -21,6 +21,7 @@ dependencies = [
     "pyomo==6.4.2",
     "tqdm",
     "jupyter",
+    "mkdocstrings-python"
 
 ]
 classifiers = [

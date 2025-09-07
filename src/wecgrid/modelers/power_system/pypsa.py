@@ -696,32 +696,9 @@ class PyPSAModeler(PowerSystemModeler):
     def snapshot_buses(self) -> pd.DataFrame:
         """Capture current bus state from PyPSA.
 
-        Builds a Pandas DataFrame of the current bus state for the loaded PyPSA network.
-        The DataFrame is formatted according to the GridState specification and includes
-        bus voltage, power injection, and control data.
-
         Returns:
-            pd.DataFrame: DataFrame with columns: bus, bus_name, type, p, q, v_mag,
-                angle_deg, Vbase. Index represents individual buses.
-
-        Notes:
-            The following PyPSA network data is used to create bus snapshots:
-
-            link - https://pypsa.readthedocs.io/en/stable/user-guide/components.html#bus
-
-            Bus Information:
-            - Bus names and numbers "name" (converted from string indices) [dimensionless]
-            - Bus control types "type"(PQ, PV, Slack) [string]
-            - Base voltage levels "v_nom" [kV]
-
-            Electrical Quantities:
-            - Active and reactive power injections "p", "q" [MW], [MVAr] → [pu]
-            - Voltage magnitude "v_mag_pu" [pu] of v_nom
-            - Voltage angle "v_ang" [radians] → [degrees]
-
-            Time Series Data:
-            - Uses latest snapshot from network.snapshots
-            - Defaults to steady-state values if no time series available
+            DataFrame with columns: bus, bus_name, type, p, q, v_mag,
+            angle_deg, vbase.
         """
         n = self.network
         buses = n.buses  # index = bus names (strings)
@@ -785,30 +762,8 @@ class PyPSAModeler(PowerSystemModeler):
     def snapshot_generators(self) -> pd.DataFrame:
         """Capture current generator state from PyPSA.
 
-        Builds a Pandas DataFrame of the current generator state for the loaded PyPSA network.
-        The DataFrame includes generator power output, base power, and status information.
-
         Returns:
-            pd.DataFrame: DataFrame with columns: gen, bus, p, q, base, status.
-                Generator names are formatted as "bus_count" (e.g., "1_1", "1_2").
-
-        Notes:
-            The following PyPSA network data is used to create generator snapshots:
-            link - https://pypsa.readthedocs.io/en/stable/user-guide/components.html#generator
-
-            Generator Information:
-            - Generator names and bus assignments [dimensionless]
-            - Active and reactive power output [MW], [MVAr] → [pu]
-            - Generator status and availability [dimensionless]
-
-            Time Series Data:
-            - Uses latest snapshot from generators_t for power values
-            - Uses generator 'active' attribute for status if available
-            - Per-bus counter for consistent naming convention
-
-            Power Conversion:
-            - All power values converted to per-unit on system base
-            - System base MVA used for normalization [MVA]
+            DataFrame with columns: gen, gen_name, bus, p, q, Mbase, status.
         """
 
         n = self.network
@@ -980,32 +935,8 @@ class PyPSAModeler(PowerSystemModeler):
     def snapshot_loads(self) -> pd.DataFrame:
         """Capture current load state from PyPSA.
 
-        Builds a Pandas DataFrame of the current load state for the loaded PyPSA network.
-        The DataFrame includes load power consumption and status information for all
-        buses with loads.
-
         Returns:
-            pd.DataFrame: DataFrame with columns: load, bus, p, q, base, status.
-                Load names are formatted as "Load_bus_count".
-
-        Notes:
-            The following PyPSA network data is used to create load snapshots:
-
-            link - https://pypsa.readthedocs.io/en/stable/user-guide/components.html#load
-
-            Load Information:
-            - Load names and bus assignments [dimensionless]
-            - Active and reactive power consumption [MW], [MVAr] → [pu]
-            - Load status from 'active' attribute [dimensionless]
-
-            Time Series Data:
-            - Uses latest snapshot from loads_t for power values
-            - Defaults to steady-state values if no time series available
-            - Per-bus counter for consistent naming convention
-
-            Power Conversion:
-            - All power values converted to per-unit on system base
-            - System base MVA used for normalization [MVA]
+            DataFrame with columns: load, load_name, bus, p, q, status.
         """
         n = self.network
         sbase = float(self.sbase)
