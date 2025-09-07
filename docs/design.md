@@ -48,7 +48,7 @@ A typical user workflow:
 6. Store results in database and generate plots.  
 
 <div style="clear: both; text-align: center;">
-  <img src="../assets/WEC-Grid_uml_sequence.png" alt="Sequence Diagram" style="width: 100%; height: auto;">
+  <img src="../assets/WEC-GRID_uml_sequence.png" alt="Sequence Diagram" style="width: 100%; height: auto;">
 </div>
 
 ---
