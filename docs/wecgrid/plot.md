@@ -37,7 +37,8 @@ from wecgrid import Engine
 
 # Initialize and run simulation
 engine = Engine()
-engine.case("IEEE_14_bus")
+engine.case("IEEE_14_bus.raw")
+engine.load(["pypsa"])  # or ["psse"], or both
 engine.simulate()
 
 # Plot bus voltages
@@ -76,7 +77,7 @@ plotter.compare_modelers(
 
 ```python
 # Generate single-line diagram
-fig = engine.plot.sld(software="pypsa", figsize=(12, 8))
+fig, ax = engine.plot.sld(software="pypsa", figsize=(12, 8), show=True)
 ```
 
 ---

@@ -10,7 +10,7 @@ It implements open-source power system analysis with modern Python algorithms an
 - **PyPSA Integration**
     - Parse PSS®E RAW case files via GRG parser
     - Build PyPSA `Network` objects with buses, lines, generators, loads, transformers
-    - Execute power flow solutions using PyPSA's optimization solvers
+    - Execute AC power flow solutions using PyPSA's solver
 
 - **WEC Farm Implementation**
     - Create new buses for WEC connections

@@ -22,8 +22,8 @@ The **Engine** is the orchestration layer of WEC-Grid. It coordinates grid model
 ## Functionality 
 
 1. **Create** an engine and (optionally) set the database path
-2. **Load**: initialize one or more power‑system modelers (PSS®E/PyPSA)
-3. **Case**: load a grid case into each enabled modeler
+2. **Case**: set the case file the modelers will load
+3. **Load**: initialize one or more power‑system modelers (PSS®E/PyPSA)
 4. **Apply WEC**: attach a WEC farm to a bus (pull cached WEC-Sim results or trigger runs via `WECSimRunner`)
 5. **Simulate**: run the time‑series (quasi‑steady‑state) loop; collect `GridState` snapshots
 6. **Persist / Plot**: save results to DB; generate time‑series, comparisons, and SLDs

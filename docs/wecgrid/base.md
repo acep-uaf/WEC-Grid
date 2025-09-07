@@ -124,7 +124,7 @@ Each schema below describes the standardized **DataFrame structure** used in `Gr
 | q         | Net reactive power injection         | float | pu      | **Sbase** (MVA)     |
 | v_mag     | Voltage magnitude                    | float | pu      | **Vbase** (kV LL)   |
 | angle_deg | Voltage angle                        | float | degrees | —                   |
-| Vbase     | Bus nominal voltage (line-to-line)   | float | kV      | —                   |
+| vbase     | Bus nominal voltage (line-to-line)   | float | kV      | —                   |
 
 ---
 

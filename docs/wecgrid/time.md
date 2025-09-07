@@ -105,6 +105,8 @@ from wecgrid import Engine
 
 # Initialize engine with time configuration
 engine = Engine()
+engine.case("IEEE_14_bus.raw")
+engine.load(["pypsa"])  # ensure a modeler is initialized
 engine.time = WECGridTime(
     start_time=datetime(2024, 3, 15, 0, 0, 0),
     num_steps=288,      # 24 hours

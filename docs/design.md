@@ -23,8 +23,8 @@ The UML class diagram highlights the modular structure:
 
 - **Engine**: entry point API, exposes `load()`, `apply_wec()`, `simulate()`, and manages solvers.  
 - **Modelers**
-    + `PowerSystemModeler` (abstract base) with implementations for `PSSERunner` and `PyPSARunner`.
-    + `WECsimRunner` interfaces with MATLAB/WEC-Sim.  
+    + `PowerSystemModeler` (abstract base) with implementations `PSSEModeler` and `PyPSAModeler`.
+    + `WECSimRunner` interfaces with MATLAB/WEC-Sim.  
 - **WECFarm / WECDevice**: represent farms of WECs, their bus locations, and simulation identifiers.  
 - **Utilities**:  
     + `WECGridDB` for SQLite persistence,  
@@ -59,7 +59,7 @@ Simulation results are stored in an **SQLite3 database** for reproducibility and
 
 - **grid_simulations**: metadata for grid-level runs.  
 - **wec_simulations** and **wec_power_results**: WEC-Sim metadata and timeseries outputs.  
-- **pypa/psse_bus, load, line, generator_results**: solver-specific simulation results.  
+- **pypsa_/psse_ bus, load, line, generator_results**: solver-specific simulation results.  
 - **wec_integrations**: mapping between grid and WEC runs.  
 
 This schema supports efficient querying, comparison, and long-term storage.

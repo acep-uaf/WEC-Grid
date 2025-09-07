@@ -230,10 +230,10 @@ engine.database.initialize_database(r"C:\path\to\new_database.db")
 ### Storing Simulation Results
 
 ```python
-# Run grid simulation with PSS®E and PyPSA
-engine.case("IEEE_14_bus")
-engine.load_raw()
-engine.add_wec_farm(farm_name="Test Farm", wec_sim_id=101, bus_location=14)
+# Run grid simulation (PyPSA shown; add PSS®E similarly if available)
+engine.case("IEEE_14_bus.raw")
+engine.load(["pypsa"])  # or ["psse"], or both
+engine.apply_wec(farm_name="Test Farm", wec_sim_id=101, bus_location=14)
 engine.simulate()
 
 # Save results to database
@@ -365,5 +365,4 @@ recent_power = engine.database.query(
 - **[PSS®E Integration](psse.md)**: Commercial power system backend
 - **[PyPSA Integration](pypsa.md)**: Open-source power system backend
 - **[WEC Integration](wec.md)**: WEC farm and device data management
-
 

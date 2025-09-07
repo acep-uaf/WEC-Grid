@@ -27,10 +27,9 @@ WEC-Grid employs a two-tier hierarchy for wave energy integration:
 ## Responsibilities
 
 - **WECDevice Class**
-    - Store and manage power output data from WEC-Sim simulations
+    - Store and manage downsampled device power time series
     - Provide electrical parameters for power system modeling
     - Maintain simulation provenance and device characteristics
-    - Support both high-resolution and grid-compatible time series
 
 - **WECFarm Class**
     - Coordinate multiple WEC devices at shared connection points
@@ -43,10 +42,10 @@ WEC-Grid employs a two-tier hierarchy for wave energy integration:
 ## Key Features
 
 - **WECDevice Capabilities**
-    - Dual resolution data: Primary dataframe (5-minute grid intervals) and full dataframe (high-resolution WEC-Sim output)
-    - Automatic scaling to power system base values (typically 100 MVA)
+    - Grid-resolution DataFrame (e.g., 5 minutes) attached to each device
+    - Power values converted to per-unit on system base MVA
     - Structured device identifiers for traceability (`{model}_{sim_id}_{index}`)
-    - Bus location, base power rating, and connection metadata
+    - Bus location and model metadata
 
 - **WECFarm Capabilities**
     - Identical devices with linear power scaling
@@ -134,19 +133,11 @@ wave_elevation_m           -- Synchronized wave data
 
 ## Data Resolution Management
 
-### Primary vs. Full Resolution
+### Device DataFrame (attached to each WECDevice)
 
-**Primary DataFrame** (Grid Integration):
-    - **Time step**: 5-minute intervals for power system compatibility
-    - **Columns**: `time`, `p` [pu], `q` [pu], `base` [MVA]
-    - **Purpose**: PSS®E/PyPSA integration, economic dispatch, stability studies
-    - **Processing**: Downsampled and per-unit converted from WEC-Sim output
-
-**Full DataFrame** (Research Analysis):
-    - **Time step**: Native WEC-Sim resolution (typically 0.1-1.0 seconds)
-    - **Columns**: `time`, `p` [MW], `q` [MVAr], `eta` [m], device states
-    - **Purpose**: Detailed analysis, control development, performance validation
-    - **Processing**: Direct WEC-Sim output with minimal processing
+- **Time step**: Grid resolution (e.g., 5 minutes)
+- **Index/Columns**: Index = simulation snapshots; columns include `p` [pu], `q` [pu]; optional columns like `time` [s], `eta` [m] may be present
+- **Processing**: Downsampled and converted to per-unit from high-resolution WEC‑Sim output
 
 ### Time Synchronization
 
