@@ -1,12 +1,6 @@
 # File: src/wecgrid/util/time.py
 
-"""Time management and coordination for WEC-Grid simulations.
-
-Provides the :class:`WECGridTime` dataclass for coordinating simulation
-time across WEC-Grid components including power system modeling, WEC
-device simulations, and data visualization with consistent temporal
-alignment.
-"""
+"""Time management utilities for WEC-Grid."""
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -15,40 +9,13 @@ import pandas as pd
 
 @dataclass
 class WECGridTime:
-    """Centralized time coordination for WEC-Grid simulations.
-
-    Coordinates temporal aspects across power system modeling (PSS®E, PyPSA),
-    WEC simulations (WEC-Sim), and visualization components. Manages simulation
-    time windows, sampling intervals, and ensures cross-platform alignment.
+    """Manage simulation time for WEC-Grid.
 
     Attributes:
-        start_time (datetime): Simulation start timestamp. Defaults to current
-            date at midnight.
-        num_steps (int): Number of simulation time steps. Defaults to 288
-            (24 hours at 5-minute intervals).
-        freq (str): Pandas frequency string for time intervals. Defaults to "5min"
-            (5-minute intervals).
-
-        sim_stop (datetime): Calculated simulation end timestamp.
-            Automatically computed from start_time, sim_length, and freq.
-            Updated whenever simulation parameters change.
-
-    Example:
-        >>> # Default 24-hour simulation at 5-minute intervals
-        >>> time_mgr = WECGridTime()
-        >>> print(f"Duration: {time_mgr.num_steps} steps")
-        >>> print(f"Interval: {time_mgr.freq}")
-        Duration: 288 steps
-        Interval: 5T
-
-        >>> # Custom simulation period
-        >>> from datetime import datetime
-        >>> time_mgr = WECGridTime(
-        ...     start_time=datetime(2023, 6, 15, 0, 0, 0),
-        ...     sim_length=144,  # 12 hours
-        ...     freq="5min"
-        ... )
-        >>> print(f"Start: {time_mgr.start_time}")
+        start_time: Simulation start timestamp.
+        num_steps: Number of time steps.
+        freq: Pandas frequency string (e.g., ``"5min"``).
+        delta_time: Step size in seconds.
     """
 
     start_time: datetime = field(
@@ -71,11 +38,7 @@ class WECGridTime:
 
     @property
     def snapshots(self) -> pd.DatetimeIndex:
-        """Generate time snapshots for simulation time series.
-
-        Returns:
-            pd.DatetimeIndex: Simulation timestamps from start_time with length sim_length.
-        """
+        """Return simulation timestamps."""
         return pd.date_range(
             start=self.start_time,
             periods=self.num_steps,

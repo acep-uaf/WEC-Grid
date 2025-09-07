@@ -280,28 +280,16 @@ class Engine:
             def g(h, mu, sig):
                 """Return Gaussian weights for given hours.
 
-                Parameters
-                ----------
-                h : array-like
-                    Hours at which the Gaussian is evaluated. Values are
-                    cast to a NumPy array to ensure vectorized
-                    operations.
-                mu : float
-                    Peak hour (mean) of the Gaussian curve.
-                sig : float
-                    Spread of the curve (standard deviation).
+                Args:
+                    h: Hours at which the Gaussian is evaluated.
+                    mu: Peak hour of the Gaussian curve.
+                    sig: Standard deviation of the curve.
 
-                Returns
-                -------
-                numpy.ndarray
-                Array of Gaussian weights corresponding to ``h``.
+                Returns:
+                    numpy.ndarray: Gaussian weights for ``h``.
 
-                Notes
-                -----
-                Intended for shaping daily load profiles by combining
-                morning and evening peaks.
                 """
-                h = np.asarray(h, dtype=float)  # <-- belt-and-suspenders
+                h = np.asarray(h, dtype=float)
                 return np.exp(-0.5 * ((h - mu) / sig) ** 2)
 
             s = g(hours, morning_peak_hour, morning_sigma_h) + g(

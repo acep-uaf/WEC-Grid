@@ -1,8 +1,4 @@
-"""WEC-Grid Database Interface Module.
-
-SQLite database interface for WEC-Grid simulation data management, including
-time series storage, configuration persistence, and result archival.
-"""
+"""Database utilities for WEC-Grid."""
 
 # Standard library
 import json
@@ -74,61 +70,10 @@ def _show_database_setup_message():
 
 
 class WECGridDB:
-    """SQLite database interface for WEC-Grid simulation data management.
-
-    Provides database operations for storing WEC simulation results, device
-    configurations, and time series data. Supports both raw SQL queries and
-    pandas DataFrame integration with multi-software backend support.
-
-    Database Schema Overview:
-    ------------------------
-    Metadata Tables:
-        - grid_simulations: Grid simulation metadata and parameters
-        - wec_simulations: WEC-Sim simulation parameters and wave conditions
-        - wec_integrations: Links WEC farms to grid connection points
-
-    PSS®E Results Tables:
-        - psse_bus_results: Bus voltages, power injections [pu on S_base]
-        - psse_generator_results: Generator outputs [pu on S_base]
-        - psse_load_results: Load demands [pu on S_base]
-        - psse_line_results: Line loadings [% of thermal rating]
-
-    PyPSA Results Tables:
-        - pypsa_bus_results: Same schema as PSS®E for cross-platform comparison
-        - pypsa_generator_results: Same schema as PSS®E
-        - pypsa_load_results: Same schema as PSS®E
-        - pypsa_line_results: Same schema as PSS®E
-
-    WEC Simulation Data:
-        - wec_simulations: Metadata including wave spectrum, class, and conditions
-        - wec_power_results: High-resolution WEC device power output [Watts]
-
-    Key Design Features:
-        - Software-specific tables enable multi-backend comparisons
-        - All grid power values in per-unit on system S_base (MVA)
-        - GridState DataFrame schema alignment for direct data mapping
-        - Optional storage model - persist only when explicitly requested
-        - JSON configuration file for database path management
-        - User-guided setup for first-time configuration
-        - Support for downloaded or cloned database repositories
-
-    Database Location:
-        Configured via database_config.json in the same directory as this module.
-        Users can point to downloaded database file, cloned repository, or create new empty database.
+    """SQLite interface for storing WEC-Grid results.
 
     Attributes:
-        db_path (str): Path to SQLite database file (from JSON configuration).
-
-    Example:
-        >>> db = WECGridDB(engine)  # Uses path from database_config.json
-        >>> # First run will prompt user to configure database path
-        >>> with db.connection() as conn:
-        ...     results = db.query("SELECT * FROM grid_simulations", return_type="df")
-
-    Notes:
-        Database path is configured via JSON file on first use.
-        Users are guided through setup process with clear instructions.
-        All database operations are transaction-safe with automatic rollback on errors.
+        db_path: Path to the SQLite database file.
     """
 
     def __init__(self, engine):
