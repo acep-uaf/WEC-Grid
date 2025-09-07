@@ -666,13 +666,28 @@ class WECGridPlot:
         plt.tight_layout(rect=[0, 0, 1, 0.96])
         plt.show()
 
-    def compare_modelers(self, grid_component: str, name: List[str], parameter: str):
+    def compare_modelers(
+        self,
+        grid_component: str,
+        name: List[str],
+        parameter: str,
+        annotate: bool = True,
+        print_metrics: bool = True,
+    ):
         """Compare a component parameter across PSS®E and PyPSA.
 
         Args:
             grid_component: Component type ("bus", "gen", "load", "line").
             name: Component name(s) to compare.
             parameter: Parameter to compare (e.g., "p", "v_mag").
+            annotate: If True, overlay metrics text on the figure.
+            print_metrics: If True, print metrics to stdout.
+
+        Returns:
+            (Figure, Axes, DataFrame): Matplotlib figure/axes and a DataFrame
+            with columns ["component", "rmse", "mae", "max_abs_err",
+            "mape_pct", "nrmse_mean", "nrmse_range", "r", "n"]. The
+            DataFrame is None if metrics cannot be computed.
         """
         # Check for available software data
         available_software = []
@@ -686,9 +701,15 @@ class WECGridPlot:
                 f"Available: {available_software}. Use add_grid() to add GridState objects "
                 f"or ensure both 'psse' and 'pypsa' are loaded in the engine."
             )
-            return
+            return None, None, None
 
         fig, ax = plt.subplots(figsize=(12, 6))
+
+        # Storage for normalized time series per software for metrics
+        ts_data = {}
+        # Map of requested component name -> friendly display name per software
+        friendly_names = {"psse": {}, "pypsa": {}}
+        metrics_df = None
 
         for software in available_software:
             grid_obj = self._get_grid_obj(software)
@@ -708,12 +729,15 @@ class WECGridPlot:
 
             # Try to find components by name first, then by ID
             available_components = []
+            # Keep the requested names aligned with available_components order for metrics
+            metric_cols = []
             component_df = getattr(grid_obj, grid_component, None)
 
             for comp_name in name:
                 # First try direct column match (for live engine data)
                 if comp_name in data.columns:
                     available_components.append(comp_name)
+                    metric_cols.append(comp_name)
                 # Then try to find by name->ID mapping (for pulled GridState data)
                 elif component_df is not None:
                     # Try to find the component ID by name
@@ -733,14 +757,18 @@ class WECGridPlot:
                             # Check if this ID exists as a column in the time series
                             if comp_id in data.columns:
                                 available_components.append(comp_id)
+                                metric_cols.append(comp_name)
                             elif str(comp_id) in data.columns:
                                 available_components.append(str(comp_id))
+                                metric_cols.append(comp_name)
 
                     # Also try treating the name as an ID directly
                     elif comp_name in data.columns:
                         available_components.append(comp_name)
+                        metric_cols.append(comp_name)
                     elif str(comp_name) in data.columns:
                         available_components.append(str(comp_name))
+                        metric_cols.append(comp_name)
 
             if not available_components:
                 print(f"Warning: Component(s) {name} not found in {software} data.")
@@ -778,8 +806,13 @@ class WECGridPlot:
                 # If index is not datetime, use step numbers
                 df_to_plot.index = range(len(df_to_plot))
 
-            # Create meaningful column names for the legend
+            # Build metrics DataFrame keyed by requested component names
+            df_metric = df_to_plot.copy()
+            df_metric.columns = metric_cols
+
+            # Create meaningful column names for the legend and map friendly names
             renamed_cols = []
+            friendly_in_order = []
             for col in df_to_plot.columns:
                 # Try to get the component name from the component DataFrame
                 if component_df is not None:
@@ -797,19 +830,35 @@ class WECGridPlot:
                                 not matching_rows.empty
                                 and name_col in component_df.columns
                             ):
-                                comp_name = matching_rows.iloc[0][name_col]
-                                renamed_cols.append(f"{comp_name}_{software.upper()}")
+                                comp_title = matching_rows.iloc[0][name_col]
+                                renamed_cols.append(f"{comp_title}_{software.upper()}")
+                                friendly_in_order.append(str(comp_title))
                             else:
                                 renamed_cols.append(f"{col}_{software.upper()}")
+                                friendly_in_order.append(str(col))
                         else:
                             renamed_cols.append(f"{col}_{software.upper()}")
+                            friendly_in_order.append(str(col))
                     else:
                         renamed_cols.append(f"{col}_{software.upper()}")
+                        friendly_in_order.append(str(col))
                 else:
                     renamed_cols.append(f"{col}_{software.upper()}")
+                    friendly_in_order.append(str(col))
 
             # Rename columns for legend
             df_to_plot.columns = renamed_cols
+
+            # Save normalized series for metrics and friendly name mapping
+            ts_data[software] = df_metric
+            # Map requested metric column names to friendly names
+            try:
+                friendly_names[software] = {
+                    metric_cols[i]: friendly_in_order[i] for i in range(len(metric_cols))
+                }
+            except Exception:
+                # Fallback to identity map if alignment fails
+                friendly_names[software] = {c: str(c) for c in df_metric.columns}
 
             df_to_plot.plot(ax=ax, linestyle="--" if software == "psse" else "-")
 
@@ -820,6 +869,125 @@ class WECGridPlot:
         ax.set_xlabel("Time of Day")
         ax.grid(True)
         ax.legend()
+
+        # Compute and display metrics if both PSSE and PYPSA present
+        if all(s in ts_data for s in ["psse", "pypsa"]):
+            df_psse = ts_data["psse"].copy()
+            df_pypsa = ts_data["pypsa"].copy()
+
+            # Align on shared components and timestamps
+            common_cols = [c for c in df_psse.columns if c in df_pypsa.columns]
+            if common_cols:
+                df_psse = df_psse[common_cols]
+                df_pypsa = df_pypsa[common_cols]
+                df_psse, df_pypsa = df_psse.align(df_pypsa, join="inner", axis=0)
+
+                metrics_lines = []
+                metrics_rows = []
+                if print_metrics:
+                    print("\nComparison metrics (PSSE vs PYPSA):")
+                for col in common_cols:
+                    s1 = df_psse[col]
+                    s2 = df_pypsa[col]
+                    mask = s1.notna() & s2.notna()
+                    s1v = s1[mask].values
+                    s2v = s2[mask].values
+                    if len(s1v) == 0:
+                        rmse = np.nan
+                        mae = np.nan
+                        corr = np.nan
+                        n = 0
+                        max_abs_err = np.nan
+                        mape_pct = np.nan
+                        nrmse_mean = np.nan
+                        nrmse_range = np.nan
+                    else:
+                        err = s1v - s2v
+                        rmse = float(np.sqrt(np.mean(err ** 2)))
+                        mae = float(np.mean(np.abs(err)))
+                        max_abs_err = float(np.max(np.abs(err)))
+                        # Normalizations (use PSSE as reference)
+                        eps = 1e-12
+                        denom_mean = float(np.mean(np.abs(s1v)))
+                        if denom_mean < eps:
+                            nrmse_mean = np.nan
+                        else:
+                            nrmse_mean = float(rmse / denom_mean)
+                        rng = float(np.max(s1v) - np.min(s1v))
+                        if rng < eps:
+                            nrmse_range = np.nan
+                        else:
+                            nrmse_range = float(rmse / rng)
+                        # MAPE in percent; ignore zero references
+                        nonzero = np.abs(s1v) > eps
+                        if np.any(nonzero):
+                            mape_pct = float(100.0 * np.mean(np.abs(err[nonzero] / s1v[nonzero])))
+                        else:
+                            mape_pct = np.nan
+                        if len(s1v) < 2 or np.std(s1v) == 0 or np.std(s2v) == 0:
+                            corr = np.nan
+                        else:
+                            corr = float(np.corrcoef(s1v, s2v)[0, 1])
+                        n = int(len(s1v))
+
+                    # Prefer PSSE friendly name, then PYPSA, else the key
+                    friendly = (
+                        friendly_names.get("psse", {}).get(col)
+                        or friendly_names.get("pypsa", {}).get(col)
+                        or str(col)
+                    )
+                    line = (
+                        f"{friendly}: RMSE={rmse:.4g}, MAE={mae:.4g}, MaxAE={max_abs_err:.4g}, "
+                        f"MAPE%={mape_pct:.4g}, NRMSE(mean)={nrmse_mean:.4g}, NRMSE(range)={nrmse_range:.4g}, R={corr:.3f}"
+                    )
+                    metrics_lines.append(line)
+                    if print_metrics:
+                        print(line)
+                    metrics_rows.append(
+                        {
+                            "component": friendly,
+                            "rmse": rmse,
+                            "mae": mae,
+                            "max_abs_err": max_abs_err,
+                            "mape_pct": mape_pct,
+                            "nrmse_mean": nrmse_mean,
+                            "nrmse_range": nrmse_range,
+                            "r": corr,
+                            "n": n,
+                        }
+                    )
+
+                # Annotate on the figure if requested
+                if metrics_lines and annotate:
+                    ax.text(
+                        0.01,
+                        0.99,
+                        "\n".join(metrics_lines),
+                        transform=ax.transAxes,
+                        ha="left",
+                        va="top",
+                        fontsize=9,
+                        bbox=dict(facecolor="white", alpha=0.7, edgecolor="none"),
+                    )
+
+                # Build metrics dataframe, preserve order of common_cols
+                try:
+                    metrics_df = pd.DataFrame(
+                        metrics_rows,
+                        columns=[
+                            "component",
+                            "rmse",
+                            "mae",
+                            "max_abs_err",
+                            "mape_pct",
+                            "nrmse_mean",
+                            "nrmse_range",
+                            "r",
+                            "n",
+                        ],
+                    )
+                except Exception:
+                    metrics_df = pd.DataFrame(metrics_rows)
 
         # Format x-axis for better time display if datetime index
         try:
@@ -841,3 +1009,4 @@ class WECGridPlot:
 
         plt.tight_layout()
         plt.show()
+        return fig, ax, metrics_df

@@ -66,12 +66,27 @@ fig, ax = engine.plot.gen(software="pypsa", parameter="p", gen=["WEC_Farm_1"])
 ```python
 # Compare PSS®E vs PyPSA bus voltages
 plotter = WECGridPlot(engine)
-plotter.compare_modelers(
+fig, ax, metrics = plotter.compare_modelers(
     grid_component="bus",
     name=["Bus_1", "Bus_5"],
-    parameter="v_mag"
+    parameter="v_mag",
+    annotate=True,         # overlay metrics on figure
+    print_metrics=True,    # print metrics to console
 )
+print(metrics)
 ```
+
+When comparing across backends, the plot can print and/or annotate per-component metrics. The function returns a DataFrame with columns:
+
+- `component`: Friendly component name
+- `rmse`: Root mean squared error
+- `mae`: Mean absolute error
+- `max_abs_err`: Maximum absolute error
+- `mape_pct`: Mean absolute percentage error (percent; PSSE as reference, zeros skipped)
+- `nrmse_mean`: RMSE normalized by mean absolute reference value
+- `nrmse_range`: RMSE normalized by reference range (max-min)
+- `r`: Pearson correlation coefficient
+- `n`: Number of aligned samples used
 
 ### Network Diagrams
 
