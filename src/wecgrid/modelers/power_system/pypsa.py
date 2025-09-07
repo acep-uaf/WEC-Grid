@@ -1,12 +1,4 @@
-"""
-PyPSA Modeler Module
-
-This module provides a wrapper class for PyPSA (Python for Power System Analysis) functionality,
-specifically designed for Wave Energy Converter (WEC) integration into power systems.
-
-Classes:
-    PyPSAModeler: Main class for managing PyPSA network operations with WEC integration
-"""
+"""PyPSA modeler integration for WEC-Grid."""
 
 # Standard library
 import contextlib
@@ -33,36 +25,10 @@ from .base import PowerSystemModeler, GridState
 
 
 class PyPSAModeler(PowerSystemModeler):
-    """PyPSA power system modeling interface.
+    """PyPSA-backed power-system modeler.
 
-    Provides interface for power system modeling and simulation using PyPSA
-    (Python for Power System Analysis). Implements PyPSA-specific functionality
-    for grid analysis, WEC farm integration, and time-series simulation.
-
-    Args:
-        engine: WEC-GRID simulation engine with case_file, time, and wec_farms attributes.
-
-    Attributes:
-        engine: Reference to simulation engine.
-        grid (GridState): Time-series data for all components.
-        network (pypsa.Network): PyPSA Network object for power system analysis.
-        sbase (float): System base power [MVA] from case file.
-        parser: GRG PSS®E case file parser object for data extraction.
-
-    Example:
-        >>> pypsa_model = PyPSAModeler(engine)
-        >>> pypsa_model.init_api()
-        >>> pypsa_model.simulate()
-
-    Notes:
-        - Compatible with PyPSA version 0.21+ for power system analysis
-        - Uses GRG PSS®E parser for case file import and conversion
-        - Automatically converts PSS®E impedance values to PyPSA format
-        - Provides validation against PSS®E results for cross-platform verification
-
-    TODO:
-        - Add support for PyPSA native case formats
-        - Implement dynamic component ratings
+    Builds a :class:`pypsa.Network` from a PSS®E RAW, solves power flow, and
+    exposes snapshots/time-series in a unified :class:`GridState` schema.
     """
 
     def __init__(self, engine: Any):
@@ -98,31 +64,10 @@ class PyPSAModeler(PowerSystemModeler):
     #     )
 
     def init_api(self) -> bool:
-        """Initialize the PyPSA environment and load the case.
-
-        This method sets up the PyPSA network by importing the PSS®E case file,
-        creating the network structure, and performing initial power flow solution.
-        It also takes an initial snapshot of the grid state.
+        """Parse case → build network → solve initial PF → take snapshot.
 
         Returns:
-            bool: True if initialization is successful, False otherwise.
-
-        Raises:
-            ImportError: If PyPSA or GRG dependencies are not found.
-            ValueError: If case file cannot be parsed or is invalid.
-
-        Notes:
-            The initialization process includes:
-
-            - Parsing PSS®E case file using GRG parser
-            - Creating PyPSA Network with system base MVA [MVA]
-            - Converting PSS®E impedance values to PyPSA format
-            - Adding buses with voltage limits [kV] and control types
-            - Adding lines with impedance [Ohm] and ratings [MVA]
-            - Adding generators with power limits [MW], [MVAr]
-            - Adding loads with power consumption [MW], [MVAr]
-            - Adding transformers and shunt impedances
-            - Solving initial power flow
+            True if initialization succeeds, otherwise False.
         """
         if not self.import_raw_to_pypsa():
             return False
@@ -133,27 +78,13 @@ class PyPSAModeler(PowerSystemModeler):
         return True
 
     def solve_powerflow(self, log: bool = False) -> bool:
-        """Run power flow solution and check convergence.
+        """Solve power flow via ``Network.pf()``.
 
-        Executes the PyPSA power flow solver with suppressed logging output
-        and verifies that the solution converged successfully for all snapshots.
+        Args:
+            log: If True, record timing and iterations in the report.
 
         Returns:
-            bool: True if power flow converged for all snapshots, False otherwise.
-
-        Notes:
-            The power flow solution process:
-
-            - Temporarily suppresses PyPSA logging to reduce output
-            - Calls ``network.pf()`` for power flow calculation
-            - Checks convergence status for all snapshots
-            - Reports any failed snapshots for debugging
-
-        Example:
-            >>> if modeler.solve_powerflow():
-            ...     print("Power flow converged successfully")
-            ... else:
-            ...     print("Power flow failed to converge")
+            True if converged, otherwise False.
         """
 
         # Suppress PyPSA logging

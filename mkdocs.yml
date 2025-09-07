@@ -115,5 +115,6 @@ nav:
     - Preloaded Database: data/preloaded_database.md
   - Reference:
       - Performance Metrics: reference/performance_metrics.md
+      - API Reference: reference/api.md
       - Troubleshooting: reference/troubleshooting.md
       - Citation: reference/citation.md

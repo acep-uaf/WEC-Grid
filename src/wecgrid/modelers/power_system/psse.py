@@ -1,6 +1,4 @@
-"""
-PSS®E Modeler
-"""
+"""PSS®E modeler integration for WEC-Grid."""
 
 # Standard library
 import contextlib
@@ -41,35 +39,10 @@ def silence_stdout():
 
 
 class PSSEModeler(PowerSystemModeler):
-    """PSS®E power system modeling interface.
+    """PSS®E-backed power-system modeler.
 
-    Provides interface for power system modeling and simulation using Siemens PSS®E software.
-    Implements PSS®E-specific functionality for grid analysis, WEC farm integration,
-    and time-series simulation.
-
-    Args:
-        engine: WEC-GRID simulation engine with case_file, time, and wec_farms attributes.
-
-    Attributes:
-        engine: Reference to simulation engine.
-        grid (GridState): Time-series data for all components.
-        sbase (float): System base power [MVA] from PSS®E case.
-        psspy (module): PSS®E Python API module for direct access.
-
-    Example:
-        >>> psse_model = PSSEModeler(engine)
-        >>> psse_model.init_api()
-        >>> psse_model.solve_powerflow()
-
-    Notes:
-        - Requires PSS®E software installation and valid license
-        - Compatible with PSS®E version 35.3 Python API
-        - Supports both .sav (saved case) and .raw (raw data) formats
-        - Automatically captures grid state at each simulation snapshot
-
-    TODO:
-        - Add support for newer PSS®E versions
-        - Implement dynamic simulation capabilities
+    Loads a PSS®E case (RAW/SAV), solves power flow, and exposes snapshots
+    and time series in a unified :class:`GridState` schema.
     """
 
     def __init__(self, engine: Any):
@@ -87,28 +60,10 @@ class PSSEModeler(PowerSystemModeler):
         self.grid.case = engine.case_name
 
     def init_api(self) -> bool:
-        """Initialize the PSS®E environment and load the case.
-
-        This method sets up the PSS®E Python API, loads the specified case file,
-        and performs initial power flow solution. It also removes reactive power
-        limits on generators and takes an initial snapshot.
+        """Initialize PSS®E API, load case, solve initial PF, snapshot.
 
         Returns:
-            bool: True if initialization is successful, False otherwise.
-
-        Raises:
-            ImportError: If PSS®E is not found or not configured correctly.
-
-        Notes:
-            The following PSS®E API calls are used for initialization:
-
-            - ``psseinit()``: Initialize PSS®E environment
-            - ``case()`` or ``read()``: Load case file (.sav or .raw)
-            - ``sysmva()``: Get system MVA base
-                Returns: System base MVA [MVA]
-            - ``fnsl()``: Solve power flow
-            - ``solved()``: Check solution status
-                Returns: 0 = converged, 1 = not converged [dimensionless]
+            True if initialization succeeds, otherwise False.
         """
         Debug = False  # Set to True for debugging output
         try:
@@ -161,23 +116,14 @@ class PSSEModeler(PowerSystemModeler):
         return True
 
     def solve_powerflow(self, log: bool = False, return_details: bool = False) -> Union[bool, Dict[str, Any]]:
-        """Run power flow solution and check convergence.
-
-        Executes the PSS®E power flow solver using the Newton-Raphson method
-        and verifies that the solution converged successfully.
+        """Run Newton–Raphson powerflow and report convergence.
 
         Args:
-            return_details (bool): If True, return detailed dict. If False, return bool.
+            log: If True, store timing/iterations in :class:`SolveReport`.
+            return_details: If True, return a details dict instead of a bool.
 
         Returns:
-            bool or dict: Bool for simple convergence check, dict with details for simulation.
-
-        Notes:
-            The following PSS®E API calls are used:
-
-            - ``fnsl()``: Full Newton-Raphson power flow solution
-            - ``solved()``: Check if power flow solution converged (0 = converged)
-            - ``iterat()``: Get iteration count from last solution attempt
+            True/False for convergence, or a details dict if requested.
         """
         # === Power Flow Solution ===
         pf_start = time.time()

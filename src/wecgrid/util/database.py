@@ -194,27 +194,14 @@ class WECGridDB:
             conn.close()
 
     def initialize_database(self, db_path: Optional[str] = None):
-        """Initialize database schema with WEC-Grid tables and indexes.
+        """Initialize required tables and indexes.
 
         Args:
-            db_path (str, optional): Path where database should be created.
-                If provided, creates new database at this location and updates
-                the current instance to use it. If None, uses existing database path.
+            db_path: Optional database file path to create/use. When provided,
+                updates the saved configuration and points this instance to it.
 
-        Creates all required tables according to the finalized WEC-Grid schema:
-        - Metadata tables for simulation parameters
-        - Software-specific result tables (PSS®E, PyPSA)
-        - WEC time-series data tables
-        - Performance indexes for efficient queries
-
-        All existing data is preserved if tables already exist.
-
-        Example:
-            >>> # Create new database when none is configured
-            >>> engine.database.initialize_database("/path/to/new_database.db")
-
-            >>> # Initialize schema on existing configured database
-            >>> engine.database.initialize_database()
+        Notes:
+            Creates missing tables and indexes; preserves existing data.
         """
         if db_path:
             # Convert to absolute path
@@ -529,20 +516,13 @@ class WECGridDB:
             )
 
     def clean_database(self) -> bool:
-        """Delete the current database and reinitialize with fresh schema.
-
-        WARNING: This will permanently delete all stored simulation data.
-        Use with caution - all existing data will be lost.
+        """Delete the current database file and reinitialize schema.
 
         Returns:
-            bool: True if database was successfully cleaned and reinitialized.
+            True if reinitialized successfully, otherwise False.
 
-        Notes:
-            Wasn't working if my Jupyter Kernal was still going, need to restart then call
-        Example:
-            >>> engine.database.clean_database()
-            WARNING: This will delete all data in the database!
-            Database cleaned and reinitialized successfully.
+        Warning:
+            Destructive operation; all stored data will be lost.
         """
         print("WARNING: This will delete all data in the database!")
 
@@ -606,26 +586,17 @@ class WECGridDB:
                 )
 
     def save_sim(self, sim_name: str, notes: str = None) -> int:
-        """Save simulation data for all available software backends in the engine.
+        """Persist simulation results for active backends and WEC farms.
 
-        Automatically detects and stores data from all active software backends
-        (PSS®E, PyPSA) and WEC farms present in the engine object.
-
-        Always creates a new simulation entry - no duplicate checking.
-        Users can manage simulation names as needed.
+        Detects available GridState objects (PSS®E, PyPSA) on the engine and
+        stores their time series and metadata.
 
         Args:
-            sim_name (str): User-friendly simulation name.
-            notes (str, optional): Simulation notes.
+            sim_name: Simulation name.
+            notes: Optional notes.
 
         Returns:
-            int: grid_sim_id of the created simulation.
-
-        Example:
-            >>> sim_id = engine.database.save_sim(
-            ...     sim_name="IEEE 30 test",
-            ...     notes="testing the database"
-            ... )
+            grid_sim_id of the new simulation.
         """
         # Gather all available software objects from engine
         softwares = []
@@ -749,13 +720,13 @@ class WECGridDB:
     def _store_all_gridstate_timeseries(
         self, grid_sim_id: int, grid_state_obj, software: str, timeManager
     ):
-        """Store all time-series data from GridState object.
+        """Store all time-series data from a GridState.
 
         Args:
-            grid_sim_id (int): Grid simulation ID.
-            grid_state_obj: GridState object with time-series data.
-            software (str): Software name ("psse" or "pypsa").
-            timeManager: WECGridTime object.
+            grid_sim_id: Grid simulation ID.
+            grid_state_obj: GridState with time-series data.
+            software: Backend name ("psse" or "pypsa").
+            timeManager: Time manager providing snapshots.
         """
         # Validate software name
         if software not in ["psse", "pypsa"]:
@@ -940,10 +911,10 @@ class WECGridDB:
                             )
 
     def _store_wec_farm_data(self, grid_sim_id: int):
-        """Store WEC farm data if available in the engine.
+        """Store WEC farm integration records for a grid simulation.
 
         Args:
-            grid_sim_id (int): Grid simulation ID to link WEC data to.
+            grid_sim_id: Grid simulation ID to link.
         """
         with self.connection() as conn:
             cursor = conn.cursor()
@@ -968,16 +939,10 @@ class WECGridDB:
     def _get_timeseries_value(
         self, timeseries_dict, parameter: str, component_id: int, timestamp
     ):
-        """Extract time-series value for specific component and timestamp.
-
-        Args:
-            timeseries_dict: AttrDict containing time-series DataFrames.
-            parameter (str): Parameter name (e.g., 'p', 'q', 'v_mag').
-            component_id (int): Component ID.
-            timestamp: Timestamp to extract.
+        """Get the time-series value for a component/parameter at a timestamp.
 
         Returns:
-            Value at the specified timestamp or None if not available.
+            The value or None if unavailable.
         """
         try:
             if parameter in timeseries_dict:
@@ -1014,21 +979,13 @@ class WECGridDB:
     def store_gridstate_data(
         self, grid_sim_id: int, timestamp: str, grid_state: 'GridState', software: str
     ):
-        """Store GridState data to appropriate software-specific tables.
+        """Store one snapshot across bus/gen/load/line tables for a backend.
 
         Args:
-            grid_sim_id (int): Grid simulation ID.
-            timestamp (str): ISO datetime string for this snapshot.
-            grid_state: GridState object with bus, gen, load, line DataFrames.
-            software (str): Software backend - "PSSE" or "PyPSA".
-
-        Example:
-            >>> db.store_gridstate_data(
-            ...     grid_sim_id=123,
-            ...     timestamp="2025-08-14T10:05:00",
-            ...     grid_state=my_grid_state,
-            ...     software="PSSE"
-            ... )
+            grid_sim_id: Grid simulation ID.
+            timestamp: ISO timestamp for this snapshot.
+            grid_state: GridState with snapshot DataFrames.
+            software: Backend ("psse" or "pypsa").
         """
         software = software.lower()
         table_prefix = f"{software}_"
@@ -1145,15 +1102,10 @@ class WECGridDB:
             )
 
     def grid_sims(self) -> pd.DataFrame:
-        """Get all grid simulation metadata in a user-friendly format.
+        """Return grid simulation metadata.
 
         Returns:
-            pd.DataFrame: Grid simulations with key metadata columns.
-
-        Example:
-            >>> engine.database.grid_sims()
-               grid_sim_id     sim_name      case_name  psse  pypsa  sbase_mva  ...
-            0           1     Test Run   IEEE_14_bus  True  False      100.0  ...
+            DataFrame of simulations with key metadata columns.
         """
         return self.query(
             """
@@ -1166,16 +1118,10 @@ class WECGridDB:
         )
 
     def wecsim_runs(self) -> pd.DataFrame:
-        """Get all WEC simulation metadata with enhanced wave parameters.
+        """Return WEC-Sim run metadata and parameters.
 
         Returns:
-            pd.DataFrame: WEC simulations with parameters and wave conditions including
-                wave spectrum type, wave class, and all simulation parameters.
-
-        Example:
-            >>> engine.database.wecsim_runs()
-               wec_sim_id model_type  sim_duration_sec  delta_time  wave_spectrum  wave_class  ...
-            0          1       RM3             600.0        0.1             PM   irregular  ...
+            DataFrame of WEC simulations with wave parameters.
         """
         return self.query(
             """
@@ -1189,31 +1135,17 @@ class WECGridDB:
         )
 
     def pull_sim(self, grid_sim_id: int, software: str = None) -> 'GridState':
-        """Pull simulation data from database and reconstruct GridState object.
-
-        Retrieves all time-series data for a specific simulation and recreates
-        the GridState object with both snapshot data and time-series history.
+        """Reconstruct a GridState from stored results.
 
         Args:
-            grid_sim_id (int): Grid simulation ID to retrieve.
-            software (str, optional): Software backend to pull data for ("psse" or "pypsa").
-                If None, automatically detects which software was used based on
-                grid_simulations table flags.
+            grid_sim_id: Simulation ID to load.
+            software: Optional backend hint ("psse" or "pypsa"); autodetected otherwise.
 
         Returns:
-            GridState: Reconstructed GridState object with time-series data.
+            GridState with snapshot DataFrames and time-series dicts.
 
         Raises:
-            ValueError: If grid_sim_id not found or software not available for this simulation.
-
-        Example:
-            >>> # Pull PSS®E simulation data
-            >>> grid_state = engine.database.pull_sim(grid_sim_id=123, software="psse")
-            >>> print(f"Buses: {len(grid_state.bus)}")
-            >>> print(f"Time series data: {list(grid_state.bus_t.keys())}")
-
-            >>> # Auto-detect software and pull data
-            >>> grid_state = engine.database.pull_sim(grid_sim_id=123)
+            ValueError: If the simulation or software data is unavailable.
         """
         # Import here to avoid circular import
         from ..modelers.power_system.base import GridState, AttrDict

@@ -1,9 +1,4 @@
-"""
-WEC-Grid high-level plotting interface
-
-This module provides comprehensive visualization capabilities for WEC-GRID simulation
-results, supporting cross-platform comparison between PSS®E and PyPSA modeling backends.
-"""
+"""Plotting utilities for WEC-Grid results."""
 
 # Standard library
 from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
@@ -25,65 +20,37 @@ from matplotlib.patches import Circle, Rectangle
 
 
 class WECGridPlot:
-    """
-    A focused plotting interface for WEC-GRID simulation visualization.
-
-    This class provides methods to plot time-series data for various grid
-    components, create single-line diagrams, and compare results from different
-    modeling backends (PSS®E and PyPSA). Can work with live engine data or
-    standalone GridState objects from database pulls.
-    """
+    """Plot time series and diagrams from engine or stored GridState."""
 
     def __init__(self, engine: Any = None):
-        """
-        Initialize the plotter with a WEC-GRID Engine instance or for standalone use.
+        """Initialize with an engine or use standalone GridState objects.
 
         Args:
-            engine: The WEC-GRID Engine containing simulation data. Can be None for
-                   standalone usage with GridState objects.
+            engine: WEC-Grid engine. If None, add GridState via ``add_grid``.
         """
         self.engine = engine
         self._standalone_grids = {}  # Store GridState objects for standalone usage
 
     def add_grid(self, software: str, grid_state: 'GridState'):
-        """Add a GridState object for standalone plotting.
-
-        Allows plotting of simulation data without requiring the original modeling
-        software to be installed. Useful for analyzing database-pulled simulations.
+        """Register a GridState for standalone plotting.
 
         Args:
-            software (str): Software identifier ("psse", "pypsa", etc.)
-            grid_state: GridState object containing simulation data
-
-        Example:
-            >>> plotter = WECGridPlot()
-            >>> psse_grid = engine.database.pull_sim(grid_sim_id=1, software='psse')
-            >>> plotter.add_grid('psse', psse_grid)
-            >>> plotter.gen(software='psse', parameter='p')
+            software: Backend identifier ("psse", "pypsa").
+            grid_state: GridState with snapshots and time series.
         """
         self._standalone_grids[software] = grid_state
 
     @classmethod
     def from_database(cls, database: 'WECGridDB', grid_sim_id: int, software: str = None) -> 'WECGridPlot':
-        """Create a standalone plotter from database simulation data.
-
-        Convenience method to create a plotter with GridState data pulled from
-        the database, without requiring the original modeling software.
+        """Construct a plotter from stored simulation data.
 
         Args:
-            database: WECGridDB instance
-            grid_sim_id (int): Grid simulation ID to retrieve
-            software (str, optional): Software backend ("psse" or "pypsa").
-                If None, auto-detects from database.
+            database: Database interface.
+            grid_sim_id: Simulation ID to load.
+            software: Optional backend hint ("psse" or "pypsa").
 
         Returns:
-            WECGridPlot: Plotter instance with GridState data loaded
-
-        Example:
-            >>> plotter = WECGridPlot.from_database(
-            ...     engine.database, grid_sim_id=1, software='psse'
-            ... )
-            >>> plotter.gen(software='psse', parameter='p')
+            WECGridPlot instance with loaded GridState.
         """
         plotter = cls(engine=None)
         grid_state = database.pull_sim(grid_sim_id, software)
@@ -91,13 +58,13 @@ class WECGridPlot:
         return plotter
 
     def _get_grid_obj(self, software: str):
-        """Get GridState object from engine or standalone storage.
+        """Resolve a GridState from engine or standalone store.
 
         Args:
-            software (str): Software identifier ("psse", "pypsa", etc.)
+            software: Backend identifier.
 
         Returns:
-            GridState object or None if not found
+            GridState or ``None`` if unavailable.
         """
         # First try standalone grids
         if software in self._standalone_grids:
@@ -122,38 +89,20 @@ class WECGridPlot:
         ylabel: str = "",
         xlabel: str = "Time",
     ):
-        """Internal helper to plot time-series data for any component.
+        """Internal helper to plot time-series data.
 
         Args:
-            software (str):
-                Modeling backend identifier (e.g., ``"psse"`` or ``"pypsa"``).
-                Can reference engine modelers or standalone GridState objects.
-            component_type (str):
-                Grid component group to plot (``"gen"``, ``"bus"``,
-                ``"load"``, ``"line"``, etc.).
-            parameter (str):
-                Name of the time-series parameter to visualize. This must
-                exist within ``<component_type>_t``.
-            components (Optional[List[str]]):
-                Specific components to include. If ``None``, all available
-                components are plotted.
-            title (str):
-                Plot title. When empty, a default title is generated from the
-                ``software``, ``component_type`` and ``parameter`` values.
-            ax (Optional[plt.Axes]):
-                Matplotlib axes on which to draw the plot. A new figure and
-                axes are created when ``None``.
-            ylabel (str):
-                Label for the y-axis. Defaults to ``parameter`` when empty.
-            xlabel (str):
-                Label for the x-axis. Defaults to ``"Time"``.
+            software: Backend identifier ("psse", "pypsa").
+            component_type: Component group ("gen", "bus", "load", "line").
+            parameter: Time-series variable to plot (must exist in ``*_t``).
+            components: Optional subset of component names/IDs.
+            title: Optional title override.
+            ax: Optional Axes to draw on; creates new if None.
+            ylabel: Optional y-axis label; defaults to ``parameter``.
+            xlabel: X-axis label.
 
         Returns:
-            Tuple[plt.Figure, plt.Axes] | Tuple[None, None]:
-                A tuple containing the Matplotlib ``Figure`` and ``Axes`` for
-                the generated plot. Returns ``(None, None)`` when the required
-                data are missing or none of the requested components are
-                available.
+            (Figure, Axes) or (None, None) if data unavailable.
         """
         grid_obj = self._get_grid_obj(software)
 
@@ -222,8 +171,7 @@ class WECGridPlot:
             gen: A list of generator names to plot. If ``None``, all generators are shown.
 
         Returns:
-            tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: The displayed
-            figure and axes for further customization.
+            (Figure, Axes).
         """
         if parameter == "p":
             title = f"{software.upper()}: Generator Active Power"
@@ -255,8 +203,7 @@ class WECGridPlot:
             bus: A list of bus names to plot. If ``None``, all buses are shown.
 
         Returns:
-            tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: The displayed
-            figure and axes for further customization.
+            (Figure, Axes).
         """
         if parameter == "p":
             title = f"{software.upper()}: Bus Active Power (net)"
@@ -294,8 +241,7 @@ class WECGridPlot:
             load: A list of load names to plot. If ``None``, all loads are shown.
 
         Returns:
-            tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: The displayed
-            figure and axes for further customization.
+            (Figure, Axes).
         """
         if parameter == "p":
             title = f"{software.upper()}: Load Active Power"
@@ -327,8 +273,7 @@ class WECGridPlot:
             line: A list of line names to plot. If ``None``, all lines are shown.
 
         Returns:
-            tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: The displayed
-            figure and axes for further customization.
+            (Figure, Axes).
         """
         if parameter == "line_pct":
             title = f"{software.upper()}: Line Percent Loading"
@@ -345,36 +290,18 @@ class WECGridPlot:
 
     def sld(
         self, software: str = "pypsa", figsize=(14, 10), title=None, save_path=None, show: bool = False
-    ) -> Any:
-        """Generate single-line diagram using GridState data.
-
-        Creates a single-line diagram visualization using the standardized GridState
-        component data. Works with both PSS®E and PyPSA backends by using the unified
-        data schema from GridState snapshots.
+    ) -> Tuple[Figure, Axes]:
+        """Draw a single-line diagram using GridState.
 
         Args:
-            software (str): Backend software ("psse" or "pypsa")
-            figsize (tuple): Figure size as (width, height)
-            title (str, optional): Custom title for the diagram
-            save_path (str, optional): Path to save the figure
-            show (bool): Whether to display the figure (default: False)
+            software: Backend ("psse" or "pypsa").
+            figsize: Figure size (width, height).
+            title: Optional title.
+            save_path: Optional file path to save image.
+            show: If True, call ``plt.show()``.
 
         Returns:
-            matplotlib.figure.Figure: The generated SLD figure
-
-        Notes:
-            Uses NetworkX for automatic layout calculation since GridState doesn't
-            include geographical bus positions. The diagram includes:
-
-            - Buses: Colored rectangles based on type (Slack=red, PV=green, PQ=gray)
-            - Lines: Black dashed lines connecting buses
-            - Generators: Circles above buses with generators
-            - Loads: Downward arrows on buses with loads
-
-            Limitations:
-            - No transformer identification (would need additional data)
-            - Layout is algorithmic, not geographical
-            - No shunt devices (not in GridState schema)
+            (Figure, Axes).
         """
         # Get the appropriate grid object
         grid_obj = self._get_grid_obj(software)
@@ -672,16 +599,16 @@ class WECGridPlot:
             print(f"SLD saved to: {save_path}")
 
         plt.tight_layout()
-        plt.show()
-        # return fig, ax
+        if show:
+            plt.show()
+        return fig, ax
 
     def wec_analysis(self, farms: Optional[List[str]] = None, software: str = "pypsa"):
-        """
-        Creates a 1x3 figure analyzing WEC farm performance.
+        """Create a 1×3 WEC farm analysis figure (power, contribution, voltage).
 
         Args:
-            farms (Optional[List[str]]): A list of farm names to analyze. If None, all farms are analyzed.
-            software (str): The modeling software to use. Defaults to 'pypsa'.
+            farms: Optional list of farm names to include.
+            software: Backend identifier.
         """
         grid_obj = self._get_grid_obj(software)
 
@@ -740,16 +667,12 @@ class WECGridPlot:
         plt.show()
 
     def compare_modelers(self, grid_component: str, name: List[str], parameter: str):
-        """
-        Compares a parameter for a specific component between PSS®E and PyPSA.
-
-        Works with both live engine data and standalone GridState objects added
-        via add_grid().
+        """Compare a component parameter across PSS®E and PyPSA.
 
         Args:
-            grid_component (str): The type of component ('bus', 'gen', 'load', 'line').
-            name (List[str]): The name(s) of the component(s) to compare.
-            parameter (str): The parameter to compare.
+            grid_component: Component type ("bus", "gen", "load", "line").
+            name: Component name(s) to compare.
+            parameter: Parameter to compare (e.g., "p", "v_mag").
         """
         # Check for available software data
         available_software = []

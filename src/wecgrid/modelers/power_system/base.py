@@ -1,20 +1,5 @@
 # src/wecgrid/modelers/power_system/base.py
-"""Core interfaces and data structures for power-system modeling backends.
-
-This module defines the foundational pieces used by all power-system
-modelers within WEC-Grid:
-
-* ``AttrDict`` – a convenience dictionary with attribute-style access for
-  organizing time-series data.
-* ``GridState`` – a dataclass that standardizes snapshot and historical data
-  for buses, generators, lines, and loads.
-* ``PowerSystemModeler`` – an abstract base class specifying the API that
-  backend implementations must provide.
-
-Concrete modelers such as :mod:`psse` and :mod:`pypsa` extend these classes
-to interface with PSS®E and PyPSA, respectively, while adhering to the common
-WEC-Grid modeling interface.
-"""
+"""Base interfaces and data containers for power-system modelers."""
 
 # Standard library
 from abc import ABC, abstractmethod
@@ -31,19 +16,10 @@ from ...wec.farm import WECFarm
 
 
 class AttrDict(dict):
-    """Dictionary that allows attribute-style access to keys.
-
-    This utility class enables accessing dictionary values using dot notation
-    (d.key) in addition to the standard bracket notation (d['key']). This is
-    used for convenient access to time-series data collections.
-
-    Example:
-        >>> data = AttrDict({'voltage': df1, 'power': df2})
-        >>> data.voltage  # Same as data['voltage']
-        >>> data.power = df3  # Same as data['power'] = df3
+    """Dict with attribute-style access (``d.key``) to keys.
 
     Raises:
-        AttributeError: If the requested attribute/key does not exist.
+        AttributeError: If the attribute is not present.
     """
 
     def __getattr__(self, name):
@@ -64,22 +40,19 @@ class AttrDict(dict):
 
 @dataclass
 class SolveReport:
-    """Performance tracking for WEC-Grid simulation runs.
-
-    Captures timing metrics, convergence status, and solver performance
-    across all simulation snapshots for analysis and benchmarking.
+    """Lightweight performance log for a simulation run.
 
     Attributes:
-        simulation_time (float): Total simulation duration in seconds.
-        case (str): Power system case name or identifier.
-        software (str): Backend modeler name ("psse", "pypsa").
-        iter_time (List[float]): Per-snapshot iteration timing.
-        converged (List[bool]): Power flow convergence status per snapshot.
-        pf_solve_time (List[float]): Power flow solver timing per snapshot.
-        pf_solve_iter (List[int]): Solver iteration count per snapshot.
-        snapshot_time (List[float]): Grid state capture timing per snapshot.
-        snapshot (List): Timestamp identifiers for each snapshot.
-        message (List[str]): Solver status messages per snapshot.
+        simulation_time: Total wall time in seconds.
+        case: Case name/identifier.
+        software: Backend name ("psse", "pypsa").
+        iter_time: Per-step iteration time [s].
+        converged: Per-step convergence flags.
+        pf_solve_time: Powerflow solve time [s] per step.
+        pf_solve_iter: Solver iterations per step.
+        snapshot_time: Snapshot capture time [s] per step.
+        snapshot: Snapshot identifiers (timestamps).
+        message: Solver status messages.
     """
     simulation_time: float = 0.0
     case: str = ""
@@ -93,13 +66,13 @@ class SolveReport:
     message: list = field(default_factory=list)  # str
 
     def __repr__(self) -> str:
+        """Return a one-line summary of solve status and timing."""
+        if not self.converged:
+            status = "Unknown"
+        else:
+            status = "Successful" if all(self.converged) else "Failed"
         return (
-            f"SolveReport:\n"
-            f"├─ Converged: {'Failed' if not all(self.converged) else 'Successful'}\n"
-            f"├─ Simulation Time: {self.simulation_time:.2f} s\n"
-            f"├─ Num Steps: {len(self.snapshot)}\n"
-            f"├─ Case: {self.case}\n"
-            f"└─ Modeler: {self.software}"
+            f"SolveReport: {status}, steps={len(self.snapshot)}, time={self.simulation_time:.2f}s, case={self.case}, sw={self.software}"
         )
 
     def add_iteration_time(self, time_val: float):
@@ -183,35 +156,21 @@ class SolveReport:
 
 @dataclass
 class GridState:
-    """Standardized container for power system snapshot and time-series data.
+    """Snapshot and time-series container for grid components.
 
-    Provides unified data structure for storing power system component states
-    across different simulation backends (PSS®E, PyPSA, etc.). Maintains both
-    current snapshot data and historical time-series data using standardized
-    DataFrame schemas to enable cross-platform validation and comparison.
-
-    All electrical quantities are stored in per-unit values based on system MVA.
-    Component IDs and naming follow WEC-Grid conventions for consistency across
-    different power system analysis tools.
+    Power quantities are per-unit on system base unless noted.
 
     Attributes:
-        software (str): Backend software identifier ("psse", "pypsa", etc.).
-        case (str): Power system case name or identifier.
-        bus (pd.DataFrame): Current bus state with voltage and power injection data.
-        gen (pd.DataFrame): Current generator state with power output data.
-        line (pd.DataFrame): Current transmission line state with loading data.
-        load (pd.DataFrame): Current load state with power consumption data.
-        bus_t (AttrDict): Time-series bus data organized by variable name.
-        gen_t (AttrDict): Time-series generator data organized by variable name.
-        line_t (AttrDict): Time-series line data organized by variable name.
-        load_t (AttrDict): Time-series load data organized by variable name.
-
-    Notes:
-        - All power values are in per-unit on system base MVA
-        - Voltage magnitudes are in per-unit, angles in degrees
-        - Line loading is expressed as percentage of thermal rating
-        - Component IDs must be consistent across all DataFrames
-        - Time-series data is automatically maintained when snapshots are updated
+        software: Backend identifier.
+        case: Case identifier.
+        bus: Current bus snapshot DataFrame.
+        gen: Current generator snapshot DataFrame.
+        line: Current line snapshot DataFrame.
+        load: Current load snapshot DataFrame.
+        bus_t: Time series by bus variable.
+        gen_t: Time series by generator variable.
+        line_t: Time series by line variable.
+        load_t: Time series by load variable.
     """
 
     software: str = ""
@@ -228,25 +187,7 @@ class GridState:
     # todo: need to add a way to identify WECs on a grid, 'G7' is a wecfarm
 
     def __repr__(self) -> str:
-        """Return a formatted string representation of the GridState.
-
-        Provides a tree-style summary showing the number of components in each
-        category and the available time-series variables for each component type.
-
-        Returns:
-            str: Multi-line string representation showing component counts and
-                available time-series data.
-
-        Example:
-            >>> print(grid)
-            GridState (psse):
-            ├─ Components:
-            │   ├─ bus:   14 components
-            │   ├─ gen:   5 components
-            │   ├─ line:  20 components
-            │   └─ load:  11 components
-            └─ Backend: PSS®E simulation model
-        """
+        """Return a compact summary with component counts."""
 
         def ts_info(component_t):
             """Format time-series information with variable count and snapshot count."""
@@ -285,26 +226,16 @@ class GridState:
         )
 
     def update(self, component: str, timestamp: pd.Timestamp, df: pd.DataFrame):
-        """Update snapshot and time-series data for a power system component.
-
-        Updates both current snapshot DataFrame and historical time-series data
-        for the specified component type. Expects DataFrames with standardized
-        WEC-Grid schemas and proper `df.attrs['df_type']` attributes.
+        """Set current snapshot and append to time series for a component.
 
         Args:
-            component (str): Component type ("bus", "gen", "line", "load").
-            timestamp (pd.Timestamp): Timestamp for this snapshot.
-            df (pd.DataFrame): Component data with `df.attrs['df_type']` set to
-                one of {"BUS", "GEN", "LINE", "LOAD"}.
+            component: One of "bus", "gen", "line", "load".
+            timestamp: Snapshot timestamp.
+            df: Component DataFrame. Must define ``df.attrs['df_type']`` and
+                include an ID column (e.g., "bus", "gen").
 
         Raises:
-            ValueError: If component is not recognized, `df_type` is invalid,
-                or required ID columns are missing.
-
-        Note:
-            All power values must be in per-unit on system MVA base.
-            Component DataFrames must include proper ID columns and naming.
-            Time-series data is automatically indexed by component names.
+            ValueError: If the component or ID mapping cannot be determined.
         """
 
         if df is None or df.empty:
@@ -486,7 +417,7 @@ class PowerSystemModeler(ABC):
         if hasattr(self.engine, "wec_farms") and self.engine.wec_farms:
             num_farms = len(self.engine.wec_farms)
             total_devices = sum(
-                len(farm.devices) for farm in self.engine.wec_farms.values()
+                len(farm.wec_devices) for farm in self.engine.wec_farms
             )
             wec_line = f"├─ WEC Farms: {num_farms} farms, {total_devices} total devices"
 

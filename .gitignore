@@ -141,8 +141,8 @@ examples/wec_models/LUPA/temp/*
 *.mat
 
 # Configuration files with user-specific paths
-src/wecgrid/wec/wecsim_config.json
-src/wecgrid/database/database_config.json
+src/wecgrid/modelers/wec_sim/wecsim_config.json
+src/wecgrid/util/database_config.json
 
 .*
 !/.gitignore

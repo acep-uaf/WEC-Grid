@@ -64,14 +64,10 @@ class WECGridTime:
         self._update_sim_stop()
 
     def set_end_time(self, end_time: datetime):
-        """Set simulation duration by specifying the desired end time.
+        """Set simulation duration by specifying the end time.
 
         Args:
-            end_time (datetime): Desired simulation end timestamp.
-                Must be later than current start_time.
-
-        Raises:
-            ValueError: If end_time is earlier than or equal to start_time.
+            end_time: Desired simulation end timestamp (should be ≥ start_time).
         """
         self.num_steps = len(
             pd.date_range(start=self.start_time, end=end_time, freq=self.freq)
