@@ -62,4 +62,4 @@ A pre-loaded database is included with WEC-Grid to lower barriers to entry. It c
 
 ---
 
-## Download [WECGrid.db](../../../examples/WECGrid.db)
+### **Download** [WECGrid.db](https://github.com/acep-uaf/WEC-Grid/blob/main/examples/WECGrid.db)

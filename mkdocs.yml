@@ -50,6 +50,7 @@ extra:
 
 plugins:
   - search
+  #- autolinks
   - mkdocstrings:
       handlers:
         python:
@@ -74,6 +75,8 @@ plugins:
       execute: False
       include_requirejs: true
       include_source: True
+      ignore_h1_titles: True
+      allow_errors: false
 
 nav:
   - Home: index.md
@@ -96,130 +99,16 @@ nav:
       - Database: wecgrid/database.md
       - Time: wecgrid/time.md
       - Plot: wecgrid/plot.md
-  - Examples & Data:
-    - Jupyter notebooks:
+  - Examples:
       - Example 1: examples/jupyter_notebooks/example1.ipynb
       - Example 2: examples/jupyter_notebooks/example2.ipynb
       - Example 3: examples/jupyter_notebooks/example3.ipynb
       - Example 4: examples/jupyter_notebooks/example4.ipynb
-    - Data:
-      - Grid Models: examples/data/grid-models.md
-      - WEC Models: examples/data/wec-models.md
-      - Preloaded Database: examples/data/loaded_database.md
+  - Data:
+    - Grid Models: data/grid-models.md
+    - WEC Models: data/wec-models.md
+    - Preloaded Database: data/loaded_database.md
   - Reference:
       - Performance Metrics: reference/performance_metrics.md
       - Troubleshooting: reference/troubleshooting.md
       - Citation: reference/citation.md
-
-
-# site_name: WEC-Grid
-# site_description: Integrating Wave Energy Converter Models into Power System Simulations
-# repo_url: https://github.com/acep-uaf/WEC-Grid
-# theme:
-#   name: windmill
-#   logo: assets/WEC-Grid_logo.png
-#   nav_style: dark
-#   features:
-#     - navigation.tabs
-#     - navigation.sections
-#     - toc.integrate
-#     - navigation.top
-#     - search.suggest
-#     - search.highlight
-#     - content.tabs.link
-  
-
-# markdown_extensions:
-#   - admonition
-#   - footnotes
-#   - attr_list
-#   - pymdownx.details
-#   - pymdownx.mark
-#   - pymdownx.inlinehilite
-#   - pymdownx.superfences
-#   - pymdownx.highlight:
-#       anchor_linenums: true
-#       line_spans: __span
-#       pygments_lang_class: true
-#   - pymdownx.arithmatex:
-#       generic: true
-#   - pymdownx.snippets
-
-# extra_javascript:
-#   - https://polyfill.io/v3/polyfill.min.js?features=es6
-#   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
-
-# extra_css:
-#   - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css
-
-
-# extra:
-#   logo: assets/WEC-Grid_mini_white_circle.png
-#   version: 1.0.0
-#   history_buttons: True
-#   article_nav_top: True
-#   article_nav_bottom: True
-
-# plugins:
-#   - search
-#   - autorefs
-#   - mkdocstrings:
-#       handlers:
-#         python:
-#           paths: [src]
-#           options:
-#             docstring_style: google
-#             merge_init_into_class: true
-#             separate_signature: true
-#             show_signature_annotations: true
-#             show_source: false
-#             show_if_no_docstring: false
-#             members_order: source
-#   # - mkdocstrings:
-#   #     handlers:
-#   #       python:
-#   #         paths: [src]
-#   #         options:
-#   #           filters:
-#   #             - "!^_"        # Exclude private methods
-#   # - mkdocs-jupyter:
-#   #     include: ["*.ipynb"] 
-#   #     execute: False
-#   #     include_source: True
-# nav:
-#   - Home: index.md
-#   - Getting Started:
-#       - Software Design: design.md
-#       - Installation: install.md
-#   - WEC-Grid:
-#     - Engine: wecgrid/engine.md
-#     - Modelers:
-#       - Power System:
-#         - Base: wecgrid/base.md
-#         - Grid State: wecgrid/grid.md
-#         - PSS/E: wecgrid/psse.md
-#         - PyPSA: wecgrid/pypsa.md
-#       - WEC-Sim:
-#         - Runner: wecgrid/wecsim.md
-#     - WEC:
-#       - WEC Module: wecgrid/wec.md
-#       - WEC Farm: wecgrid/wec_farm.md
-#       - WEC Device: wecgrid/wec_device.md
-#     - Util:
-#       - Database: wecgrid/database.md
-#       - Time: wecgrid/time.md
-#       - Plot: wecgrid/plot.md
-#   - Examples & Data:
-#     - Jupyter notebooks:
-#       - Example 1: examples/jupyter_notebooks/example1.ipynb
-#       - Example 2: examples/jupyter_notebooks/example2.ipynb
-#       - Example 3: examples/jupyter_notebooks/example3.ipynb
-#       - Example 4: examples/jupyter_notebooks/example4.ipynb
-#     - Data:
-#       - Grid Models: examples/data/grid-models.md
-#       - WEC Models: examples/data/wec-models.md
-#       - Database: examples/data/database.md
-#   - Reference:
-#       - Performance Metrics: reference/performance_metrics.md
-#       - Troubleshooting: reference/troubleshooting.md
-#       - Citation: reference/citation.md

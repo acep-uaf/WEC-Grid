@@ -8,7 +8,7 @@ WEC-Grid includes two pre-configured wave energy converter models for simulation
 <!-- TODO: Add 3D model visualization for RM3 -->
 - **Description**: Two-body point absorber developed by Sandia National Laboratories
 - **Type**: Point absorber with vertical motion
-- **Download**: [RM3 Model (ZIP)](./wec_models/RM3.zip)
+- **Download**: [RM3 Model (ZIP)](RM3.zip)
 - **Citation**: [RM3](https://tethys-engineering.pnnl.gov/signature-projects/rm3-wave-point-absorber)
 
 --- 
@@ -18,7 +18,7 @@ WEC-Grid includes two pre-configured wave energy converter models for simulation
 - **Description**: OSU Linear Model Two-body heave-only wave energy converter
 - **Type**: Two-body heave-only, 20-meter diameter  
 - **Developer**: Oregon State University PMEC Lab
-- **Download**: [LUPA Model (ZIP)](./wec_models/LUPA.zip)
+- **Download**: [LUPA Model (ZIP)](LUPA.zip)
 - **Citation**: [LUPA GitHub Repository](https://github.com/PMEC-OSU/LUPA_WEC-Sim/tree/main)
 - **Version**: [20 m LUPA](https://github.com/PMEC-OSU/LUPA_WEC-Sim/tree/main/Additional%20Numerical%20Models/TEAMERLUPA2_inf_depth_20m)
 
