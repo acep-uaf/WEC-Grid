@@ -1,4 +1,4 @@
-
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/acep-uaf/WEC-Grid/v1.0.0)
 # WEC-Grid: Integrating Wave Energy Converters into Power Grid Simulations
 
 <div style="clear: both; text-align: center;">
