@@ -20,4 +20,4 @@ Wave energy integration into power grids faces a critical modeling challenge: cu
 ## Acknowledgments
 This work is supported by the **U.S. Department of Energy Office of Energy Efficiency and Renewable Energy**, Water Power Technology Office (Grant #DE-EE0009445), **University of Alaska Fairbanks**, and **Pacific Northwest National Laboratory**.
 
-**Github Repo**: [github.com/acep-uaf/WEC-Grid](https://github.com/acep-uaf/WEC-Grid)
+**GitHub Repo**: [github.com/acep-uaf/WEC-Grid](https://github.com/acep-uaf/WEC-Grid)

@@ -1,4 +1,4 @@
-**WEC-Grid** is an open-source software framework that bridges **Wave Energy Converter (WEC) modeling** and **electrical power system modeling**. It enables researchers and practitioners to perform quasi–steady-state integration studies, capturing interactions between hydrodynamic WEC simulations (via WEC-Sim) and grid analysis tools (PSS®E and PyPSA).  
+**WEC-Grid** is an open-source software framework that bridges **Wave Energy Converter (WEC) modeling** and **electrical power system modeling**. It enables researchers and practitioners to perform quasi-steady-state integration studies, capturing interactions between hydrodynamic WEC simulations (via WEC-Sim) and grid analysis tools (PSS®E and PyPSA).  
 
 The system is modular, extensible, and built to support flexibility across grid scenarios, farm layouts, and solver configurations. It provides standardized APIs, a relational database backend, and visualization capabilities.
 

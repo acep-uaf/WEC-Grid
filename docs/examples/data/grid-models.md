@@ -31,7 +31,7 @@ WEC-Grid includes several IEEE standard test systems that provide well-character
 ### RTS-GMLC 96
 - **Description**: Grid Modernization Laboratory Consortium version based on the 1979 and 1996 Reliability Test Systems with 73 buses, 98 generators, 105 lines, 51 loads, 3 shunt impedances, and 15 transformers. Features key changes to enable simulations of hourly and 5-minute operations for a full year with renewable energy integration.
 - **Download**: [RTS-GMLC](../jupyter_notebooks/grid_models/RTS-GMLC_Hooman.raw)
-- **Citation**: [RTS-GMLC 96 Github](https://github.com/GridMod/RTS-GMLC)
+- **Citation**: [RTS-GMLC 96 GitHub](https://github.com/GridMod/RTS-GMLC)
 
 ### IEEE 118-Bus System
 - **Description**: Approximation of the American Electric Power system (U.S. Midwest) as of December 1962 with 118 buses, 54 generators, 177 lines, 99 loads, and 9 transformers.

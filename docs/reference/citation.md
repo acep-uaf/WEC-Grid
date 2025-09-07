@@ -18,9 +18,7 @@ If you use WEC-Grid in your research, please cite:
 
 This work was supported by the U.S. Department of Energy Office of Energy Efficiency and Renewable Energy, Water Power Technologies Office (Grant #DE-EE0009445), the University of Alaska Fairbanks, and the Pacific Northwest National Laboratory.
 
-## Related Publications
 
-Currently in development. Please cite the software directly.
 
 ## Third-Party Acknowledgments
 
