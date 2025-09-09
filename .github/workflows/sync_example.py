@@ -3,7 +3,8 @@ import shutil, glob, pathlib
 
 # Go up 2 levels from .github/workflows/ to get repo root
 root = pathlib.Path(__file__).resolve().parent.parent.parent
-docs_nb = root / "docs" / "examples" / "jupyter_notebooks"
+# Destination inside mkdocs docs dir for examples
+docs_nb = root / "docs" / "examples"
 (docs_nb / "grid_models").mkdir(parents=True, exist_ok=True)
 
 # notebooks
