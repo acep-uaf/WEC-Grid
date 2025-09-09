@@ -20,6 +20,8 @@ markdown_extensions:
   - admonition
   - footnotes
   - attr_list
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.details
   - pymdownx.mark
   - pymdownx.inlinehilite

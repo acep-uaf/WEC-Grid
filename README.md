@@ -11,65 +11,63 @@
 
 ---
 
-### Software Setup
+### Quick Install
 
-#### Optional (but encouraged) Software / Packages
+WEC‑Grid supports Windows, macOS, and Linux. We recommend Python 3.9 to match the pinned dependencies.
 
-1. **Install Miniconda**
-   - Miniconda is a minimal installer for conda. It is recommended to manage your Python environments. Helpful for specifying python and other package versions.
-   - Download and install [Miniconda (64-bit)](https://docs.conda.io/en/latest/miniconda.html) for Python environment management.
+1) Clone the repo
+```bash
+git clone https://github.com/acep-uaf/WEC-Grid
+cd WEC-Grid
+```
 
-2. **MATLAB**
-   - MATLAB 2021b for running our wave energy converter simulations via WEC-SIM. [Download MATLAB](https://www.mathworks.com/products/matlab.html). This is the only tested and supported version of MATLAB currently. Hold off on installing the MATLAB Engine API for Python until your conda environment is set up.
+2) Create and activate an environment (pick one)
 
-3. **WEC-SIM**
-   - Install WEC-SIM. [Get WEC-SIM](https://wec-sim.github.io/WEC-Sim/).
-   - Expose MATLAB to Python by installing the MATLAB Engine API for Python. Follow instructions [here](https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html). Instructions are also provided below.
+Using conda (Windows/macOS/Linux):
+```bash
+conda create -n wecgrid_env python=3.9
+conda activate wecgrid_env
+```
 
-4. **PSSe API**
-   - Obtain and configure the PSSe API. Details and licensing are available on the [PSS®E website](https://new.siemens.com/global/en/products/energy/services/transmission-distribution-smart-grid/consulting-and-planning/pss-software/pss-e.html).
+Using Python venv
+- Windows (PowerShell):
+  ```powershell
+  py -3.9 -m venv wecgrid_env
+  .\wecgrid_env\Scripts\Activate.ps1
+  ```
+- Windows (Command Prompt):
+  ```bat
+  py -3.9 -m venv wecgrid_env
+  .\wecgrid_env\Scripts\activate.bat
+  ```
+- macOS/Linux (bash/zsh):
+  ```bash
+  python3 -m venv wecgrid_env
+  source wecgrid_env/bin/activate
+  ```
 
----
+3) Upgrade pip
+```bash
+python -m pip install --upgrade pip
+```
 
-### Install 
+4) Install WEC‑Grid
+```bash
+pip install -e .
+```
 
-1. Clone WEC-Grid
-   ```bash
-   git clone https://github.com/acep-uaf/WEC-Grid
-   ```
-2. Navigate to the WEC-Grid directory:
-   ```bash
-   cd WEC-Grid
-   ```
-3. Create an environment: (recommended)
-   ```bash 
-   py -3.9 -m venv wecgrid_env
+5) Optional extras
+- PSS®E path helper (Windows only):
+  ```bash
+  pip install -e .[psse]
+  ```
+- Dev tools (tests):
+  ```bash
+  pip install -e .[dev]
+  pytest -q
+  ```
 
-   ``` or with conda
-   ```bash
-   conda create --name wecgrid_env python=3.9
-   ```
-4. Activate the environment:
-   ```bash 
-   .\wecgrid_env\Scripts\activate
-   python -m pip install --upgrade pip
-
-   ``` or with conda
-   ```bash
-   conda activate wecgrid_env
-   ```
-5. Install WEC-Grid!
-   ```bash
-   pip install -e .
-   ```
-6. (Optional) Install extra dependencies
-   ```bash
-   pip install wecgrid[psse]    # PSS®E path helper support
-   ```
-7. Run tests
-   ```bash
-   pytest -v
-   ```
+For more detailed, OS-specific instructions, see `docs/install.md` or the online docs.
 
 ---
 
@@ -88,3 +86,11 @@ You can configure paths via code or environment variables.
   - Quick (env var): set `WECGRID_WECSIM_PATH` to the WEC‑Sim folder
   - Persistent (code): `engine.wecsim.set_wec_sim_path("/path/to/WEC-Sim")`
     - Stored in your user config directory (e.g., `~/.wecgrid/wecsim_config.json`).
+
+---
+
+### Optional Tools
+
+- Miniconda: Recommended for managing Python versions and binary packages. Download: https://docs.conda.io/en/latest/miniconda.html
+- MATLAB + WEC‑Sim: For WEC simulations. Install MATLAB R2021b and WEC‑Sim, then add the MATLAB Engine API for Python to your active environment: https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html
+- PSS®E API (Windows): Commercial license required. See: https://new.siemens.com/global/en/products/energy/services/transmission-distribution-smart-grid/consulting-and-planning/pss-software/pss-e.html

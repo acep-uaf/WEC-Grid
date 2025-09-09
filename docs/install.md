@@ -1,87 +1,282 @@
 # Installation
 
 ## System Requirements
-- **Python**: 3.7+  
-- **Operating System**: Windows recommended for full functionality (PSS®E is Windows-only). Core features are compatible with most platforms.
+- Python: 3.7+ (3.9 recommended)
+- Operating System: Windows, macOS, or Linux
+  - Windows recommended for full functionality with PSS®E (Windows‑only)
+- Git: Required to clone the repository
 
-### Power System Software
-- **PSS®E**: Version 34 or later (commercial license required)
-- **PyPSA**: [PyPSA GitHub](https://github.com/PyPSA/PyPSA)
+### Power System Software (optional)
+- PSS®E: Version 34 or later (commercial, Windows‑only)
+- PyPSA: Installed via WEC‑Grid dependencies
 
-### WEC Modeling Software
-- **MATLAB**: R2021b or later
-- **WEC-Sim**: [WEC-Sim Getting Started Guide](https://wec-sim.github.io/WEC-Sim/main/user/getting_started.html)
-
----
-
-## Install WEC-Grid
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/acep-uaf/WEC-Grid
-   ```
-2. Navigate into the project directory:
-   ```bash
-   cd WEC-Grid
-   ```
-3. Create a virtual environment (recommended):
-   ```bash
-   py -3.9 -m venv wecgrid_env
-   ```
-   Or with Conda:
-   ```bash
-   conda create --name wecgrid_env python=3.9
-   ```
-4. Activate the environment:
-   ```bash
-   .\wecgrid_env\Scripts\activate
-   python -m pip install --upgrade pip
-   ```
-   Or with Conda:
-   ```bash
-   conda activate wecgrid_env
-   ```
-5. Install WEC-Grid:
-   ```bash
-   pip install -e .
-   ```
-6. (Optional) Install extra dependencies:
-   ```bash
-   pip install wecgrid[psse]   # PSS®E API support
-   ```
-**Common Issue** Update your `pip` if you encounter installation errors:
-```bash
-python -m pip install --upgrade pip
-```
----
-
-## WEC-Sim / MATLAB Setup
-
-1. Install MATLAB.
-2. Install WEC-Sim ([instructions here](https://wec-sim.github.io/WEC-Sim/main/user/getting_started.html)) and add it to your MATLAB path.
-3. Add the MATLAB Python Engine API to your Python environment ([guide](https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html)).
-
-> **Note**: Remember where you downloaded WEC-Sim so you can correctly set the path in WEC-Grid.
+### WEC Modeling Software (optional)
+- MATLAB: R2021b (tested)
+- WEC‑Sim: https://wec-sim.github.io/WEC-Sim/main/user/getting_started.html
 
 ---
 
-## PSS®E Setup
+## Choose Your OS
 
-1. Install PSS®E (commercial license required).
-2. Ensure the PSS®E Python API is accessible in your Python environment. This may involve setting environment variables or modifying the Python path.
-3. The easiest method is to use the [pssepath](https://github.com/danifus/pssepath) package:
+Use the tabs below to get tailored steps for your platform and environment manager.
+
+=== "Windows"
+
+    === "Conda"
+
+    1. Clone the repo
+       ```bash
+       git clone https://github.com/acep-uaf/WEC-Grid
+       cd WEC-Grid
+       ```
+    2. Create and activate env
+       ```bash
+       conda create -n wecgrid_env python=3.9
+       conda activate wecgrid_env
+       ```
+    3. Upgrade pip
+       ```bash
+       python -m pip install --upgrade pip
+       ```
+    4. Install WEC‑Grid
+       ```bash
+       pip install -e .
+       ```
+    5. Optional extras
+       ```bash
+       pip install -e .[psse]   # PSS®E helper
+       pip install -e .[dev]    # tests, tooling
+       pytest -q
+       ```
+    6. Verify
+       ```bash
+       python -c "import wecgrid; print(wecgrid.__version__)"
+       ```
+
+    === "Python venv (PowerShell)"
+
+    1. Clone the repo
+       ```powershell
+       git clone https://github.com/acep-uaf/WEC-Grid
+       cd WEC-Grid
+       ```
+    2. Create and activate env
+        ```powershell
+        py -3.9 -m venv wecgrid_env
+        .\wecgrid_env\Scripts\Activate.ps1
+        ```
+    3. Upgrade pip
+       ```powershell
+       python -m pip install --upgrade pip
+       ```
+    4. Install WEC‑Grid
+       ```powershell
+       pip install -e .
+       ```
+    5. Optional extras (same as above)
+
+    6. Verify
+       ```powershell
+       python -c "import wecgrid; print(wecgrid.__version__)"
+       ```
+
+    === "Python venv (CMD)"
+
+    1. Clone the repo
+       ```bat
+       git clone https://github.com/acep-uaf/WEC-Grid
+       cd WEC-Grid
+       ```
+    2. Create and activate env
+       ```bat
+       py -3.9 -m venv wecgrid_env
+       .\wecgrid_env\Scripts\activate.bat
+       ```
+    3. Upgrade pip
+       ```bat
+       python -m pip install --upgrade pip
+       ```
+    4. Install WEC‑Grid
+       ```bat
+       pip install -e .
+       ```
+    5. Optional extras (same as above)
+
+    6. Verify
+       ```bat
+       python -c "import wecgrid; print(wecgrid.__version__)"
+       ```
+
+=== "macOS"
+
+    === "Conda"
+
+    1. Clone the repo
+       ```bash
+       git clone https://github.com/acep-uaf/WEC-Grid
+       cd WEC-Grid
+       ```
+    2. Create and activate env
+       ```bash
+       conda create -n wecgrid_env python=3.9
+       conda activate wecgrid_env
+       ```
+    3. Upgrade pip
+       ```bash
+       python -m pip install --upgrade pip
+       ```
+    4. Install WEC‑Grid
+       ```bash
+       pip install -e .
+       ```
+    5. Optional extras
+       ```bash
+       pip install -e .[dev]
+       pytest -q
+       ```
+    6. Verify
+       ```bash
+       python -c "import wecgrid; print(wecgrid.__version__)"
+       ```
+
+    === "Python venv"
+
+    1. Clone the repo
+       ```bash
+       git clone https://github.com/acep-uaf/WEC-Grid
+       cd WEC-Grid
+       ```
+    2. Create and activate env
+       ```bash
+       python3 -m venv wecgrid_env
+       source wecgrid_env/bin/activate
+       ```
+    3. Upgrade pip
+       ```bash
+       python -m pip install --upgrade pip
+       ```
+    4. Install WEC‑Grid
+       ```bash
+       pip install -e .
+       ```
+    5. Optional extras (same as above)
+
+    6. Verify
+       ```bash
+       python -c "import wecgrid; print(wecgrid.__version__)"
+       ```
+
+=== "Linux"
+
+    === "Conda"
+
+    1. Clone the repo
+       ```bash
+       git clone https://github.com/acep-uaf/WEC-Grid
+       cd WEC-Grid
+       ```
+    2. Create and activate env
+       ```bash
+       conda create -n wecgrid_env python=3.9
+       conda activate wecgrid_env
+       ```
+    3. Upgrade pip
+       ```bash
+       python -m pip install --upgrade pip
+       ```
+    4. Install WEC‑Grid
+       ```bash
+       pip install -e .
+       ```
+    5. Optional extras
+       ```bash
+       pip install -e .[dev]
+       pytest -q
+       ```
+    6. Verify
+       ```bash
+       python -c "import wecgrid; print(wecgrid.__version__)"
+       ```
+
+    === "Python venv"
+
+    1. Install venv if needed
+       ```bash
+       sudo apt-get update && sudo apt-get install -y python3-venv
+       ```
+    2. Clone the repo
+       ```bash
+       git clone https://github.com/acep-uaf/WEC-Grid
+       cd WEC-Grid
+       ```
+    3. Create and activate env
+       ```bash
+       python3 -m venv wecgrid_env
+       source wecgrid_env/bin/activate
+       ```
+    4. Upgrade pip
+       ```bash
+       python -m pip install --upgrade pip
+       ```
+    5. Install WEC‑Grid
+       ```bash
+       pip install -e .
+       ```
+    6. Optional extras (same as above)
+
+    7. Verify
+       ```bash
+       python -c "import wecgrid; print(wecgrid.__version__)"
+       ```
+
+Notes
+- If `python=3.9` is unavailable on your default conda channels, try: `conda create -n wecgrid_env -c conda-forge python=3.9`.
+- On Linux, using conda is often simpler for scientific Python stacks with native libs.
+
+---
+
+## WEC‑Sim / MATLAB Setup (Optional)
+
+1. Install MATLAB (R2021b recommended/tested).
+2. Install WEC‑Sim: https://wec-sim.github.io/WEC-Sim/main/user/getting_started.html
+3. Install the MATLAB Engine API for Python into your active environment:
+   - Official guide: https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html
+   - Typical flow (with env activated):
+     ```bash
+     # Replace <matlabroot> with your MATLAB install path
+     cd <matlabroot>/extern/engines/python
+     python -m pip install --upgrade pip
+     python -m pip install .
+     ```
+
+---
+
+## PSS®E Setup (Windows only)
+
+1. Install PSS®E (commercial license).
+2. Ensure your Python version matches your PSS®E version (see below).
+3. Make PSS®E’s Python API importable. Easiest path is the helper:
    ```bash
-   pip install wecgrid[psse]
+   pip install -e .[psse]
    # or
    pip install pssepath
    ```
-4. If this does not work, you can manually configure PSS®E following [this guide](https://psspy.org/psse-help-forum/question/122/how-do-i-import-the-psspy-module-in-a-python-script/).
+4. If needed, manually configure env vars/PATH per Siemens docs or community guides, e.g.:
+   https://psspy.org/psse-help-forum/question/122/how-do-i-import-the-psspy-module-in-a-python-script/
 
-### Common Issues
-- **Bad magic number error**: This typically means the Python version you are using is not compatible with your installed version of PSS®E. See [this forum post](https://psspy.org/psse-help-forum/question/9494/im-trying-to-use-psspy-and-always-i-get-the-same-error-bad-magic-number-in-psspy-bx03xf3rn-someone-can-help-me-to-fix-this-error/) for more details.
+Common issue
+- “Bad magic number” when importing `psspy` usually indicates a Python version mismatch: https://psspy.org/psse-help-forum/question/9494/im-trying-to-use-psspy-and-always-i-get-the-same-error-bad-magic-number-in-psspy-bx03xf3rn-someone-can-help-me-to-fix-this-error/
 
-### PSS®E and Python Version compatibility:
-- **PSS®E 32**: Requires Python 2.5 (32-bit).
-- **PSS®E 33**: Requires Python 2.7 (32-bit).
-- **PSS®E 34**: Supports Python 2.7, 3.4, 3.7 (all 32-bit).
-- **PSS®E 35**: Supports Python 3.9 (64-bit).
+PSS®E ↔ Python compatibility (typical)
+- PSS®E 32: Python 2.5 (32‑bit)
+- PSS®E 33: Python 2.7 (32‑bit)
+- PSS®E 34: Python 2.7 / 3.4 / 3.7 (32‑bit)
+- PSS®E 35: Python 3.9 (64‑bit)
+
+---
+
+## Troubleshooting
+- Always upgrade `pip` inside your env: `python -m pip install --upgrade pip`.
+- If pip builds fail on Linux/macOS, prefer conda to avoid compiler issues.
+- On Debian/Ubuntu, if `python3 -m venv` fails, install: `sudo apt-get install python3-venv`.
+- Quick verification: `python -c "import wecgrid; print(wecgrid.__version__)"`.
