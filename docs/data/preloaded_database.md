@@ -28,7 +28,7 @@ A pre-loaded database is included with WEC-Grid to lower barriers to entry. It c
 
 ### RM3 
 <div style="clear: both; text-align: center;">
-  <img src="../assets/rm3_powerw.png" alt="WEC-SIM RM3 Results" style="width: 100%; height: auto;">
+  <img src="../../assets/rm3_powerw.png" alt="WEC-SIM RM3 Results" style="width: 100%; height: auto;">
 </div>
 
 - **Simulation Details**
@@ -46,7 +46,7 @@ A pre-loaded database is included with WEC-Grid to lower barriers to entry. It c
 
 ### LUPA 
 <div style="clear: both; text-align: center;">
-  <img src="../assets/lupa_powerw.png" alt="WEC-SIM LUPA Results" style="width: 100%; height: auto;">
+  <img src="../../assets/lupa_powerw.png" alt="WEC-SIM LUPA Results" style="width: 100%; height: auto;">
 </div>
 
 - **Simulation Details**

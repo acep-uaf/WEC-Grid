@@ -32,7 +32,7 @@ The UML class diagram highlights the modular structure:
     + `WECGridPlot` for visualization.  
 
 <div style="clear: both; text-align: center;">
-  <img src="assets/WEC-Grid_uml_class.png" alt="UML Class Diagram" style="width: 100%; height: auto;">
+  <img src="../assets/WEC-Grid_uml_class.png" alt="UML Class Diagram" style="width: 100%; height: auto;">
 </div>
 
 ---
@@ -48,7 +48,7 @@ A typical user workflow:
 6. Store results in database and generate plots.  
 
 <div style="clear: both; text-align: center;">
-  <img src="assets/WEC-GRID_uml_sequence.png" alt="Sequence Diagram" style="width: 100%; height: auto;">
+  <img src="../assets/WEC-GRID_uml_sequence.png" alt="Sequence Diagram" style="width: 100%; height: auto;">
 </div>
 
 ---
@@ -65,7 +65,7 @@ Simulation results are stored in an **SQLite3 database** for reproducibility and
 This schema supports efficient querying, comparison, and long-term storage.
 
 <div style="clear: both; text-align: center;">
-  <img src="assets/database_diagram.png" alt="Database Schema" style="width: 100%; height: auto;">
+  <img src="../assets/database_diagram.png" alt="Database Schema" style="width: 100%; height: auto;">
 </div>
 
 ---

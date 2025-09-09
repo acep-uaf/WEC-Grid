@@ -73,10 +73,10 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/acep-uaf/WEC-Grid
-  alternate:
-    - name: favicon
-      link: assets/WEC-Grid_mini_white.png
-  social_image: assets/social-card.png   # optional: for link previews
+  # alternate:
+  #   - name: favicon
+  #     link: assets/WEC-Grid_mini_white.png
+  # social_image: assets/social-card.png   # optional: for link previews
 
 plugins:
   - search
