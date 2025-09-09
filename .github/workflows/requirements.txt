@@ -8,9 +8,9 @@ plantuml-markdown
 jupyter
 nbconvert
 pymdown-extensions
-markdown-includemkdocs-glightbox
+mkdocs-glightbox
 mkdocs-autorefs
-git-revision-date-localized-plugin
 mkdocstrings[python]>=0.24
 pymdown-extensions
 markdown-include
+mkdocs-git-revision-date-localized-plugin
