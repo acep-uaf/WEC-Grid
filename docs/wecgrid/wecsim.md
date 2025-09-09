@@ -228,9 +228,7 @@ wec_sim_id = wecsim(
 
 ### Example Run
 
-elow is an example of running a full 24 wec simulation of the RM3 wave energy model.
-
-# Run WEC-Sim simulation of the RM3 wave energy model 
+Below is an example of running a full 24 wec simulation of the RM3 wave energy model.
 
 ```python 
 
