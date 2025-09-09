@@ -29,10 +29,9 @@ WEC-Grid builds upon several open-source projects:
 - **PSS®E** – Power System Simulator for Engineering
 - **Pandas** – Data analysis and manipulation library
 - **NumPy** – Numerical computing library
-- **Matplotlib** – Plotting library -->
+- **Matplotlib** – Plotting library
 
 ## Contact
 
 For questions about WEC-Grid or collaboration opportunities:
 - **Primary Contact**: barajale@oregonstate.edu
-

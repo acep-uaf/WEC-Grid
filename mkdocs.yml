@@ -1,31 +1,54 @@
 site_name: WEC-Grid
 site_description: Integrating Wave Energy Converter Models into Power System Simulations
+site_url: https://acep-uaf.github.io/WEC-Grid/   # helps SEO + sitemap
+
 repo_url: https://github.com/acep-uaf/WEC-Grid
+repo_name: acep-uaf/WEC-Grid
+edit_uri: edit/main/docs/   # adjust if your docs folder differs
 
 theme:
-  name: windmill
-  logo: assets/WEC-Grid_logo.png
-  nav_style: dark
+  name: material
+  logo: assets/WEC-Grid_mini_white_circle.png
   features:
+    - content.action.edit
+    - content.action.view
     - navigation.tabs
     - navigation.sections
-    - toc.integrate
     - navigation.top
+    - toc.integrate
+    - navigation.tracking
     - search.suggest
     - search.highlight
-    - content.tabs.link
+    - search.share
     - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.footnote.tooltips
+    - header.autohide
+  palette:
+    - scheme: default
+      primary: gray
+      accent: black
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: gray
+      accent: black
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
 
 markdown_extensions:
   - admonition
   - footnotes
   - attr_list
-  - pymdownx.tabbed:
-      alternate_style: true
   - pymdownx.details
   - pymdownx.mark
   - pymdownx.inlinehilite
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -34,31 +57,34 @@ markdown_extensions:
       generic: true
   - pymdownx.snippets
 
-# extra_javascript:
-#   - javascripts/mathjax-config.js         # <-- add this (your config)
-#   - https://polyfill.io/v3/polyfill.min.js?features=es6
-#   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js
-
 extra_javascript:
   - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js   # optional: diagrams
 
-# Remove KaTeX CSS if you’re using MathJax:
-# extra_css:
-#   - https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css
+extra_css:
+  - assets/custom.css
 
 extra:
-  logo: assets/WEC-Grid_mini_white_circle.png
   version: 1.0.0
-  history_buttons: True
-  article_nav_top: True
-  article_nav_bottom: True
+  history_buttons: true
+  article_nav_top: true
+  article_nav_bottom: true
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/acep-uaf/WEC-Grid
+  alternate:
+    - name: favicon
+      link: assets/WEC-Grid_mini_white.png
+  social_image: assets/social-card.png   # optional: for link previews
 
 plugins:
   - search
+  - glightbox
+  - autorefs
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: date
   - mkdocstrings:
       handlers:
         python:
@@ -77,13 +103,12 @@ plugins:
             members_order: source
             filters: ["!^_"]
             show_object_full_path: true
-
   - mkdocs-jupyter:
-      include: ["*.ipynb"] 
-      execute: False
+      include: ["*.ipynb"]
+      execute: false
       include_requirejs: true
-      include_source: True
-      ignore_h1_titles: True
+      include_source: true
+      ignore_h1_titles: true
       allow_errors: false
 
 nav:
@@ -92,29 +117,29 @@ nav:
       - Software Design: design.md
       - Installation: install.md
   - WEC-Grid:
-    - Engine: wecgrid/engine.md
-    - Modelers:
-      - Power System:
-        - Base Class: wecgrid/base.md
-        - PSS®E: wecgrid/psse.md
-        - PyPSA: wecgrid/pypsa.md
-      - Wave Energy Converter:
-        - WEC-Sim: wecgrid/wecsim.md
-    - WEC:
-      - WEC Farm / Device: wecgrid/wec.md
-    - Util:
-      - Database: wecgrid/database.md
-      - Time: wecgrid/time.md
-      - Plot: wecgrid/plot.md
+      - Engine: wecgrid/engine.md
+      - Modelers:
+          - Power System:
+              - Base Class: wecgrid/base.md
+              - PSS®E: wecgrid/psse.md
+              - PyPSA: wecgrid/pypsa.md
+          - Wave Energy Converter:
+              - WEC-Sim: wecgrid/wecsim.md
+      - WEC:
+          - WEC Farm / Device: wecgrid/wec.md
+      - Util:
+          - Database: wecgrid/database.md
+          - Time: wecgrid/time.md
+          - Plot: wecgrid/plot.md
   - Examples:
-      - Example 1: examples/jupyter_notebooks/example1.ipynb
-      - Example 2: examples/jupyter_notebooks/example2.ipynb
-      - Example 3: examples/jupyter_notebooks/example3.ipynb
-      - Example 4: examples/jupyter_notebooks/example4.ipynb
+      - Example 1: examples/example1.ipynb
+      - Example 2: examples/example2.ipynb
+      - Example 3: examples/example3.ipynb
+      - Example 4: examples/example4.ipynb
   - Data:
-    - Grid Models: data/grid-models.md
-    - WEC Models: data/wec-models.md
-    - Preloaded Database: data/preloaded_database.md
+      - Grid Models: data/grid-models.md
+      - WEC Models: data/wec-models.md
+      - Preloaded Database: data/preloaded_database.md
   - Reference:
       - Performance Metrics: reference/performance_metrics.md
       - Troubleshooting: reference/troubleshooting.md

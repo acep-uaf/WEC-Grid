@@ -5,15 +5,15 @@
   <img src="./docs/assets/WEC-Grid_mini_white.png" alt="WEC-Grid Logo" style="width: 80%; height: auto;">
 </div>
 
-**WEC-Grid** is an open-source Python library crafted to simulate the integration of Wave Energy Converters (WECs) power grid simulators like [PSS®E](https://new.siemens.com/global/en/products/energy/services/transmission-distribution-smart-grid/consulting-and-planning/pss-software/pss-e.html) & [PyPSA](https://pypsa.org/).
+**WEC-Grid** is an open-source Python library crafted to simulate the integration of Wave Energy Converters (WECs) with power grid simulators like [PSS®E](https://new.siemens.com/global/en/products/energy/services/transmission-distribution-smart-grid/consulting-and-planning/pss-software/pss-e.html) & [PyPSA](https://pypsa.org/).
 
 **Documentation**: [acep-uaf.github.io/WEC-Grid](https://acep-uaf.github.io/WEC-Grid/)
 
 ---
 
-### Quick Install
+### Quick Install (macOS, Python venv)
 
-WEC‑Grid supports Windows, macOS, and Linux. We recommend Python 3.9 to match the pinned dependencies.
+We recommend Python 3.9 to match pinned dependencies.
 
 1) Clone the repo
 ```bash
@@ -21,26 +21,12 @@ git clone https://github.com/acep-uaf/WEC-Grid
 cd WEC-Grid
 ```
 
-2) Create and activate an environment (pick one)
+2) Create and activate a virtual environment
 
-Using conda (Windows/macOS/Linux):
-```bash
-conda create -n wecgrid_env python=3.9
-conda activate wecgrid_env
-```
+<!-- For conda-based setup, see docs/install.md -->
 
 Using Python venv
-- Windows (PowerShell):
-  ```powershell
-  py -3.9 -m venv wecgrid_env
-  .\wecgrid_env\Scripts\Activate.ps1
-  ```
-- Windows (Command Prompt):
-  ```bat
-  py -3.9 -m venv wecgrid_env
-  .\wecgrid_env\Scripts\activate.bat
-  ```
-- macOS/Linux (bash/zsh):
+- macOS (bash/zsh):
   ```bash
   python3 -m venv wecgrid_env
   source wecgrid_env/bin/activate
@@ -56,18 +42,13 @@ python -m pip install --upgrade pip
 pip install -e .
 ```
 
-5) Optional extras
-- PSS®E path helper (Windows only):
-  ```bash
-  pip install -e .[psse]
-  ```
-- Dev tools (tests):
-  ```bash
-  pip install -e .[dev]
-  pytest -q
-  ```
+5) Optional (dev tools + tests)
+```bash
+pip install -e .[dev]
+pytest -q
+```
 
-For more detailed, OS-specific instructions, see `docs/install.md` or the online docs.
+Need Windows, Linux, or conda instructions? See the full guide: `docs/install.md`.
 
 ---
 

@@ -85,9 +85,9 @@ eng.load(["pypsa"])  # Calls import_raw_to_pypsa() internally
 
 ## System Requirements
 
-- **PyPSA:** Version 0.21+ with pandas, NumPy, SciPy dependencies
-- **GRG Parser:** `grg_pssedata` package for PSS®E case file import
-- **Python:** 3.8+ with scientific computing stack
+- **PyPSA:** Version 0.20.1 (as pinned) with pandas, NumPy, SciPy
+- **GRG parser:** `grg-pssedata` package for PSS®E RAW import
+- **Python:** 3.7+ (3.9 recommended)
 - **Operating System:** Cross-platform (Windows, macOS, Linux)
 
 ---

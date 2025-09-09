@@ -24,216 +24,216 @@ Use the tabs below to get tailored steps for your platform and environment manag
 
     === "Conda"
 
-    1. Clone the repo
-       ```bash
-       git clone https://github.com/acep-uaf/WEC-Grid
-       cd WEC-Grid
-       ```
-    2. Create and activate env
-       ```bash
-       conda create -n wecgrid_env python=3.9
-       conda activate wecgrid_env
-       ```
-    3. Upgrade pip
-       ```bash
-       python -m pip install --upgrade pip
-       ```
-    4. Install WEC‑Grid
-       ```bash
-       pip install -e .
-       ```
-    5. Optional extras
-       ```bash
-       pip install -e .[psse]   # PSS®E helper
-       pip install -e .[dev]    # tests, tooling
-       pytest -q
-       ```
-    6. Verify
-       ```bash
-       python -c "import wecgrid; print(wecgrid.__version__)"
-       ```
+        1. Clone the repo
+           ```bash
+           git clone https://github.com/acep-uaf/WEC-Grid
+           cd WEC-Grid
+           ```
+        2. Create and activate env
+           ```bash
+           conda create -n wecgrid_env python=3.9
+           conda activate wecgrid_env
+           ```
+        3. Upgrade pip
+           ```bash
+           python -m pip install --upgrade pip
+           ```
+        4. Install WEC‑Grid
+           ```bash
+           pip install -e .
+           ```
+        5. Optional extras
+           ```bash
+           pip install -e .[psse]   # PSS®E helper
+           pip install -e .[dev]    # tests, tooling
+           pytest -q
+           ```
+        6. Verify
+           ```bash
+           python -c "import wecgrid; print(wecgrid.__version__)"
+           ```
 
     === "Python venv (PowerShell)"
 
-    1. Clone the repo
-       ```powershell
-       git clone https://github.com/acep-uaf/WEC-Grid
-       cd WEC-Grid
-       ```
-    2. Create and activate env
-        ```powershell
-        py -3.9 -m venv wecgrid_env
-        .\wecgrid_env\Scripts\Activate.ps1
-        ```
-    3. Upgrade pip
-       ```powershell
-       python -m pip install --upgrade pip
-       ```
-    4. Install WEC‑Grid
-       ```powershell
-       pip install -e .
-       ```
-    5. Optional extras (same as above)
+        1. Clone the repo
+            ```powershell
+            git clone https://github.com/acep-uaf/WEC-Grid
+            cd WEC-Grid
+            ```
+        2. Create and activate env
+            ```powershell
+            py -3.9 -m venv wecgrid_env
+            .\wecgrid_env\Scripts\Activate.ps1
+            ```
+        3. Upgrade pip
+            ```powershell
+            python -m pip install --upgrade pip
+            ```
+        4. Install WEC‑Grid
+            ```powershell
+            pip install -e .
+            ```
+        5. Optional extras (same as above)
 
-    6. Verify
-       ```powershell
-       python -c "import wecgrid; print(wecgrid.__version__)"
-       ```
+        6. Verify
+            ```powershell
+            python -c "import wecgrid; print(wecgrid.__version__)"
+            ```
 
     === "Python venv (CMD)"
 
-    1. Clone the repo
-       ```bat
-       git clone https://github.com/acep-uaf/WEC-Grid
-       cd WEC-Grid
-       ```
-    2. Create and activate env
-       ```bat
-       py -3.9 -m venv wecgrid_env
-       .\wecgrid_env\Scripts\activate.bat
-       ```
-    3. Upgrade pip
-       ```bat
-       python -m pip install --upgrade pip
-       ```
-    4. Install WEC‑Grid
-       ```bat
-       pip install -e .
-       ```
-    5. Optional extras (same as above)
+        1. Clone the repo
+            ```bat
+            git clone https://github.com/acep-uaf/WEC-Grid
+            cd WEC-Grid
+            ```
+        2. Create and activate env
+            ```bat
+            py -3.9 -m venv wecgrid_env
+            .\wecgrid_env\Scripts\activate.bat
+            ```
+        3. Upgrade pip
+            ```bat
+            python -m pip install --upgrade pip
+            ```
+        4. Install WEC‑Grid
+            ```bat
+            pip install -e .
+            ```
+        5. Optional extras (same as above)
 
-    6. Verify
-       ```bat
-       python -c "import wecgrid; print(wecgrid.__version__)"
-       ```
+        6. Verify
+            ```bat
+            python -c "import wecgrid; print(wecgrid.__version__)"
+            ```
 
 === "macOS"
 
     === "Conda"
 
-    1. Clone the repo
-       ```bash
-       git clone https://github.com/acep-uaf/WEC-Grid
-       cd WEC-Grid
-       ```
-    2. Create and activate env
-       ```bash
-       conda create -n wecgrid_env python=3.9
-       conda activate wecgrid_env
-       ```
-    3. Upgrade pip
-       ```bash
-       python -m pip install --upgrade pip
-       ```
-    4. Install WEC‑Grid
-       ```bash
-       pip install -e .
-       ```
-    5. Optional extras
-       ```bash
-       pip install -e .[dev]
-       pytest -q
-       ```
-    6. Verify
-       ```bash
-       python -c "import wecgrid; print(wecgrid.__version__)"
-       ```
+        1. Clone the repo
+            ```bash
+            git clone https://github.com/acep-uaf/WEC-Grid
+            cd WEC-Grid
+            ```
+        2. Create and activate env
+            ```bash
+            conda create -n wecgrid_env python=3.9
+            conda activate wecgrid_env
+            ```
+        3. Upgrade pip
+            ```bash
+            python -m pip install --upgrade pip
+            ```
+        4. Install WEC‑Grid
+            ```bash
+            pip install -e .
+            ```
+        5. Optional extras
+            ```bash
+            pip install -e .[dev]
+            pytest -q
+            ```
+        6. Verify
+            ```bash
+            python -c "import wecgrid; print(wecgrid.__version__)"
+            ```
 
     === "Python venv"
 
-    1. Clone the repo
-       ```bash
-       git clone https://github.com/acep-uaf/WEC-Grid
-       cd WEC-Grid
-       ```
-    2. Create and activate env
-       ```bash
-       python3 -m venv wecgrid_env
-       source wecgrid_env/bin/activate
-       ```
-    3. Upgrade pip
-       ```bash
-       python -m pip install --upgrade pip
-       ```
-    4. Install WEC‑Grid
-       ```bash
-       pip install -e .
-       ```
-    5. Optional extras (same as above)
+        1. Clone the repo
+            ```bash
+            git clone https://github.com/acep-uaf/WEC-Grid
+            cd WEC-Grid
+            ```
+        2. Create and activate env
+            ```bash
+            python3 -m venv wecgrid_env
+            source wecgrid_env/bin/activate
+            ```
+        3. Upgrade pip
+            ```bash
+            python -m pip install --upgrade pip
+            ```
+        4. Install WEC‑Grid
+            ```bash
+            pip install -e .
+            ```
+        5. Optional extras (same as above)
 
-    6. Verify
-       ```bash
-       python -c "import wecgrid; print(wecgrid.__version__)"
-       ```
+        6. Verify
+            ```bash
+            python -c "import wecgrid; print(wecgrid.__version__)"
+            ```
 
 === "Linux"
 
     === "Conda"
 
-    1. Clone the repo
-       ```bash
-       git clone https://github.com/acep-uaf/WEC-Grid
-       cd WEC-Grid
-       ```
-    2. Create and activate env
-       ```bash
-       conda create -n wecgrid_env python=3.9
-       conda activate wecgrid_env
-       ```
-    3. Upgrade pip
-       ```bash
-       python -m pip install --upgrade pip
-       ```
-    4. Install WEC‑Grid
-       ```bash
-       pip install -e .
-       ```
-    5. Optional extras
-       ```bash
-       pip install -e .[dev]
-       pytest -q
-       ```
-    6. Verify
-       ```bash
-       python -c "import wecgrid; print(wecgrid.__version__)"
-       ```
+        1. Clone the repo
+            ```bash
+            git clone https://github.com/acep-uaf/WEC-Grid
+            cd WEC-Grid
+            ```
+        2. Create and activate env
+            ```bash
+            conda create -n wecgrid_env python=3.9
+            conda activate wecgrid_env
+            ```
+        3. Upgrade pip
+            ```bash
+            python -m pip install --upgrade pip
+            ```
+        4. Install WEC‑Grid
+            ```bash
+            pip install -e .
+            ```
+        5. Optional extras
+            ```bash
+            pip install -e .[dev]
+            pytest -q
+            ```
+        6. Verify
+            ```bash
+            python -c "import wecgrid; print(wecgrid.__version__)"
+            ```
 
     === "Python venv"
 
-    1. Install venv if needed
-       ```bash
-       sudo apt-get update && sudo apt-get install -y python3-venv
-       ```
-    2. Clone the repo
-       ```bash
-       git clone https://github.com/acep-uaf/WEC-Grid
-       cd WEC-Grid
-       ```
-    3. Create and activate env
-       ```bash
-       python3 -m venv wecgrid_env
-       source wecgrid_env/bin/activate
-       ```
-    4. Upgrade pip
-       ```bash
-       python -m pip install --upgrade pip
-       ```
-    5. Install WEC‑Grid
-       ```bash
-       pip install -e .
-       ```
-    6. Optional extras (same as above)
+        1. Install venv if needed
+            ```bash
+            sudo apt-get update && sudo apt-get install -y python3-venv
+            ```
+        2. Clone the repo
+            ```bash
+            git clone https://github.com/acep-uaf/WEC-Grid
+            cd WEC-Grid
+            ```
+        3. Create and activate env
+            ```bash
+            python3 -m venv wecgrid_env
+            source wecgrid_env/bin/activate
+            ```
+        4. Upgrade pip
+            ```bash
+            python -m pip install --upgrade pip
+            ```
+        5. Install WEC‑Grid
+            ```bash
+            pip install -e .
+            ```
+        6. Optional extras (same as above)
 
-    7. Verify
-       ```bash
-       python -c "import wecgrid; print(wecgrid.__version__)"
-       ```
+        7. Verify
+            ```bash
+            python -c "import wecgrid; print(wecgrid.__version__)"
+            ```
 
 Notes
 - If `python=3.9` is unavailable on your default conda channels, try: `conda create -n wecgrid_env -c conda-forge python=3.9`.
 - On Linux, using conda is often simpler for scientific Python stacks with native libs.
 
----
+
 
 ## WEC‑Sim / MATLAB Setup (Optional)
 

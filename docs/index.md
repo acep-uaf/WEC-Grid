@@ -1,7 +1,14 @@
 <!-- # WEC-Grid -->
 
-<div style="clear: both; text-align: center;">
+<!-- <div style="clear: both; text-align: center;">
   <img src="assets/WEC-Grid_logo.png" alt="WEC-Grid Logo" style="width: 100%; height: auto;">
+</div> -->
+
+<div style="clear: both; text-align: center;">
+  <img src="assets/WEC-Grid_logo.png"
+       alt="WEC-Grid Logo"
+       class="invert-on-dark"
+       style="width: 100%; height: auto;">
 </div>
 
 **WEC-Grid** is an open-source software framework that integrates **Wave Energy Converter (WEC)** models into power system simulations. It enables researchers and practitioners to perform preliminary integration studies of renewable wave energy with grid steady-state analysis.

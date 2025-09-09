@@ -51,4 +51,3 @@ At a high level, the model includes:
 - **Grid Controller:** manages power injection into the grid.  
 
 This structure enables realistic studies of how wave energy devices interact with microgrids, while remaining flexible for different control strategies and system designs.
-

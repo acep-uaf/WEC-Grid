@@ -141,7 +141,7 @@ This integration allows seamless execution of detailed WEC-Sim physics while mai
 - **MATLAB:** R2021b+ with valid license for WEC-Sim execution
 - **WEC-Sim:** Latest version from [WEC-Sim GitHub](https://github.com/WEC-Sim/WEC-Sim)
 - **MATLAB Python API:** Installed for engine integration
-- **Python:** 3.8+ with matplotlib for result visualization
+- **Python:** 3.7+ (3.9 recommended) with matplotlib for result visualization
 
 ---
 
