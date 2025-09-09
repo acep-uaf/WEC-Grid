@@ -13,7 +13,7 @@ At the highest level, **WEC-Grid** employs a **bridge pattern**:
 - **WEC Farm and Devices**: abstractions for configuring farms of WEC units, mapping them into the grid.
 
 <!-- <div style="clear: both; text-align: center;">
-  <img src="../assets/WEC_Grid_workflow.png" alt="Workflow Diagram" style="width: 100%; height: auto;">
+  <img src="assets/WEC_Grid_workflow.png" alt="Workflow Diagram" style="width: 100%; height: auto;">
 </div> -->
 
 ---

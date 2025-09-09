@@ -47,7 +47,7 @@ The **WECGridDB** provides the central data management system for WEC-Grid simul
 ## Database Schema
 
 <div style="clear: both; text-align: center;">
-  <img src="../../assets/database_diagram.png" alt="Database Table Diagram" style="width: 100%; height: auto;">
+  <img src="../assets/database_diagram.png" alt="Database Table Diagram" style="width: 100%; height: auto;">
 </div>
 
 ### Metadata Tables

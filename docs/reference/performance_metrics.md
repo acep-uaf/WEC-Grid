@@ -35,7 +35,7 @@ Simulation time grew approximately **linearly** with the number of buses for bot
 *What this means*: Doubling the number of buses roughly doubles the runtime. Both solvers behave predictably, which is important for planning large-scale studies.
 
 <div style="clear: both; text-align: center;">
-  <img src="assets/grid_scaling.png" alt="Simulation time vs. grid size" style="width: 100%; height: auto;">
+  <img src="../assets/grid_scaling.png" alt="Simulation time vs. grid size" style="width: 100%; height: auto;">
 </div>
 
 ---
@@ -49,7 +49,7 @@ For the IEEE 39-bus system, simulations were run with 1–3 synthetic WEC farms:
 *What this means*: Adding WEC farms increases runtime slightly, but overhead remains modest. The results show that scaling up the number of WECs is computationally feasible.
 
 <div style="clear: both; text-align: center;">
-  <img src="assets/wec_scaling.png" alt="Simulation time vs. number of WEC farms" style="width: 100%; height: auto;">
+  <img src="../assets/wec_scaling.png" alt="Simulation time vs. number of WEC farms" style="width: 100%; height: auto;">
 </div>
 
 ---

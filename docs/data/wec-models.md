@@ -29,14 +29,14 @@ WEC-Grid includes two pre-configured wave energy converter models for simulation
 ### Wave-to-Wire Model Architecture
 
 <!-- <div style="clear: both; text-align: center;">
-  <img src="../../assets/lupa_simulink.png" alt="LUPA Wave-to-Wire Model Architecture" style="width: 100%; height: auto;">
+  <img src="../assets/lupa_simulink.png" alt="LUPA Wave-to-Wire Model Architecture" style="width: 100%; height: auto;">
   <p style="font-style: italic; margin-top: 8px; color: #666;">
     Figure 1: Complete wave-to-wire model architecture showing the integration of WEC-Sim hydrodynamic simulation with power take-off systems, electrical conversion, and grid interface components.
   </p>
 </div> -->
 
 <figure markdown="span">
-  ![LUPA Wave-to-Wire Model Architecture](../../assets/lupa_simulink.png){ width="300" }
+  ![LUPA Wave-to-Wire Model Architecture](../assets/lupa_simulink.png){ width="300" }
   <figcaption>Complete wave-to-wire model architecture showing the integration of WEC-Sim hydrodynamic simulation with power take-off systems, electrical conversion, and grid interface components.</figcaption>
 </figure>
 
