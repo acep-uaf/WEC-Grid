@@ -671,7 +671,8 @@ class WECGridPlot:
         grid_component: str,
         name: List[str],
         parameter: str,
-        annotate: bool = True,
+        annotate: bool = False,
+        dataframe: bool = False,
         print_metrics: bool = True,
     ):
         """Compare a component parameter across PSS®E and PyPSA.
@@ -681,13 +682,15 @@ class WECGridPlot:
             name: Component name(s) to compare.
             parameter: Parameter to compare (e.g., "p", "v_mag").
             annotate: If True, overlay metrics text on the figure.
+            dataframe: If True, return only a metrics DataFrame and do not show the plot.
             print_metrics: If True, print metrics to stdout.
 
         Returns:
-            (Figure, Axes, DataFrame): Matplotlib figure/axes and a DataFrame
-            with columns ["component", "rmse", "mae", "max_abs_err",
-            "mape_pct", "nrmse_mean", "nrmse_range", "r", "n"]. The
-            DataFrame is None if metrics cannot be computed.
+            - If `dataframe` is False (default): `(Figure, Axes)` for the comparison plot.
+            - If `dataframe` is True: a pandas `DataFrame` with columns
+              ["component", "rmse", "mae", "max_abs_err", "mape_pct",
+              "nrmse_mean", "nrmse_range", "r", "n"]. Returns `None` if
+              metrics cannot be computed.
         """
         # Check for available software data
         available_software = []
@@ -701,7 +704,7 @@ class WECGridPlot:
                 f"Available: {available_software}. Use add_grid() to add GridState objects "
                 f"or ensure both 'psse' and 'pypsa' are loaded in the engine."
             )
-            return None, None, None
+            return None if dataframe else (None, None)
 
         fig, ax = plt.subplots(figsize=(12, 6))
 
@@ -890,8 +893,12 @@ class WECGridPlot:
                     s1 = df_psse[col]
                     s2 = df_pypsa[col]
                     mask = s1.notna() & s2.notna()
-                    s1v = s1[mask].values
-                    s2v = s2[mask].values
+                    # Coerce to numeric and drop any non-numeric remnants
+                    s1c = pd.to_numeric(s1[mask], errors="coerce")
+                    s2c = pd.to_numeric(s2[mask], errors="coerce")
+                    mask2 = s1c.notna() & s2c.notna()
+                    s1v = s1c[mask2].to_numpy(dtype=float).ravel()
+                    s2v = s2c[mask2].to_numpy(dtype=float).ravel()
                     if len(s1v) == 0:
                         rmse = np.nan
                         mae = np.nan
@@ -924,10 +931,19 @@ class WECGridPlot:
                             mape_pct = float(100.0 * np.mean(np.abs(err[nonzero] / s1v[nonzero])))
                         else:
                             mape_pct = np.nan
-                        if len(s1v) < 2 or np.std(s1v) == 0 or np.std(s2v) == 0:
+                        # Pearson correlation (manual) with ddof=1
+                        if len(s1v) < 2:
                             corr = np.nan
                         else:
-                            corr = float(np.corrcoef(s1v, s2v)[0, 1])
+                            sx = float(np.std(s1v, ddof=1))
+                            sy = float(np.std(s2v, ddof=1))
+                            if sx <= eps or sy <= eps:
+                                corr = np.nan
+                            else:
+                                xm = float(np.mean(s1v))
+                                ym = float(np.mean(s2v))
+                                cov = float(np.sum((s1v - xm) * (s2v - ym)) / (len(s1v) - 1))
+                                corr = float(cov / (sx * sy))
                         n = int(len(s1v))
 
                     # Prefer PSSE friendly name, then PYPSA, else the key
@@ -1008,5 +1024,10 @@ class WECGridPlot:
             pass  # Fall back to default formatting if anything goes wrong
 
         plt.tight_layout()
-        plt.show()
-        return fig, ax, metrics_df
+        # Return depending on 'dataframe' flag
+        if dataframe:
+            # Do not display the figure when only metrics are requested
+            return metrics_df
+        else:
+            plt.show()
+            return fig, ax

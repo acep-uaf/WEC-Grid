@@ -254,7 +254,7 @@ class WECSimRunner:
 
         plt.show()
 
-    def __call__(
+    def simulate(
         self,
         model_path: str,
         sim_length: int = 3600 * 24,  # 24 hours

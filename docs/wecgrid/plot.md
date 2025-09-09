@@ -66,12 +66,24 @@ fig, ax = engine.plot.gen(software="pypsa", parameter="p", gen=["WEC_Farm_1"])
 ```python
 # Compare PSS®E vs PyPSA bus voltages
 plotter = WECGridPlot(engine)
-fig, ax, metrics = plotter.compare_modelers(
+fig, ax = plotter.compare_modelers(
     grid_component="bus",
     name=["Bus_1", "Bus_5"],
     parameter="v_mag",
-    annotate=True,         # overlay metrics on figure
+    # annotate=False,      # default: do not overlay metrics on figure
     print_metrics=True,    # print metrics to console
+)
+```
+
+To get only the metrics DataFrame (and skip showing the figure):
+
+```python
+metrics = plotter.compare_modelers(
+    grid_component="bus",
+    name=["Bus_1", "Bus_5"],
+    parameter="v_mag",
+    dataframe=True,        # return DataFrame, do not show plot
+    print_metrics=False,   # optional: silence console output
 )
 print(metrics)
 ```

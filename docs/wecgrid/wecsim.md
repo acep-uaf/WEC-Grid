@@ -61,7 +61,7 @@ MATLAB Engine → Model Directory → Set Parameters → w2gSim() → Results �
     - `set_wec_sim_path()` — Configure WEC-Sim installation location
 
 - **Simulation Control**
-    - `__call__()` — Execute complete WEC device simulation with parameters
+    - `simulate()` — Execute complete WEC device simulation with parameters
     - Wave parameters: height [m], period [s], spectrum type, random seed
     - Simulation parameters: duration [s], time step [s], model path
 
@@ -225,3 +225,125 @@ wec_sim_id = wecsim(
 - Reduce simulation length for testing workflows
 - Increase time step for faster execution (trade-off with accuracy)
 - Use smaller wave heights to avoid numerical instabilities
+
+### Example Run
+
+elow is an example of running a full 24 wec simulation of the RM3 wave energy model.
+
+# Run WEC-Sim simulation of the RM3 wave energy model 
+
+```python 
+
+runner.wecsim(
+    model_path="./wec/RM3",
+    sim_length=3600 * 24,  # 24 hours in seconds
+    delta_time=0.1,
+    spectrum_type='PM',
+    wave_class='irregular',
+    wave_height=2.5,
+    wave_period=8.0,
+    wave_seed = random.randint(1, 100),
+)
+
+```
+```bash
+
+⠀              WEC-SIM⠀⠀⠀⠀     ⣠⣴⣶⠾⠿⠿⠯⣷⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⣾⠛⠁⠀⠀⠀⠀⠀⠀⠈⢻⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⠿⠁⠀⠀⠀⢀⣤⣾⣟⣛⣛⣶⣬⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⠟⠃⠀⠀⠀⠀⠀⣾⣿⠟⠉⠉⠉⠉⠛⠿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⡟⠋⠀⠀⠀⠀⠀⠀⠀⣿⡏⣤⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠀⣠⡿⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⣷⡍⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣤⣤⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⣠⣼⡏⠀⠀           ⠈⠙⠷⣤⣤⣠⣤⣤⡤⡶⣶⢿⠟⠹⠿⠄⣿⣿⠏⠀⣀⣤⡦⠀⠀⠀⠀⣀⡄
+            ⢀⣄⣠⣶⣿⠏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠓⠚⠋⠉⠀⠀⠀⠀⠀⠀⠈⠛⡛⡻⠿⠿⠙⠓⢒⣺⡿⠋⠁
+            ⠉⠉⠉⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠁⠀
+            
+Starting MATLAB Engine... MATLAB engine started.
+Adding WEC-SIM to path... WEC-SIM path added.
+Starting WEC-SIM simulation...
+	 Model: RM3
+	 Model Path: ./wec/RM3
+	 Simulation Length: 86400 seconds
+	 Time Step: 0.1 seconds
+	 Wave class: irregular
+	 Wave Height: 2.5 m
+	 Wave Period: 8.0 s
+
+simulation complete... writing to database at 
+	c:\Users\alexb\research\WEC-GRID\examples\WECGrid.db
+WEC-SIM complete: model = RM3, wec_sim_id = 1, duration = 86400s
+MATLAB Output:
+==========
+WEC-Sim: An open-source code for simulating wave energy converters
+Version: 5.0.1
+
+Initializing the Simulation Class...
+	Case Dir: C:\Users\alexb\research\WEC-GRID\examples\wec\RM3 
+
+WEC-Sim Input From Standard wecSimInputFile.m Of Case Directory... 
+WEC-Sim: An open-source code for simulating wave energy converters
+Version: 5.0.1
+
+Initializing the Simulation Class...
+	Case Dir: C:\Users\alexb\research\WEC-GRID\examples\wec\RM3 
+Elapsed time is 0.399332 seconds.
+
+WEC-Sim Pre-processing ...   
+	Infinite water depth specified in BEM and "waves.waterDepth" not specified in input file.
+Set water depth to 200m for visualization.
+Elapsed time is 24.918356 seconds.
+
+WEC-Sim Simulation Settings:
+	Start Time                     (sec) = 0
+	End Time                       (sec) = 86400
+	Time Step Size                 (sec) = 0.1
+	Ramp Function Time             (sec) = 0
+	Convolution Integral Interval  (sec) = 60
+	 Number of Time Steps     = 864000 
+
+Wave Environment: 
+	Wave Type                            = Irregular Waves (Predefined Random Phase)
+	Spectrum Type                        = Pierson-Moskowitz  
+	Significant Wave Height, Hs      (m) = 2.5
+	Peak Wave Period, Tp           (sec) = 8
+
+List of Body: Number of Bodies = 2 
+
+	***** Body Number 1, Name: float *****
+	Body CG                          (m) = [0,0,-0.72]
+	Body Mass                       (kg) = 725834 
+	Body Diagonal MOI              (kgm2)= [2.09073E+07,2.13061E+07,3.70855E+07]
+
+	***** Body Number 2, Name: spar *****
+	Body CG                          (m) = [0,0,-21.29]
+	Body Mass                       (kg) = 886691 
+	Body Diagonal MOI              (kgm2)= [9.44196E+07,9.44071E+07,2.85422E+07]
+
+List of PTO(s): Number of PTOs = 1 
+
+	***** PTO Name: PTO1 *****
+	PTO Stiffness           (N/m;Nm/rad) = 0
+	PTO Damping           (Ns/m;Nsm/rad) = 0
+
+List of Constraint(s): Number of Constraints = 1 
+
+	***** Constraint Name: Constraint1 *****
+
+
+Simulating the WEC device defined in the SimMechanics model C:\Users\alexb\research\WEC-GRID\examples\wec\RM3\W2G_ss_RM3.slx...   
+Elapsed time is 5.154023 seconds.
+Elapsed time is 802.377574 seconds.
+
+Post-processing and saving...   
+Elapsed time is 8.199315 seconds.
+Inserting simulation metadata...
+  model_type: RM3 (class: char)
+  wave_spectrum: PM (class: char)
+  wave_class: irregular (class: char)
+  sim_hash: RM3_2.5m_8.0s_94 (class: char)
+WEC-Sim data stored: wec_sim_id = 1, 864001 time points
+
+==========
+MATLAB engine stopped.
+
+```
