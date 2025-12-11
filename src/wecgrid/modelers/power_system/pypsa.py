@@ -98,6 +98,7 @@ class PyPSAModeler(PowerSystemModeler):
                 # === Power Flow Solution ===
                 pf_start = time.time()
                 results = self.network.pf()
+                #results = self.network.lopf()
                 pf_time = time.time() - pf_start
 
         except Exception as e:
@@ -663,7 +664,11 @@ class PyPSAModeler(PowerSystemModeler):
                 snap_start = time.time()
                 self.take_snapshot(timestamp=snapshot)
                 self.report.add_snapshot_data(time.time() - snap_start)
+                # Compute and store health metrics for this timestep
+                self.compute_health_metrics(timestamp=snapshot, converged=True, network=self.network)
             else:
+                # Still compute metrics even on failure to track convergence issues
+                self.compute_health_metrics(timestamp=snapshot, converged=False, network=self.network)
                 raise Exception(f"Powerflow failed at snapshot {snapshot}")
 
             self.report.add_iteration_time(time.time() - iter_start)
