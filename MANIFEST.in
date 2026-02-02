@@ -1,6 +1,6 @@
 include README.md
 include LICENSE
 global-exclude *.pyc
-recursive-include src/wecgrid/util *.json
-recursive-include src/wecgrid/modelers/wec_sim *.json
+recursive-include src/marinegrid/util *.json
+recursive-include src/marinegrid/modeler/wecsim *.json
 

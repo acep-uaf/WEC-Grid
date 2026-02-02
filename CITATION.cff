@@ -1,8 +1,8 @@
-title: WEC-Grid
+title: Marine-Grid
 authors:
   - family-names: Barajas-Ritchie
     given-names: Alexander
-version: 1.0.0
+version: 2.0.0
 license: MIT
-repository-code: "https://github.com/acep-uaf/WEC-Grid"
-date-released: 2025-08-26
+repository-code: "https://github.com/acep-uaf/Marine-Grid"
+date-released: 2026-02-02

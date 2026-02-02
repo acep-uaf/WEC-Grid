@@ -3,23 +3,22 @@ requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "wecgrid"
-version = "1.0.0"
-description = "WEC-Grid: A tool for integrating Wave Energy Converter models into power system simulations"
+name = "marinegrid"
+version = "2.0.0"
+description = "Marine-Grid: A tool for integrating marine renewable energy models into power system simulations"
 readme = "README.md"
 requires-python = ">=3.7"
 authors = [{name = "Alexander Barajas-Ritchie", email = "barajale@oregonstate.edu"}]
 license = {file = "LICENSE"}
 dependencies = [
-    "numpy==1.21.6",
-    "scipy==1.7.3",
-    "pandas==1.3.5",
-    "matplotlib==3.5.3",
-    "matplotlib-inline==0.1.6",
-    "pypsa==0.20.1",
-    "grg-pssedata==0.1.4",
-    "networkx==2.6.3",
-    "pyomo==6.4.2",
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "pypsa",
+    "grg-pssedata",
+    "networkx",
+    "pyomo",
     "tqdm",
     "jupyter",
     "mkdocstrings-python"
@@ -35,17 +34,13 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 
-[project.optional-dependencies]
-psse = [
-    "pssepath==0.3.0",
-]
 dev = [
     "pytest>=6.0",
     "pytest-cov",
 ]
 
 [project.urls]
-Homepage = "https://github.com/acep-uaf/WEC-GRID"
+Homepage = "https://github.com/acep-uaf/Marine-Grid"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -55,7 +50,7 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-wecgrid = [
+marinegrid = [
     "util/*.json",
-    "modelers/wec_sim/*.json",
+    "modeler/wecsim/*.json",
 ]
