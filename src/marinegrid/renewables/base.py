@@ -11,10 +11,6 @@ from typing import Optional
 # Third-party
 import pandas as pd
 
-
-# Local
-
-
 class RenewableDevice(ABC):
     """
     Abstract base class for all renewable energy devices.

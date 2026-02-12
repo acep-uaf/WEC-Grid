@@ -6,7 +6,7 @@ File: src/marinegrid/renewables/__init__.py
 
 from .base import RenewableDevice
 from .farm import RenewableEnergyFarm
-from .wec import WECDevice
+from .wec import WECDevice, WECFarm
 from .wind import WindDevice
 from .solar import SolarDevice
 from .tidal import TidalDevice
@@ -16,6 +16,7 @@ __all__ = [
     "RenewableDevice",
     "RenewableEnergyFarm",
     "WECDevice",
+    "WECFarm",
     "WindDevice",
     "SolarDevice",
     "TidalDevice",

@@ -7,7 +7,7 @@ File: src/marinegrid/modeler/powersystem/base.py
 # Standard library
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 
 # Third-party
 import pandas as pd
@@ -16,87 +16,8 @@ import pandas as pd
 # Local
 from ...util.grid_instance import GridInstance
 from ...util.grid_data import GridData
-
-
-@dataclass
-class SolveReport:
-    """
-    Performance tracking for simulation runs.
-
-    Attributes:
-        simulation_time: Total wall time in seconds.
-        case: Case name/identifier.
-        backend: Backend name (e.g., "pypsa", "pandapower").
-        snapshots: List of snapshot timestamps.
-        converged: Per-step convergence flags.
-        solve_time: Power flow solve time per step.
-        solve_iterations: Solver iterations per step.
-        messages: Solver status messages per step.
-    """
-
-    simulation_time: float = 0.0
-    case: str = ""
-    backend: str = ""
-    snapshots: List = field(default_factory=list)
-    converged: List[bool] = field(default_factory=list)
-    solve_time: List[float] = field(default_factory=list)
-    solve_iterations: List[int] = field(default_factory=list)
-    messages: List[str] = field(default_factory=list)
-
-    def __repr__(self) -> str:
-        """Return a one-line summary of solve status and timing."""
-        if not self.converged:
-            status = "No runs"
-        elif all(self.converged):
-            status = "Converged"
-        else:
-            failed = sum(1 for c in self.converged if not c)
-            status = f"Failed ({failed}/{len(self.converged)})"
-
-        return (
-            f"SolveReport: {status}, "
-            f"steps={len(self.snapshots)}, "
-            f"time={self.simulation_time:.2f}s"
-        )
-
-    def add_solve_result(
-        self,
-        snapshot,
-        converged: bool,
-        solve_time: float = 0.0,
-        iterations: int = 0,
-        message: str = "",
-    ):
-        """
-        Record solve result for a simulation step.
-
-        Args:
-            snapshot: Timestamp for this step.
-            converged: Whether power flow converged.
-            solve_time: Time to solve in seconds.
-            iterations: Number of solver iterations.
-            message: Solver status message.
-        """
-        self.snapshots.append(snapshot)
-        self.converged.append(converged)
-        self.solve_time.append(solve_time)
-        self.solve_iterations.append(iterations)
-        self.messages.append(message)
-
-    def to_dataframe(self) -> pd.DataFrame:
-        """
-        Convert report to DataFrame for analysis.
-
-        Returns:
-            DataFrame with columns for each metric.
-        """
-        return pd.DataFrame({
-            "snapshot": self.snapshots,
-            "converged": self.converged,
-            "solve_time": self.solve_time,
-            "iterations": self.solve_iterations,
-            "message": self.messages,
-        })
+# if TYPE_CHECKING:
+#     from ...util.time import Time
 
 
 class PowerSystemModeler(ABC):
@@ -113,6 +34,7 @@ class PowerSystemModeler(ABC):
         report: SolveReport for performance tracking.
         backend: String identifier for the backend (e.g., "pypsa").
         sbase: System base power in MVA.
+        time: Reference to the central Time object for simulation timeline.
     """
 
     def __init__(self, backend: str):
@@ -123,12 +45,31 @@ class PowerSystemModeler(ABC):
             backend: Name of the power system backend being used.
         """
         # Class objects
-        self.data = GridData()
-        self.report = SolveReport(backend=backend)
+        self._data = GridData()
+        #self.report = SolveReport(backend=backend) 
+        self._time: Optional["Time"] = None
+        self.api: Any = None # API connection object
 
         # Class attributes
         self.backend = backend
-        self.sbase: Optional[float] = None
+        self.sbase: float | None = None
+
+    @property
+    def time(self) -> Optional["Time"]:
+        """Get the central Time object for simulation timeline."""
+        return self._time
+
+    def set_time(self, time: "Time") -> None:
+        """
+        Set the central Time object for simulation timeline.
+
+        Args:
+            time: Time object to use as the simulation timeline.
+
+        Raises:
+            TypeError: If time is not a Time instance.
+        """
+        self._time = time
 
     def __repr__(self) -> str:
         """Return a formatted summary of the modeler state."""
@@ -151,10 +92,17 @@ class PowerSystemModeler(ABC):
         # Sbase info
         sbase_str = f"{self.sbase} MVA" if self.sbase else "Not set"
 
+        # Time info
+        if self._time is not None:
+            time_str = f"{len(self._time)} steps @ {self._time.freq}"
+        else:
+            time_str = "Not set"
+
         return (
             f"{class_name}:\n"
             f"├─ Backend: {self.backend}\n"
             f"├─ System Base: {sbase_str}\n"
+            f"├─ Time: {time_str}\n"
             f"├─ Components: {components}\n"
             f"├─ History: {history_count} snapshots\n"
             f"└─ {self.report}"
@@ -164,40 +112,40 @@ class PowerSystemModeler(ABC):
     # Convenience properties for current state
     # -------------------------------------------------------------------------
 
-    @property
-    def bus(self) -> Optional[pd.DataFrame]:
-        """Current bus state DataFrame."""
-        if self.data.currentState is None:
-            return None
-        return self.data.currentState.bus
+    # @property
+    # def bus(self) -> pd.DataFrame:
+    #     """Current bus state DataFrame."""
+    #     if self._data.currentState is None:
+    #          raise ValueError("bus data unavailble")
+    #     return self._data.currentState.bus
 
-    @property
-    def gen(self) -> Optional[pd.DataFrame]:
-        """Current generator state DataFrame."""
-        if self.data.currentState is None:
-            return None
-        return self.data.currentState.gen
+    # @property
+    # def gen(self) -> Optional[pd.DataFrame]:
+    #     """Current generator state DataFrame."""
+    #     if self._data.currentState is None:
+    #         return None
+    #     return self._data.currentState.gen
 
-    @property
-    def line(self) -> Optional[pd.DataFrame]:
-        """Current line state DataFrame."""
-        if self.data.currentState is None:
-            return None
-        return self.data.currentState.line
+    # @property
+    # def line(self) -> Optional[pd.DataFrame]:
+    #     """Current line state DataFrame."""
+    #     if self._data.currentState is None:
+    #         return None
+    #     return self._data.currentState.line
 
-    @property
-    def load(self) -> Optional[pd.DataFrame]:
-        """Current load state DataFrame."""
-        if self.data.currentState is None:
-            return None
-        return self.data.currentState.load
+    # @property
+    # def load(self) -> Optional[pd.DataFrame]:
+    #     """Current load state DataFrame."""
+    #     if self._data.currentState is None:
+    #         return None
+    #     return self._data.currentState.load
 
-    @property
-    def transformer(self) -> Optional[pd.DataFrame]:
-        """Current transformer state DataFrame."""
-        if self.data.currentState is None:
-            return None
-        return self.data.currentState.transformer
+    # @property
+    # def transformer(self) -> Optional[pd.DataFrame]:
+    #     """Current transformer state DataFrame."""
+    #     if self._data.currentState is None:
+    #         return None
+    #     return self._data.currentState.transformer
 
     # -------------------------------------------------------------------------
     # Abstract methods - must be implemented by subclasses
@@ -229,22 +177,36 @@ class PowerSystemModeler(ABC):
             True if the solution converged, False otherwise.
         """
         pass
+    
+    
 
-    @abstractmethod
-    def simulate(self, snapshots: Optional[pd.DatetimeIndex] = None) -> bool:
-        """
-        Run time-series power flow simulation.
+    # @abstractmethod
+    # def simulate(
+    #     self,
+    #     gen_schedules: Optional[Dict[str, Union[pd.Series, pd.DataFrame]]] = None,
+    #     load_schedules: Optional[Dict[str, Union[pd.Series, pd.DataFrame]]] = None,
+    # ) -> bool:
+    #     """
+    #     Run time-series power flow simulation.
 
-        Executes power flow calculations across all snapshots,
-        updating the grid state at each time step and capturing results.
+    #     Executes power flow calculations across all snapshots from the
+    #     Time object, updating the grid state at each time step and
+    #     capturing results to GridData.
 
-        Args:
-            snapshots: Time points to simulate. If None, uses single snapshot.
+    #     Uses self.time.snapshots as the simulation timeline. If no Time
+    #     object is set, runs a single snapshot simulation.
 
-        Returns:
-            True if simulation completed successfully, False otherwise.
-        """
-        pass
+    #     Args:
+    #         gen_schedules: Dictionary mapping generator names/IDs to time series.
+    #             Values can be Series (p only) or DataFrame (p, q columns).
+    #             Power values in per-unit on system MVA base.
+    #         load_schedules: Dictionary mapping load names/IDs to time series.
+    #             Same format as gen_schedules.
+
+    #     Returns:
+    #         True if simulation completed successfully, False otherwise.
+    #     """
+    #     pass
 
     @abstractmethod
     def getState(self, timestamp: pd.Timestamp) -> bool:
@@ -382,5 +344,212 @@ class PowerSystemModeler(ABC):
 
         Returns:
             True if update succeeded, False otherwise.
+        """
+        pass
+
+    # -------------------------------------------------------------------------
+    # Component add/remove - abstract methods
+    # -------------------------------------------------------------------------
+
+    @abstractmethod
+    def add_bus(
+        self,
+        name: str,
+        v_nom: float,
+        **kwargs,
+    ) -> bool:
+        """
+        Add a bus to the network.
+
+        Args:
+            name: Unique bus identifier/name.
+            v_nom: Nominal voltage in kV.
+            **kwargs: Additional backend-specific parameters.
+                Common options:
+                - v_mag_pu_set: Voltage magnitude setpoint [pu]
+                - v_mag_pu_min: Minimum voltage [pu]
+                - v_mag_pu_max: Maximum voltage [pu]
+                - control: Control type ('PQ', 'PV', 'Slack')
+
+        Returns:
+            True if bus was added successfully, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def remove_bus(self, name: str) -> bool:
+        """
+        Remove a bus from the network.
+
+        Also removes all components connected to this bus (generators,
+        loads, lines, transformers).
+
+        Args:
+            name: Bus identifier/name to remove.
+
+        Returns:
+            True if bus was removed successfully, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def add_generator(
+        self,
+        name: str,
+        bus: str,
+        p_nom: float,
+        **kwargs,
+    ) -> bool:
+        """
+        Add a generator to the network.
+
+        Args:
+            name: Unique generator identifier/name.
+            bus: Bus name where generator connects.
+            p_nom: Nominal power capacity in MW.
+            **kwargs: Additional backend-specific parameters.
+                Common options:
+                - p_set: Active power setpoint [MW]
+                - q_set: Reactive power setpoint [MVAr]
+                - p_min: Minimum active power [MW]
+                - p_max: Maximum active power [MW]
+                - control: Control mode ('PQ', 'PV', 'Slack')
+                - carrier: Energy carrier type (e.g., 'AC', 'wave', 'wind')
+
+        Returns:
+            True if generator was added successfully, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def remove_generator(self, name: str) -> bool:
+        """
+        Remove a generator from the network.
+
+        Args:
+            name: Generator identifier/name to remove.
+
+        Returns:
+            True if generator was removed successfully, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def add_load(
+        self,
+        name: str,
+        bus: str,
+        p_set: float,
+        **kwargs,
+    ) -> bool:
+        """
+        Add a load to the network.
+
+        Args:
+            name: Unique load identifier/name.
+            bus: Bus name where load connects.
+            p_set: Active power consumption in MW.
+            **kwargs: Additional backend-specific parameters.
+                Common options:
+                - q_set: Reactive power consumption [MVAr]
+
+        Returns:
+            True if load was added successfully, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def remove_load(self, name: str) -> bool:
+        """
+        Remove a load from the network.
+
+        Args:
+            name: Load identifier/name to remove.
+
+        Returns:
+            True if load was removed successfully, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def add_line(
+        self,
+        name: str,
+        bus0: str,
+        bus1: str,
+        **kwargs,
+    ) -> bool:
+        """
+        Add a transmission line to the network.
+
+        Args:
+            name: Unique line identifier/name.
+            bus0: From bus name.
+            bus1: To bus name.
+            **kwargs: Additional backend-specific parameters.
+                Common options:
+                - r: Resistance [Ohm or pu]
+                - x: Reactance [Ohm or pu]
+                - b: Susceptance [S or pu]
+                - s_nom: Thermal rating [MVA]
+                - length: Line length [km]
+
+        Returns:
+            True if line was added successfully, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def remove_line(self, name: str) -> bool:
+        """
+        Remove a transmission line from the network.
+
+        Args:
+            name: Line identifier/name to remove.
+
+        Returns:
+            True if line was removed successfully, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def add_transformer(
+        self,
+        name: str,
+        bus0: str,
+        bus1: str,
+        s_nom: float,
+        **kwargs,
+    ) -> bool:
+        """
+        Add a transformer to the network.
+
+        Args:
+            name: Unique transformer identifier/name.
+            bus0: Primary bus name.
+            bus1: Secondary bus name.
+            s_nom: Nominal apparent power rating [MVA].
+            **kwargs: Additional backend-specific parameters.
+                Common options:
+                - r: Resistance [pu]
+                - x: Reactance [pu]
+                - tap_ratio: Off-nominal tap ratio
+                - phase_shift: Phase shift angle [degrees]
+
+        Returns:
+            True if transformer was added successfully, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def remove_transformer(self, name: str) -> bool:
+        """
+        Remove a transformer from the network.
+
+        Args:
+            name: Transformer identifier/name to remove.
+
+        Returns:
+            True if transformer was removed successfully, False otherwise.
         """
         pass

@@ -12,8 +12,6 @@ import pandas as pd
 
 # Local
 from .base import RenewableDevice
-
-
 class StorageDevice(RenewableDevice):
     """
     Energy storage system with time-series power data.
@@ -25,7 +23,7 @@ class StorageDevice(RenewableDevice):
         max_discharge_rate: Maximum discharge rate in MW.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a storage device with defaults."""
         super().__init__()
         self.device_type = "Storage"

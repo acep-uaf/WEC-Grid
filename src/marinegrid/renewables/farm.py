@@ -12,8 +12,6 @@ from typing import List, Optional
 
 # Local
 from .base import RenewableDevice
-
-
 class RenewableEnergyFarm:
     """
     Collection of renewable devices connected to a single bus.
@@ -31,7 +29,7 @@ class RenewableEnergyFarm:
         bus_location: Optional[int] = None,
         size: int = 0,
         devices: Optional[List[RenewableDevice]] = None,
-    ):
+    ) -> None:
         """Initialize a renewable energy farm container."""
         self.farm_name = farm_name
         self.bus_location = bus_location

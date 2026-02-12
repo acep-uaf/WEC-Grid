@@ -6,40 +6,44 @@ File: src/marinegrid/util/convert.py
 
 # Standard library
 from pathlib import Path
+from typing import Union
 
 # Third-party
 import grg_pssedata.io as grgio
 import pypsa
 
-# Local
-
-
 class Converter:
     """Case file conversion utilities (RAW → PyPSA)."""
 
-    def __init__(self):
+    ALLOWED_EXTENSIONS = {".raw"}
+
+    def __init__(self) -> None:
         """Initialize conversion helper."""
         pass
 
-    def raw_to_pypsa(self, raw_file: str | Path) -> pypsa.Network:
+    def raw_to_pypsa(self, raw_file: Union[str, Path]) -> pypsa.Network:
         """
         Convert raw case file to PyPSA Network.
 
-        Parameters:
-            raw_file (str | Path): Path to the .raw case file.
+        Args:
+            raw_file: Path to the .raw case file.
 
         Returns:
-            pypsa.Network: Converted PyPSA Network object.
-        """
+            Converted PyPSA Network object.
 
+        Raises:
+            TypeError: If raw_file is not a str or Path.
+            FileNotFoundError: If the file does not exist.
+            ValueError: If the file extension is not .raw or is not a file.
+        """
         if not isinstance(raw_file, (str, Path)):
             raise TypeError("raw_file must be a str or pathlib.Path pointing to a .raw file")
 
         raw_file_path = Path(raw_file)
 
-        # Value checks (optional but helpful)
         if raw_file_path.suffix.lower() != ".raw":
             raise ValueError(f"raw_file must have a .raw extension, got: {raw_file_path.name}")
+
         if not raw_file_path.exists():
             raise FileNotFoundError(f"raw_file not found: {raw_file_path}")
 

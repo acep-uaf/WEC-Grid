@@ -12,8 +12,6 @@ import pandas as pd
 
 # Local
 from .base import RenewableDevice
-
-
 class SolarDevice(RenewableDevice):
     """
     Solar photovoltaic device with time-series power output.
@@ -24,7 +22,7 @@ class SolarDevice(RenewableDevice):
         azimuth: Panel azimuth angle in degrees.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a solar device with defaults."""
         super().__init__()
         self.device_type = "Solar"

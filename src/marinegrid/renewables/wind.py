@@ -12,8 +12,6 @@ import pandas as pd
 
 # Local
 from .base import RenewableDevice
-
-
 class WindDevice(RenewableDevice):
     """
     Wind turbine device with time-series power output.
@@ -24,7 +22,7 @@ class WindDevice(RenewableDevice):
         rated_speed: Rated wind speed in m/s.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a wind turbine device with defaults."""
         super().__init__()
         self.device_type = "Wind"

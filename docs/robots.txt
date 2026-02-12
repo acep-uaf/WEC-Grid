@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://acep-uaf.github.io/WEC-Grid/sitemap.xml

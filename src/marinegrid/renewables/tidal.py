@@ -12,8 +12,6 @@ import pandas as pd
 
 # Local
 from .base import RenewableDevice
-
-
 class TidalDevice(RenewableDevice):
     """
     Tidal energy converter with time-series power output.
@@ -24,7 +22,7 @@ class TidalDevice(RenewableDevice):
         depth: Installation depth in meters.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a tidal energy device with defaults."""
         super().__init__()
         self.device_type = "Tidal"
