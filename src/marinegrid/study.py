@@ -5,12 +5,7 @@ File: src/marinegrid/study.py
 """
 
 # Standard library
-#from importlib.resources import path
 from pathlib import Path
-#from typing import Optional
-
-# Third-party
-
 
 # Local
 from .tool.plot import Plot
@@ -29,7 +24,7 @@ class Study:
     analysis utilities.
 
     Attributes:
-        case_file: Path to the input case file (e.g., RAW).
+        case_path: Path to the input case file (e.g., RAW).
         case_name: Human-readable case identifier.
         time: Time manager instance.
         modeler: Unified modeler interface for managing backends.

@@ -4,9 +4,6 @@ PyPSA Modeler Module.
 File: src/marinegrid/modeler/powersystem/pypsa.py
 """
 
-# Standard library
-from typing import Dict, Optional
-
 # Third-party
 import pypsa
 import pandas as pd
@@ -40,8 +37,8 @@ class PyPSAModeler(PowerSystemModeler):
         super().__init__(backend="pypsa")
 
         # Class attributes
-        self.network: Optional[pypsa.Network] = None
-        self.sbase: Optional[float] = None
+        self.network: pypsa.Network | None = None
+        self.sbase: float | None = None
 
     def initialize(self, network: pypsa.Network) -> bool:
         """
@@ -105,7 +102,7 @@ class PyPSAModeler(PowerSystemModeler):
             message="Converged" if converged else "Did not converge",
         )
 
-    def getBusData(self) -> pd.DataFrame:
+    def get_bus_data(self) -> pd.DataFrame:
         """
         Retrieve bus data from PyPSA network.
 
@@ -180,7 +177,7 @@ class PyPSAModeler(PowerSystemModeler):
         df.index = pd.RangeIndex(start=0, stop=len(df))
         return df
     
-    def getLineData(self) -> pd.DataFrame:
+    def get_line_data(self) -> pd.DataFrame:
         """
         Retrieve transmission line data from PyPSA network.
 
@@ -291,7 +288,7 @@ class PyPSAModeler(PowerSystemModeler):
         df.index = pd.RangeIndex(start=0, stop=len(df))
         return df
     
-    def getGeneratorData(self) -> pd.DataFrame:
+    def get_generator_data(self) -> pd.DataFrame:
         """
         Retrieve generator data from PyPSA network.
 
@@ -367,7 +364,7 @@ class PyPSAModeler(PowerSystemModeler):
         df.index = pd.RangeIndex(start=0, stop=len(df))
         return df
     
-    def getLoadData(self) -> pd.DataFrame:
+    def get_load_data(self) -> pd.DataFrame:
         """
         Retrieve load data from PyPSA network.
 
@@ -436,7 +433,7 @@ class PyPSAModeler(PowerSystemModeler):
         df.index = pd.RangeIndex(start=0, stop=len(df))
         return df
     
-    def getTransformerData(self) -> pd.DataFrame:
+    def get_transformer_data(self) -> pd.DataFrame:
         """
         Retrieve transformer data from PyPSA network.
 
@@ -549,328 +546,171 @@ class PyPSAModeler(PowerSystemModeler):
         df.index = pd.RangeIndex(start=0, stop=len(df))
         return df
     
-    def updateGenerator(self, gen_data: pd.DataFrame) -> bool:
+    def update_generator(self, name: str, **kwargs) -> bool:
         """
         Update generator parameters in PyPSA network.
 
-        Updates generator setpoints and parameters. The DataFrame should contain
-        a 'gen_name' or 'gen' column to identify generators, plus columns for
-        values to update.
-
         Args:
-            gen_data: DataFrame with columns:
-                - gen_name or gen: Generator identifier (matches PyPSA index)
-                - p_set: Active power setpoint [per-unit] (optional)
-                - q_set: Reactive power setpoint [per-unit] (optional)
-                - p_nom: Nominal power [MW] (optional)
-                - status: Generator status 0/1 (optional)
+            name: Generator identifier (matches PyPSA index).
+            **kwargs: Parameters to update. Common options:
+                - p_set: Active power setpoint [per-unit on sbase]
+                - q_set: Reactive power setpoint [per-unit on sbase]
+                - p_nom: Nominal power [MW]
+                - status: Generator status 0/1
 
         Returns:
             True if update succeeded, False otherwise.
         """
         if self.network is None:
             return False
-        if gen_data.empty:
-            return True
 
-        # Determine generator identifier column
-        if "gen_name" in gen_data.columns:
-            id_col = "gen_name"
-        elif "gen" in gen_data.columns:
-            id_col = "gen"
-        else:
+        gen_id = str(name)
+        if gen_id not in self.network.generators.index:
             return False
 
         sbase = float(self.sbase) if self.sbase else 100.0
 
-        for _, row in gen_data.iterrows():
-            gen_id = str(row[id_col])
-
-            # Find matching generator in network
-            if gen_id not in self.network.generators.index:
-                # Try matching by index position (G0, G1, etc.)
-                try:
-                    idx = int(gen_id) if gen_id.isdigit() else int(gen_id[1:])
-                    if idx < len(self.network.generators.index):
-                        gen_id = self.network.generators.index[idx]
-                    else:
-                        continue
-                except (ValueError, IndexError):
-                    continue
-
-            # Update p_set (convert from per-unit to MW)
-            if "p_set" in row and pd.notna(row["p_set"]):
-                p_mw = float(row["p_set"]) * sbase
-                self.network.generators.at[gen_id, "p_set"] = p_mw
-
-            # Update q_set (convert from per-unit to MVAr)
-            if "q_set" in row and pd.notna(row["q_set"]):
-                q_mvar = float(row["q_set"]) * sbase
-                self.network.generators.at[gen_id, "q_set"] = q_mvar
-
-            # Update p_nom (already in MW)
-            if "p_nom" in row and pd.notna(row["p_nom"]):
-                self.network.generators.at[gen_id, "p_nom"] = float(row["p_nom"])
-
-            # Update status
-            if "status" in row and pd.notna(row["status"]):
-                # PyPSA uses 'active' column for status
+        for key, value in kwargs.items():
+            if key == "p_set":
+                self.network.generators.at[gen_id, "p_set"] = float(value) * sbase
+            elif key == "q_set":
+                self.network.generators.at[gen_id, "q_set"] = float(value) * sbase
+            elif key == "p_nom":
+                self.network.generators.at[gen_id, "p_nom"] = float(value)
+            elif key == "status":
                 if "active" in self.network.generators.columns:
-                    self.network.generators.at[gen_id, "active"] = bool(row["status"])
+                    self.network.generators.at[gen_id, "active"] = bool(value)
+            else:
+                self.network.generators.at[gen_id, key] = value
 
         return True
     
-    def updateBus(self, bus_data: pd.DataFrame) -> bool:
+    def update_bus(self, name: str, **kwargs) -> bool:
         """
         Update bus parameters in PyPSA network.
 
-        Updates bus voltage setpoints and control modes. The DataFrame should
-        contain a 'bus' or 'bus_name' column to identify buses.
-
         Args:
-            bus_data: DataFrame with columns:
-                - bus or bus_name: Bus identifier (matches PyPSA index)
-                - v_mag_pu_set: Voltage magnitude setpoint [per-unit] (optional)
-                - v_mag_pu_min: Minimum voltage magnitude [per-unit] (optional)
-                - v_mag_pu_max: Maximum voltage magnitude [per-unit] (optional)
-                - control: Control mode 'PQ', 'PV', or 'Slack' (optional)
+            name: Bus identifier (matches PyPSA index).
+            **kwargs: Parameters to update. Common options:
+                - v_mag_pu_set: Voltage magnitude setpoint [per-unit]
+                - v_mag_pu_min: Minimum voltage magnitude [per-unit]
+                - v_mag_pu_max: Maximum voltage magnitude [per-unit]
+                - control: Control mode ('PQ', 'PV', 'Slack')
 
         Returns:
             True if update succeeded, False otherwise.
         """
         if self.network is None:
             return False
-        if bus_data.empty:
-            return True
 
-        # Determine bus identifier column
-        if "bus" in bus_data.columns:
-            id_col = "bus"
-        elif "bus_name" in bus_data.columns:
-            id_col = "bus_name"
-        else:
+        bus_id = str(name)
+        if bus_id not in self.network.buses.index:
             return False
 
-        for _, row in bus_data.iterrows():
-            bus_id = str(row[id_col])
-
-            # Check if bus exists in network
-            if bus_id not in self.network.buses.index:
-                continue
-
-            # Update voltage magnitude setpoint
-            if "v_mag_pu_set" in row and pd.notna(row["v_mag_pu_set"]):
-                self.network.buses.at[bus_id, "v_mag_pu_set"] = float(row["v_mag_pu_set"])
-
-            # Update voltage limits
-            if "v_mag_pu_min" in row and pd.notna(row["v_mag_pu_min"]):
-                self.network.buses.at[bus_id, "v_mag_pu_min"] = float(row["v_mag_pu_min"])
-
-            if "v_mag_pu_max" in row and pd.notna(row["v_mag_pu_max"]):
-                self.network.buses.at[bus_id, "v_mag_pu_max"] = float(row["v_mag_pu_max"])
-
-            # Update control mode
-            if "control" in row and pd.notna(row["control"]):
-                control = str(row["control"]).upper()
+        for key, value in kwargs.items():
+            if key == "control":
+                control = str(value).upper()
                 if control in ("PQ", "PV", "SLACK"):
                     self.network.buses.at[bus_id, "control"] = control
+            else:
+                self.network.buses.at[bus_id, key] = value
 
         return True
     
-    def updateLoad(self, load_data: pd.DataFrame) -> bool:
+    def update_load(self, name: str, **kwargs) -> bool:
         """
         Update load parameters in PyPSA network.
 
-        Updates load power consumption. The DataFrame should contain a 'load_name',
-        'load', or 'bus' column to identify loads, plus columns for values to update.
-
         Args:
-            load_data: DataFrame with columns:
-                - load_name, load, or bus: Load identifier
-                - p_set: Active power consumption [per-unit] (optional)
-                - q_set: Reactive power consumption [per-unit] (optional)
-                - status: Load status 0/1 (optional)
+            name: Load identifier (matches PyPSA index).
+            **kwargs: Parameters to update. Common options:
+                - p_set: Active power consumption [per-unit on sbase]
+                - q_set: Reactive power consumption [per-unit on sbase]
+                - status: Load status 0/1
 
         Returns:
             True if update succeeded, False otherwise.
         """
         if self.network is None:
             return False
-        if load_data.empty:
-            return True
 
-        # Determine load identifier column
-        if "load_name" in load_data.columns:
-            id_col = "load_name"
-        elif "load" in load_data.columns:
-            id_col = "load"
-        elif "bus" in load_data.columns:
-            id_col = "bus"
-        else:
+        load_id = str(name)
+        if load_id not in self.network.loads.index:
             return False
 
         sbase = float(self.sbase) if self.sbase else 100.0
 
-        # Build bus-to-load mapping for bus-based lookups
-        bus_to_load = {str(bus): name for name, bus in self.network.loads["bus"].items()}
-
-        for _, row in load_data.iterrows():
-            load_id = str(row[id_col])
-
-            # Find matching load in network
-            if load_id in self.network.loads.index:
-                target_load = load_id
-            elif load_id in bus_to_load:
-                # Lookup by bus number
-                target_load = bus_to_load[load_id]
-            else:
-                # Try matching by index position (LD0, LD1, etc.)
-                try:
-                    idx = int(load_id) if load_id.isdigit() else int(load_id[2:])
-                    if idx < len(self.network.loads.index):
-                        target_load = self.network.loads.index[idx]
-                    else:
-                        continue
-                except (ValueError, IndexError):
-                    continue
-
-            # Update p_set (convert from per-unit to MW)
-            if "p_set" in row and pd.notna(row["p_set"]):
-                p_mw = float(row["p_set"]) * sbase
-                self.network.loads.at[target_load, "p_set"] = p_mw
-
-            # Update q_set (convert from per-unit to MVAr)
-            if "q_set" in row and pd.notna(row["q_set"]):
-                q_mvar = float(row["q_set"]) * sbase
-                self.network.loads.at[target_load, "q_set"] = q_mvar
-
-            # Update status
-            if "status" in row and pd.notna(row["status"]):
+        for key, value in kwargs.items():
+            if key == "p_set":
+                self.network.loads.at[load_id, "p_set"] = float(value) * sbase
+            elif key == "q_set":
+                self.network.loads.at[load_id, "q_set"] = float(value) * sbase
+            elif key == "status":
                 if "active" in self.network.loads.columns:
-                    self.network.loads.at[target_load, "active"] = bool(row["status"])
+                    self.network.loads.at[load_id, "active"] = bool(value)
+            else:
+                self.network.loads.at[load_id, key] = value
 
         return True
     
-    def updateLine(self, line_data: pd.DataFrame) -> bool:
+    def update_line(self, name: str, **kwargs) -> bool:
         """
         Update transmission line parameters in PyPSA network.
 
-        Updates line ratings and status. The DataFrame should contain a
-        'line' or 'line_name' column to identify lines.
-
         Args:
-            line_data: DataFrame with columns:
-                - line or line_name: Line identifier (matches PyPSA index)
-                - s_nom: Thermal rating [MVA] (optional)
-                - s_max_pu: Maximum loading as fraction of s_nom (optional)
-                - status: Line status 0/1 (optional)
+            name: Line identifier (matches PyPSA index).
+            **kwargs: Parameters to update. Common options:
+                - s_nom: Thermal rating [MVA]
+                - s_max_pu: Maximum loading as fraction of s_nom
+                - status: Line status 0/1
 
         Returns:
             True if update succeeded, False otherwise.
         """
         if self.network is None:
             return False
-        if line_data.empty:
-            return True
 
-        # Determine line identifier column
-        if "line_name" in line_data.columns:
-            id_col = "line_name"
-        elif "line" in line_data.columns:
-            id_col = "line"
-        else:
+        line_id = str(name)
+        if line_id not in self.network.lines.index:
             return False
 
-        for _, row in line_data.iterrows():
-            line_id = str(row[id_col])
-
-            # Find matching line in network
-            if line_id not in self.network.lines.index:
-                # Try matching by index position (L0, L1, etc.)
-                try:
-                    idx = int(line_id) if line_id.isdigit() else int(line_id[1:])
-                    if idx < len(self.network.lines.index):
-                        line_id = self.network.lines.index[idx]
-                    else:
-                        continue
-                except (ValueError, IndexError):
-                    continue
-
-            # Update thermal rating
-            if "s_nom" in row and pd.notna(row["s_nom"]):
-                self.network.lines.at[line_id, "s_nom"] = float(row["s_nom"])
-
-            # Update maximum loading fraction
-            if "s_max_pu" in row and pd.notna(row["s_max_pu"]):
-                self.network.lines.at[line_id, "s_max_pu"] = float(row["s_max_pu"])
-
-            # Update status (PyPSA uses 'active' column)
-            if "status" in row and pd.notna(row["status"]):
+        for key, value in kwargs.items():
+            if key == "status":
                 if "active" in self.network.lines.columns:
-                    self.network.lines.at[line_id, "active"] = bool(row["status"])
+                    self.network.lines.at[line_id, "active"] = bool(value)
+            else:
+                self.network.lines.at[line_id, key] = value
 
         return True
     
-    def updateTransformer(self, transformer_data: pd.DataFrame) -> bool:
+    def update_transformer(self, name: str, **kwargs) -> bool:
         """
         Update transformer parameters in PyPSA network.
 
-        Updates transformer tap ratios, phase shifts, and ratings. The DataFrame
-        should contain a 'transformer' column to identify transformers.
-
         Args:
-            transformer_data: DataFrame with columns:
-                - transformer: Transformer identifier (matches PyPSA index)
-                - tap_ratio: Tap ratio (optional)
-                - phase_shift: Phase shift angle [degrees] (optional)
-                - s_nom: Thermal rating [MVA] (optional)
-                - status: Transformer status 0/1 (optional)
+            name: Transformer identifier (matches PyPSA index).
+            **kwargs: Parameters to update. Common options:
+                - tap_ratio: Tap ratio
+                - phase_shift: Phase shift angle [degrees]
+                - s_nom: Thermal rating [MVA]
+                - status: Transformer status 0/1
 
         Returns:
             True if update succeeded, False otherwise.
         """
         if self.network is None:
             return False
-        if transformer_data.empty:
-            return True
 
-        # Determine transformer identifier column
-        if "transformer" in transformer_data.columns:
-            id_col = "transformer"
-        else:
+        tx_id = str(name)
+        if tx_id not in self.network.transformers.index:
             return False
 
-        for _, row in transformer_data.iterrows():
-            tx_id = str(row[id_col])
-
-            # Find matching transformer in network
-            if tx_id not in self.network.transformers.index:
-                # Try matching by index position (T0, T1, etc.)
-                try:
-                    idx = int(tx_id) if tx_id.isdigit() else int(tx_id[1:])
-                    if idx < len(self.network.transformers.index):
-                        tx_id = self.network.transformers.index[idx]
-                    else:
-                        continue
-                except (ValueError, IndexError):
-                    continue
-
-            # Update tap ratio
-            if "tap_ratio" in row and pd.notna(row["tap_ratio"]):
-                self.network.transformers.at[tx_id, "tap_ratio"] = float(row["tap_ratio"])
-
-            # Update phase shift
-            if "phase_shift" in row and pd.notna(row["phase_shift"]):
-                self.network.transformers.at[tx_id, "phase_shift"] = float(row["phase_shift"])
-
-            # Update thermal rating
-            if "s_nom" in row and pd.notna(row["s_nom"]):
-                self.network.transformers.at[tx_id, "s_nom"] = float(row["s_nom"])
-
-            # Update status
-            if "status" in row and pd.notna(row["status"]):
+        for key, value in kwargs.items():
+            if key == "status":
                 if "active" in self.network.transformers.columns:
-                    self.network.transformers.at[tx_id, "active"] = bool(row["status"])
+                    self.network.transformers.at[tx_id, "active"] = bool(value)
+            else:
+                self.network.transformers.at[tx_id, key] = value
 
         return True
 

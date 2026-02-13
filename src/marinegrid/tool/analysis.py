@@ -5,7 +5,7 @@ File: src/marinegrid/tool/analysis.py
 """
 
 # Standard library
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 # Third-party
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class Analysis:
     """Analysis utilities for Marine-Grid simulations (stub)."""
 
-    def __init__(self, study: Optional["Study"] = None) -> None:
+    def __init__(self, study: "Study | None" = None) -> None:
         """
         Initialize analysis helper with optional study reference.
 

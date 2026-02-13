@@ -5,7 +5,7 @@ File: src/marinegrid/renewables/wec.py
 """
 
 # Standard library
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 # Third-party
 import pandas as pd
@@ -13,6 +13,7 @@ import numpy as np
 
 # Local
 from .base import RenewableDevice
+from .farm import RenewableEnergyFarm
 if TYPE_CHECKING:
     from ..util.time import Time
     from ..tool.database import Database
@@ -41,10 +42,10 @@ class WECDevice(RenewableDevice):
     def __init__(
         self,
         name: str = "",
-        data: Optional[pd.DataFrame] = None,
-        bus_location: Optional[int] = None,
-        model: Optional[str] = None,
-        wec_sim_id: Optional[int] = None,
+        data: pd.DataFrame | None = None,
+        bus_location: int | None = None,
+        model: str | None = None,
+        wec_sim_id: int | None = None,
     ):
         """
         Initialize a WEC device.
@@ -114,27 +115,21 @@ class WECDevice(RenewableDevice):
         return float(self.data.loc[ts, "q"])
 
 
-class WECFarm:
+class WECFarm(RenewableEnergyFarm):
     """
-    Group of identical WEC devices connected to one bus.
+    Farm of WEC devices with database loading and downsampling.
 
-    Manages a collection of WEC devices that share the same model type and
-    are connected to the same grid bus. Loads WEC-Sim simulation data from
-    a database, downsamples to the grid simulation frequency, and provides
-    aggregate power output at each timestamp.
+    Extends RenewableEnergyFarm with WEC-specific behavior: loading
+    simulation data from a database, downsampling high-resolution
+    WEC-Sim output to the grid simulation frequency, and managing
+    device scaling.
 
     Attributes:
-        farm_name: Human-readable identifier for the farm.
         database: Database interface used to fetch WEC-Sim results.
         time: Time manager providing simulation snapshots.
         wec_sim_id: Simulation ID used for database queries.
         model: WEC device model name (populated from database).
-        bus_location: Bus number where the farm connects.
-        connecting_bus: Existing bus to connect the farm to.
-        gen_name: Generator name in the grid model.
-        size: Number of devices in the farm.
-        devices: List of WECDevice instances.
-        sbase: Base power in MVA for per-unit conversion.
+        farm_id: Optional integer identifier for the farm.
         scaling_factor: Linear multiplier applied to device power.
 
     Example:
@@ -159,7 +154,7 @@ class WECFarm:
         connecting_bus: int = 1,
         gen_name: str = "",
         size: int = 1,
-        farm_id: Optional[int] = None,
+        farm_id: int | None = None,
         sbase: float = 100.0,
         scaling_factor: float = 1.0,
     ):
@@ -183,19 +178,20 @@ class WECFarm:
             RuntimeError: If WEC simulation data is missing.
             ValueError: If the database returns empty results.
         """
-        self.farm_name = farm_name
+        super().__init__(
+            farm_name=farm_name,
+            bus_location=bus_location,
+            connecting_bus=connecting_bus,
+            size=size,
+            gen_name=gen_name,
+            sbase=sbase,
+        )
         self.database = database
         self.time = time
         self.wec_sim_id = wec_sim_id
         self.model: str = ""
-        self.bus_location = bus_location
-        self.connecting_bus = connecting_bus
         self.farm_id = farm_id
-        self.size = size
-        self.devices: List[WECDevice] = []
-        self.sbase = sbase
         self.scaling_factor = scaling_factor
-        self.gen_name = gen_name
 
         self._prepare_farm()
 
@@ -211,14 +207,6 @@ class WECFarm:
             f"├─ wec_sim_id: {self.wec_sim_id}\n"
             f"└─ sbase: {self.sbase} MVA"
         )
-
-    def __len__(self) -> int:
-        """Return number of devices in the farm."""
-        return len(self.devices)
-
-    def __iter__(self):
-        """Iterate over devices in the farm."""
-        return iter(self.devices)
 
     def _prepare_farm(self) -> None:
         """
@@ -408,33 +396,6 @@ class WECFarm:
 
         return pd.DataFrame(downsampled_data)
 
-    def power_at_snapshot(self, timestamp: pd.Timestamp) -> float:
-        """
-        Return total active power at a simulation timestamp.
-
-        Sums the power output from all devices in the farm at the given
-        timestamp. Power is returned in per-unit on the system MVA base.
-
-        Args:
-            timestamp: Time at which to read device power.
-
-        Returns:
-            Sum of device powers in per-unit on sbase.
-
-        Raises:
-            TypeError: If timestamp is not a pd.Timestamp.
-            KeyError: If timestamp is not present in the device data.
-        """
-        total_power = 0.0
-        for device in self.devices:
-            if (
-                device.data is not None
-                and not device.data.empty
-                and timestamp in device.data.index
-            ):
-                total_power += device.data.at[timestamp, "p"]
-        return total_power
-
     def reactive_power_at_snapshot(self, timestamp: pd.Timestamp) -> float:
         """
         Return total reactive power at a simulation timestamp.
@@ -458,23 +419,3 @@ class WECFarm:
                 total_power += device.data.at[timestamp, "q"]
         return total_power
 
-    def get_power_timeseries(self) -> pd.DataFrame:
-        """
-        Get aggregate power time series for the entire farm.
-
-        Returns:
-            DataFrame with timestamp index and columns for total p and q
-            in per-unit.
-        """
-        if not self.devices:
-            return pd.DataFrame()
-
-        # Use first device's data as template
-        result = self.devices[0].data[["p", "q"]].copy()
-
-        # Sum across all devices
-        for device in self.devices[1:]:
-            result["p"] += device.data["p"]
-            result["q"] += device.data["q"]
-
-        return result

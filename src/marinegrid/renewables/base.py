@@ -6,7 +6,6 @@ File: src/marinegrid/renewables/base.py
 
 # Standard library
 from abc import ABC, abstractmethod
-from typing import Optional
 
 # Third-party
 import pandas as pd
@@ -43,7 +42,7 @@ class RenewableDevice(ABC):
         self.device_type: str = ""
         self.device_id: str = ""
         self.capacity: float = 0.0  # in pu
-        self.bus_location: Optional[int] = None
+        self.bus_location: int | None = None
     
     def __repr__(self) -> str:
         """Return a compact string describing the device."""

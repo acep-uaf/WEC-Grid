@@ -4,9 +4,6 @@ Wind device model.
 File: src/marinegrid/renewables/wind.py
 """
 
-# Standard library
-from typing import Optional
-
 # Third-party
 import pandas as pd
 
@@ -26,9 +23,9 @@ class WindDevice(RenewableDevice):
         """Initialize a wind turbine device with defaults."""
         super().__init__()
         self.device_type = "Wind"
-        self.turbine_model: Optional[str] = None
-        self.hub_height: Optional[float] = None
-        self.rated_speed: Optional[float] = None
+        self.turbine_model: str | None = None
+        self.hub_height: float | None = None
+        self.rated_speed: float | None = None
 
     def power_at(self, ts: pd.Timestamp) -> float:
         """Return active power at timestamp `ts` (per unit)."""

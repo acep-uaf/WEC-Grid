@@ -7,7 +7,7 @@ File: src/marinegrid/modeler/powersystem/base.py
 # Standard library
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 # Third-party
 import pandas as pd
@@ -46,7 +46,7 @@ class PowerSystemModeler(ABC):
     Abstract base class for power system modeling backends.
 
     Defines the interface contract that all power system modelers
-    (PyPSA, PandaPower, OpenDSS, etc.) must implement. Provides
+    must implement. Provides
     standardized methods for initialization, power flow solving,
     and component-level data access/updates.
 
@@ -116,7 +116,7 @@ class PowerSystemModeler(ABC):
     # -------------------------------------------------------------------------
 
     @abstractmethod
-    def getBusData(self) -> pd.DataFrame:
+    def get_bus_data(self) -> pd.DataFrame:
         """
         Pull and organize all bus data in format specified in documentation.
 
@@ -126,7 +126,7 @@ class PowerSystemModeler(ABC):
 
 
     @abstractmethod
-    def getGeneratorData(self) -> pd.DataFrame:
+    def get_generator_data(self) -> pd.DataFrame:
         """
         Pull and organize all generator data in format specified in documentation.
 
@@ -135,7 +135,7 @@ class PowerSystemModeler(ABC):
         """
 
     @abstractmethod
-    def getLoadData(self) -> pd.DataFrame:
+    def get_load_data(self) -> pd.DataFrame:
         """
         Pull and organize all load data in format specified in documentation.
 
@@ -144,7 +144,7 @@ class PowerSystemModeler(ABC):
         """
 
     @abstractmethod
-    def getLineData(self) -> pd.DataFrame:
+    def get_line_data(self) -> pd.DataFrame:
         """
         Pull and organize all line data in format specified in documentation.
 
@@ -154,7 +154,7 @@ class PowerSystemModeler(ABC):
 
 
     @abstractmethod
-    def getTransformerData(self) -> pd.DataFrame:
+    def get_transformer_data(self) -> pd.DataFrame:
         """
         Pull and organize all transformer data in format specified in documentation.
 
@@ -165,168 +165,211 @@ class PowerSystemModeler(ABC):
 
     # -------------------------------------------------------------------------
     # Component data updates - abstract methods
-    # TODO: fix the doc strings and functions here, not sure if I'll be passing in DFs
     # -------------------------------------------------------------------------
 
     @abstractmethod
-    def updateBus(self) -> bool:
+    def update_bus(self, name: str, **kwargs: Any) -> bool:
         """
         Update bus parameters in the model.
 
+        Args:
+            name: Bus identifier.
+            **kwargs: Parameters to update (e.g., v_mag_pu_set, control).
+
         Returns:
             True if update succeeded, False otherwise.
         """
 
-
     @abstractmethod
-    def updateGenerator(self) -> bool:
+    def update_generator(self, name: str, **kwargs: Any) -> bool:
         """
         Update generator parameters in the model.
 
+        Args:
+            name: Generator identifier.
+            **kwargs: Parameters to update (e.g., p_set, q_set, p_nom).
+
         Returns:
             True if update succeeded, False otherwise.
         """
 
-
     @abstractmethod
-    def updateLoad(self) -> bool:
+    def update_load(self, name: str, **kwargs: Any) -> bool:
         """
         Update load parameters in the model.
 
+        Args:
+            name: Load identifier.
+            **kwargs: Parameters to update (e.g., p_set, q_set).
+
         Returns:
             True if update succeeded, False otherwise.
         """
 
-
     @abstractmethod
-    def updateLine(self) -> bool:
+    def update_line(self, name: str, **kwargs: Any) -> bool:
         """
         Update transmission line parameters in the model.
 
+        Args:
+            name: Line identifier.
+            **kwargs: Parameters to update (e.g., s_nom, status).
+
         Returns:
             True if update succeeded, False otherwise.
         """
 
-
     @abstractmethod
-    def updateTransformer(self) -> bool:
+    def update_transformer(self, name: str, **kwargs: Any) -> bool:
         """
         Update transformer parameters in the model.
 
+        Args:
+            name: Transformer identifier.
+            **kwargs: Parameters to update (e.g., tap_ratio, s_nom).
+
         Returns:
             True if update succeeded, False otherwise.
         """
 
-
     # -------------------------------------------------------------------------
-    # Component add  - abstract methods
-    # TODO: fix the doc strings and functions here, not sure how I want to go about passing in parameters
+    # Component add - abstract methods
     # -------------------------------------------------------------------------
 
     @abstractmethod
-    def add_bus(self) -> bool:
+    def add_bus(self, name: str, **kwargs: Any) -> bool:
         """
         Add a bus to the network.
+
+        Args:
+            name: Unique bus identifier.
+            **kwargs: Backend-specific parameters (e.g., v_nom, control).
 
         Returns:
             True if bus was added successfully, False otherwise.
         """
 
-
     @abstractmethod
-    def add_generator(self) -> bool:
+    def add_generator(self, name: str, bus: str, **kwargs: Any) -> bool:
         """
         Add a generator to the network.
+
+        Args:
+            name: Unique generator identifier.
+            bus: Bus name where generator connects.
+            **kwargs: Backend-specific parameters (e.g., p_nom, carrier).
 
         Returns:
             True if generator was added successfully, False otherwise.
         """
 
-
     @abstractmethod
-    def add_load(self) -> bool:
+    def add_load(self, name: str, bus: str, **kwargs: Any) -> bool:
         """
         Add a load to the network.
+
+        Args:
+            name: Unique load identifier.
+            bus: Bus name where load connects.
+            **kwargs: Backend-specific parameters (e.g., p_set, q_set).
 
         Returns:
             True if load was added successfully, False otherwise.
         """
 
-
     @abstractmethod
-    def add_line(self) -> bool:
+    def add_line(self, name: str, bus0: str, bus1: str, **kwargs: Any) -> bool:
         """
         Add a transmission line to the network.
+
+        Args:
+            name: Unique line identifier.
+            bus0: From bus name.
+            bus1: To bus name.
+            **kwargs: Backend-specific parameters (e.g., r, x, s_nom).
 
         Returns:
             True if line was added successfully, False otherwise.
         """
 
-
-
     @abstractmethod
-    def add_transformer(self) -> bool:
+    def add_transformer(self, name: str, bus0: str, bus1: str, s_nom: float, **kwargs: Any) -> bool:
         """
         Add a transformer to the network.
+
+        Args:
+            name: Unique transformer identifier.
+            bus0: Primary bus name.
+            bus1: Secondary bus name.
+            s_nom: Nominal apparent power rating in MVA.
+            **kwargs: Backend-specific parameters (e.g., tap_ratio, phase_shift).
 
         Returns:
             True if transformer was added successfully, False otherwise.
         """
 
-
-
     # -------------------------------------------------------------------------
-    # Component remove  - abstract methods
-    # TODO: fix the doc strings and functions here, not sure how I want to go about passing in parameters
+    # Component remove - abstract methods
     # -------------------------------------------------------------------------
-
 
     @abstractmethod
-    def remove_bus(self) -> bool:
+    def remove_bus(self, name: str) -> bool:
         """
         Remove a bus from the network.
 
         Also removes all components connected to this bus (generators,
         loads, lines, transformers).
 
+        Args:
+            name: Bus identifier to remove.
+
         Returns:
             True if bus was removed successfully, False otherwise.
         """
 
-
     @abstractmethod
-    def remove_generator(self) -> bool:
+    def remove_generator(self, name: str) -> bool:
         """
         Remove a generator from the network.
+
+        Args:
+            name: Generator identifier to remove.
 
         Returns:
             True if generator was removed successfully, False otherwise.
         """
 
-
     @abstractmethod
-    def remove_load(self) -> bool:
+    def remove_load(self, name: str) -> bool:
         """
         Remove a load from the network.
+
+        Args:
+            name: Load identifier to remove.
 
         Returns:
             True if load was removed successfully, False otherwise.
         """
 
-
     @abstractmethod
-    def remove_line(self) -> bool:
+    def remove_line(self, name: str) -> bool:
         """
         Remove a transmission line from the network.
+
+        Args:
+            name: Line identifier to remove.
 
         Returns:
             True if line was removed successfully, False otherwise.
         """
 
     @abstractmethod
-    def remove_transformer(self) -> bool:
+    def remove_transformer(self, name: str) -> bool:
         """
         Remove a transformer from the network.
+
+        Args:
+            name: Transformer identifier to remove.
 
         Returns:
             True if transformer was removed successfully, False otherwise.

@@ -5,8 +5,7 @@ File: src/marinegrid/modeler/manager.py
 """
 
 # Standard library
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
-
+from typing import Any, TYPE_CHECKING
 # Third-party
 import pandas as pd
 
@@ -17,7 +16,7 @@ from .powersystem.base import PowerSystemModeler, SolveResult
 
 if TYPE_CHECKING:
     from ..util.time import Time
-    from ..renewables.wec import WECFarm
+    from ..renewables.farm import RenewableEnergyFarm
 
 
 class ModelerManager:
@@ -54,16 +53,15 @@ class ModelerManager:
         and prepares storage for instantiated modelers, farms, and data.
         """
         # Class objects
-        self._time: Optional["Time"] = None
-        self._grid_data: Dict[str, GridData] = {}
+        self._time: "Time | None" = None
+        self._grid_data: dict[str, GridData] = {}
 
         # Class attributes
-        self.modelers: Dict[str, Any] = {}
-        self.farms: List["WECFarm"] = []
+        self.modelers: dict[str, Any] = {}
+        self.farms: list["RenewableEnergyFarm"] = []
         self._registry = {
             "pypsa": self._load_pypsa,
             "wecsim": self._load_wecsim,
-            # "pandapower": self._load_pandapower,  # Future implementation
         }
 
     def __repr__(self) -> str:
@@ -95,12 +93,12 @@ class ModelerManager:
     # -------------------------------------------------------------------------
 
     @property
-    def time(self) -> Optional["Time"]:
+    def time(self) -> "Time | None":
         """Get the central Time object for simulation timeline."""
         return self._time
 
     @property
-    def grid_data(self) -> Dict[str, GridData]:
+    def grid_data(self) -> dict[str, GridData]:
         """Get all GridData instances keyed by backend name."""
         return self._grid_data
 
@@ -114,12 +112,6 @@ class ModelerManager:
         """Get the WEC-Sim modeler if loaded."""
         return self.modelers.get("wecsim")
 
-
-    # TODO: not sure if this belongs here
-    # def get_component(self) -> bool:
-    #     """
-    #     """
-    #     return True
 
     # -------------------------------------------------------------------------
     # Time Management
@@ -142,7 +134,7 @@ class ModelerManager:
     # Data Access
     # -------------------------------------------------------------------------
 
-    def get_data(self, name: str) -> Optional[GridData]:
+    def get_data(self, name: str) -> GridData | None:
         """
         Get the GridData for a specific backend.
 
@@ -158,7 +150,7 @@ class ModelerManager:
     # Farm Management
     # -------------------------------------------------------------------------
 
-    def add_farm(self, farm: "WECFarm", add_to_network: bool = True) -> bool:
+    def add_farm(self, farm: "RenewableEnergyFarm", add_to_network: bool = True) -> bool:
         """
         Register a renewable energy farm for simulation.
 
@@ -187,7 +179,7 @@ class ModelerManager:
 
         return True
 
-    def remove_farm(self, farm: "WECFarm") -> bool:
+    def remove_farm(self, farm: "RenewableEnergyFarm") -> bool:
         """
         Remove a farm from the manager and all loaded power system modelers.
 
@@ -290,8 +282,8 @@ class ModelerManager:
 
     def simulate(
         self,
-        gen_schedules: Optional[Dict[str, pd.DataFrame]] = None,
-        load_schedules: Optional[Dict[str, pd.DataFrame]] = None,
+        gen_schedules: dict[str, pd.DataFrame] | None = None,
+        load_schedules: dict[str, pd.DataFrame] | None = None,
     ) -> bool:
         """
         Run time-series simulation across all loaded power system modelers.
@@ -322,6 +314,13 @@ class ModelerManager:
         gen_schedules = gen_schedules or {}
         load_schedules = load_schedules or {}
 
+        # Convert farms to generator schedules
+        for farm in self.farms:
+            if hasattr(farm, "get_power_timeseries") and getattr(farm, "gen_name", None):
+                farm_schedule = farm.get_power_timeseries()
+                if farm_schedule is not None and not farm_schedule.empty:
+                    gen_schedules[farm.gen_name] = farm_schedule
+
         # Identify power system modelers
         ps_modelers = {
             name: m for name, m in self.modelers.items()
@@ -336,30 +335,45 @@ class ModelerManager:
         for ts in snapshots:
             for name, modeler in ps_modelers.items():
 
-                # 1. Update components from schedules
-                # TODO: apply gen_schedules and load_schedules to modeler
-                #       waiting on finalized update method signatures
+                # 1. Apply generator schedules
+                for gen_name, schedule in gen_schedules.items():
+                    if ts in schedule.index:
+                        row = schedule.loc[ts]
+                        modeler.update_generator(
+                            gen_name,
+                            p_set=float(row.get("p", 0.0)),
+                            q_set=float(row.get("q", 0.0)),
+                        )
 
-                # 2. Solve
+                # 2. Apply load schedules
+                for load_name, schedule in load_schedules.items():
+                    if ts in schedule.index:
+                        row = schedule.loc[ts]
+                        modeler.update_load(
+                            load_name,
+                            p_set=float(row.get("p", 0.0)),
+                            q_set=float(row.get("q", 0.0)),
+                        )
+
+                # 3. Solve
                 result = modeler.solve()
 
-                # 3. Collect grid state
+                # 4. Collect grid state
                 state = GridInstance()
                 state.timestamp = ts
-                state.bus = modeler.getBusData()
-                state.gen = modeler.getGeneratorData()
-                state.load = modeler.getLoadData()
-                state.line = modeler.getLineData()
-                state.transformer = modeler.getTransformerData()
+                state.solve_result = result
+                state.bus = modeler.get_bus_data()
+                state.gen = modeler.get_generator_data()
+                state.load = modeler.get_load_data()
+                state.line = modeler.get_line_data()
+                state.transformer = modeler.get_transformer_data()
 
-                # TODO: attach SolveResult to state or GridData
-
-                # 4. Store
-                self._grid_data[name].appendState(state)
+                # 5. Store
+                self._grid_data[name].append_state(state)
 
         return True
 
-    def loaded(self) -> List[str]:
+    def loaded(self) -> list[str]:
         """
         Return a list of loaded modeler names.
 

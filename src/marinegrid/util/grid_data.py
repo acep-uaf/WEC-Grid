@@ -5,7 +5,7 @@ File: src/marinegrid/util/grid_data.py
 """
 
 # Standard library
-from typing import Dict, List, Optional, Any, Union
+from typing import Any
 
 # Third-party
 import pandas as pd
@@ -27,12 +27,12 @@ class GridData:
 
     Attributes:
         history: Dictionary mapping timestamps to GridInstance objects.
-        currentState: Most recently appended GridInstance.
+        current_state: Most recently appended GridInstance.
 
     Example:
         >>> data = GridData()
-        >>> data.appendState(state1)
-        >>> data.appendState(state2)
+        >>> data.append_state(state1)
+        >>> data.append_state(state2)
         >>> print(data)
         GridData: 2 snapshots
         ├─ Time Range: 2024-01-01 12:00 → 2024-01-01 12:05
@@ -51,7 +51,7 @@ class GridData:
         Creates empty history storage ready for GridInstance snapshots.
         """
         self._history: dict[pd.Timestamp, GridInstance] = {}
-        self._currentState: GridInstance | None = None
+        self._current_state: GridInstance | None = None
         self._snapshots: list[pd.Timestamp] = []  # Ordered list of timestamps
 
     def __repr__(self) -> str:
@@ -70,13 +70,13 @@ class GridData:
             time_str = "Unknown"
 
         # Component counts from current state
-        if self._currentState is not None:
-            bus_count = len(self._currentState.bus) if self._currentState.bus is not None else 0
-            gen_count = len(self._currentState.gen) if self._currentState.gen is not None else 0
-            line_count = len(self._currentState.line) if self._currentState.line is not None else 0
-            load_count = len(self._currentState.load) if self._currentState.load is not None else 0
+        if self._current_state is not None:
+            bus_count = len(self._current_state.bus) if self._current_state.bus is not None else 0
+            gen_count = len(self._current_state.gen) if self._current_state.gen is not None else 0
+            line_count = len(self._current_state.line) if self._current_state.line is not None else 0
+            load_count = len(self._current_state.load) if self._current_state.load is not None else 0
             comp_str = f"{bus_count} buses, {gen_count} gens, {line_count} lines, {load_count} loads"
-            current_str = str(self._currentState.timestamp)
+            current_str = str(self._current_state.timestamp)
         else:
             comp_str = "No data"
             current_str = "None"
@@ -109,7 +109,7 @@ class GridData:
     # -------------------------------------------------------------------------
 
     @property
-    def history(self) -> Dict[pd.Timestamp, GridInstance]:
+    def history(self) -> dict[pd.Timestamp, GridInstance]:
         """
         Get the complete history of grid states.
 
@@ -119,16 +119,16 @@ class GridData:
         return self._history
 
     @property
-    def currentState(self) -> GridInstance:
+    def current_state(self) -> GridInstance:
         """
         Get the most recent grid state.
 
         Returns:
             Most recently appended GridInstance or None if no states exist.
         """
-        if self._currentState is None:
+        if self._current_state is None:
             raise ValueError("Current State Data is None")
-        return self._currentState
+        return self._current_state
 
     @property
     def snapshots(self) -> list[pd.Timestamp]:
@@ -157,43 +157,43 @@ class GridData:
     @property
     def bus(self) -> pd.DataFrame:
         """Current bus state DataFrame."""
-        if self._currentState is None:
-            raise ValueError("Bus Data not Avaible") 
-        return self._currentState.bus
+        if self._current_state is None:
+            raise ValueError("Bus data not available") 
+        return self._current_state.bus
 
     @property
-    def gen(self) -> Optional[pd.DataFrame]:
+    def gen(self) -> pd.DataFrame | None:
         """Current generator state DataFrame."""
-        if self._currentState is None:
+        if self._current_state is None:
             return None
-        return self._currentState.gen
+        return self._current_state.gen
 
     @property
-    def line(self) -> Optional[pd.DataFrame]:
+    def line(self) -> pd.DataFrame | None:
         """Current line state DataFrame."""
-        if self._currentState is None:
+        if self._current_state is None:
             return None
-        return self._currentState.line
+        return self._current_state.line
 
     @property
-    def load(self) -> Optional[pd.DataFrame]:
+    def load(self) -> pd.DataFrame | None:
         """Current load state DataFrame."""
-        if self._currentState is None:
+        if self._current_state is None:
             return None
-        return self._currentState.load
+        return self._current_state.load
 
     @property
-    def transformer(self) -> Optional[pd.DataFrame]:
+    def transformer(self) -> pd.DataFrame | None:
         """Current transformer state DataFrame."""
-        if self._currentState is None:
+        if self._current_state is None:
             return None
-        return self._currentState.transformer
+        return self._current_state.transformer
 
     # -------------------------------------------------------------------------
     # State management
     # -------------------------------------------------------------------------
 
-    def appendState(self, state: GridInstance) -> bool:
+    def append_state(self, state: GridInstance) -> bool:
         """
         Add a new grid state to the history.
 
@@ -214,7 +214,7 @@ class GridData:
             raise ValueError("GridInstance must have a timestamp set.")
 
         self._history[state.timestamp] = state
-        self._currentState = state
+        self._current_state = state
 
         # Maintain ordered list of timestamps
         if state.timestamp not in self._snapshots:
@@ -223,7 +223,7 @@ class GridData:
 
         return True
 
-    def getState(self, timestamp: pd.Timestamp) -> Optional[GridInstance]:
+    def get_state(self, timestamp: pd.Timestamp) -> GridInstance | None:
         """
         Get a grid state by timestamp.
 
@@ -238,7 +238,7 @@ class GridData:
         """
         return self._history.get(timestamp)
 
-    def getStateAt(self, index: int) -> Optional[GridInstance]:
+    def get_state_at(self, index: int) -> GridInstance | None:
         """
         Get a grid state by index position.
 
@@ -261,7 +261,7 @@ class GridData:
         """Clear all history data."""
         self._history.clear()
         self._snapshots.clear()
-        self._currentState = None
+        self._current_state = None
 
     # -------------------------------------------------------------------------
     # Time-series data access
@@ -271,7 +271,7 @@ class GridData:
         self,
         component: str,
         column: str,
-        name_column: Optional[str] = None
+        name_column: str | None = None
     ) -> pd.DataFrame:
         """
         Build a time-series DataFrame for a specific component variable.
@@ -333,7 +333,7 @@ class GridData:
         result.index.name = "timestamp"
         return result
 
-    def get_component_history(self, component: str) -> Dict[str, pd.DataFrame]:
+    def get_component_history(self, component: str) -> dict[str, pd.DataFrame]:
         """
         Get all time-series data for a component type.
 
@@ -385,7 +385,7 @@ class GridData:
     # Analysis helpers
     # -------------------------------------------------------------------------
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """
         Generate a summary of the grid data history.
 
@@ -398,8 +398,8 @@ class GridData:
             "end_time": self._snapshots[-1] if self._snapshots else None,
         }
 
-        if self._currentState is not None:
-            result.update(self._currentState.summary())
+        if self._current_state is not None:
+            result.update(self._current_state.summary())
 
         return result
 
@@ -529,7 +529,7 @@ class GridData:
     # Export methods
     # -------------------------------------------------------------------------
 
-    def to_dataframes(self) -> Dict[str, pd.DataFrame]:
+    def to_dataframes(self) -> dict[str, pd.DataFrame]:
         """
         Export all time-series data as DataFrames.
 
@@ -546,7 +546,7 @@ class GridData:
 
         return result
 
-    def to_dict(self) -> Dict[pd.Timestamp, Dict[str, pd.DataFrame]]:
+    def to_dict(self) -> dict[pd.Timestamp, dict[str, pd.DataFrame]]:
         """
         Export history as nested dictionary.
 

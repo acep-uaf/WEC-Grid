@@ -4,9 +4,6 @@ Energy storage device model.
 File: src/marinegrid/renewables/storage.py
 """
 
-# Standard library
-from typing import Optional
-
 # Third-party
 import pandas as pd
 
@@ -27,10 +24,10 @@ class StorageDevice(RenewableDevice):
         """Initialize a storage device with defaults."""
         super().__init__()
         self.device_type = "Storage"
-        self.storage_model: Optional[str] = None
-        self.energy_capacity: Optional[float] = None
-        self.max_charge_rate: Optional[float] = None
-        self.max_discharge_rate: Optional[float] = None
+        self.storage_model: str | None = None
+        self.energy_capacity: float | None = None
+        self.max_charge_rate: float | None = None
+        self.max_discharge_rate: float | None = None
 
     def power_at(self, ts: pd.Timestamp) -> float:
         """Return net power at timestamp `ts` (per unit)."""

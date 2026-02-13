@@ -4,9 +4,6 @@ Tidal device model.
 File: src/marinegrid/renewables/tidal.py
 """
 
-# Standard library
-from typing import Optional
-
 # Third-party
 import pandas as pd
 
@@ -26,9 +23,9 @@ class TidalDevice(RenewableDevice):
         """Initialize a tidal energy device with defaults."""
         super().__init__()
         self.device_type = "Tidal"
-        self.turbine_model: Optional[str] = None
-        self.rotor_diameter: Optional[float] = None
-        self.depth: Optional[float] = None
+        self.turbine_model: str | None = None
+        self.rotor_diameter: float | None = None
+        self.depth: float | None = None
 
     def power_at(self, ts: pd.Timestamp) -> float:
         """Return active power at timestamp `ts` (per unit)."""

@@ -6,7 +6,7 @@ File: src/marinegrid/util/time.py
 
 # Standard library
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Iterator, Union
+from collections.abc import Iterator
 
 # Third-party
 import pandas as pd
@@ -69,7 +69,7 @@ class Time:
         self._delta_time: int = 300  # seconds
 
         # Cached snapshots (invalidated on parameter change)
-        self._snapshots_cache: Optional[pd.DatetimeIndex] = None
+        self._snapshots_cache: pd.DatetimeIndex | None = None
 
     def __repr__(self) -> str:
         """Return a compact summary of time parameters."""
@@ -188,10 +188,10 @@ class Time:
 
     def configure(
         self,
-        start_time: Optional[datetime] = None,
-        num_steps: Optional[int] = None,
-        freq: Optional[str] = None,
-        end_time: Optional[datetime] = None,
+        start_time: datetime | None = None,
+        num_steps: int | None = None,
+        freq: str | None = None,
+        end_time: datetime | None = None,
     ) -> "Time":
         """
         Configure time parameters.
@@ -249,7 +249,7 @@ class Time:
         self._invalidate_cache()
         return self
 
-    def set_range(self, start: datetime, end: datetime, freq: Optional[str] = None) -> "Time":
+    def set_range(self, start: datetime, end: datetime, freq: str | None = None) -> "Time":
         """
         Set simulation time range.
 
@@ -277,7 +277,7 @@ class Time:
     # Query methods
     # -------------------------------------------------------------------------
 
-    def get_step(self, timestamp: Union[datetime, pd.Timestamp]) -> int:
+    def get_step(self, timestamp: datetime | pd.Timestamp) -> int:
         """
         Get the step index for a timestamp.
 
@@ -315,7 +315,7 @@ class Time:
             raise IndexError(f"Step {step} is out of range [0, {self._num_steps})")
         return self.snapshots[step]
 
-    def contains(self, timestamp: Union[datetime, pd.Timestamp]) -> bool:
+    def contains(self, timestamp: datetime | pd.Timestamp) -> bool:
         """
         Check if a timestamp is within the simulation range.
 
@@ -330,7 +330,7 @@ class Time:
         """
         return self._start_time <= timestamp <= self.end_time
 
-    def nearest_snapshot(self, timestamp: Union[datetime, pd.Timestamp]) -> pd.Timestamp:
+    def nearest_snapshot(self, timestamp: datetime | pd.Timestamp) -> pd.Timestamp:
         """
         Find the nearest snapshot to a timestamp.
 
@@ -390,7 +390,7 @@ class Time:
             else:
                 return 300  # Default to 5 minutes
 
-    def to_dict(self) -> Dict[str, Union[datetime, int, str, float]]:
+    def to_dict(self) -> dict[str, datetime | int | str | float]:
         """
         Export time configuration as dictionary.
 

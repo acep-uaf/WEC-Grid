@@ -4,9 +4,6 @@ Solar device model.
 File: src/marinegrid/renewables/solar.py
 """
 
-# Standard library
-from typing import Optional
-
 # Third-party
 import pandas as pd
 
@@ -26,9 +23,9 @@ class SolarDevice(RenewableDevice):
         """Initialize a solar device with defaults."""
         super().__init__()
         self.device_type = "Solar"
-        self.panel_model: Optional[str] = None
-        self.tilt_angle: Optional[float] = None
-        self.azimuth: Optional[float] = None
+        self.panel_model: str | None = None
+        self.tilt_angle: float | None = None
+        self.azimuth: float | None = None
 
     def power_at(self, ts: pd.Timestamp) -> float:
         """Return active power at timestamp `ts` (per unit)."""

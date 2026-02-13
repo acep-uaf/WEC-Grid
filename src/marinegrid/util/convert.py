@@ -6,7 +6,6 @@ File: src/marinegrid/util/convert.py
 
 # Standard library
 from pathlib import Path
-from typing import Union
 
 # Third-party
 import grg_pssedata.io as grgio
@@ -21,7 +20,7 @@ class Converter:
         """Initialize conversion helper."""
         pass
 
-    def raw_to_pypsa(self, raw_file: Union[str, Path]) -> pypsa.Network:
+    def raw_to_pypsa(self, raw_file: str | Path) -> pypsa.Network:
         """
         Convert raw case file to PyPSA Network.
 

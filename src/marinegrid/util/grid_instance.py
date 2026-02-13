@@ -6,7 +6,7 @@ File: src/marinegrid/util/grid_instance.py
 
 # Standard library
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any, Set
+from typing import Any
 
 # Third-party
 import pandas as pd
@@ -28,9 +28,9 @@ class ComponentSchema:
     """
     name: str
     id_column: str
-    required_columns: List[str]
-    optional_columns: List[str]
-    units: Dict[str, str]
+    required_columns: list[str]
+    optional_columns: list[str]
+    units: dict[str, str]
 
 
 # Standard schemas for each component type
@@ -169,12 +169,13 @@ class GridInstance:
         All component DataFrames are set to None initially and must
         be populated via property setters.
         """
-        self._bus: Optional[pd.DataFrame] = None
-        self._line: Optional[pd.DataFrame] = None
-        self._gen: Optional[pd.DataFrame] = None
-        self._load: Optional[pd.DataFrame] = None
-        self._transformer: Optional[pd.DataFrame] = None
-        self._timestamp: Optional[pd.Timestamp] = None
+        self._bus: pd.DataFrame | None = None
+        self._line: pd.DataFrame | None = None
+        self._gen: pd.DataFrame | None = None
+        self._load: pd.DataFrame | None = None
+        self._transformer: pd.DataFrame | None = None
+        self._timestamp: pd.Timestamp | None = None
+        self._solve_result: Any = None
 
     def __repr__(self) -> str:
         """Return a formatted summary of the grid instance."""
@@ -200,12 +201,12 @@ class GridInstance:
     # -------------------------------------------------------------------------
 
     @property
-    def timestamp(self) -> Optional[pd.Timestamp]:
+    def timestamp(self) -> pd.Timestamp | None:
         """Get the timestamp for this grid state."""
         return self._timestamp
 
     @timestamp.setter
-    def timestamp(self, value: Optional[pd.Timestamp]):
+    def timestamp(self, value: pd.Timestamp | None):
         """
         Set the timestamp for this grid state.
 
@@ -219,65 +220,75 @@ class GridInstance:
             raise TypeError("timestamp must be a pandas Timestamp instance or None.")
         self._timestamp = value
 
+    @property
+    def solve_result(self) -> Any:
+        """Get the SolveResult from the power flow solve for this snapshot."""
+        return self._solve_result
+
+    @solve_result.setter
+    def solve_result(self, value: Any):
+        """Set the SolveResult for this snapshot."""
+        self._solve_result = value
+
     # -------------------------------------------------------------------------
     # Component properties with validation
     # -------------------------------------------------------------------------
 
     @property
-    def bus(self) -> Optional[pd.DataFrame]:
+    def bus(self) -> pd.DataFrame | None:
         """Get bus data DataFrame."""
         return self._bus
 
     @bus.setter
-    def bus(self, value: Optional[pd.DataFrame]):
+    def bus(self, value: pd.DataFrame | None):
         """Set bus data DataFrame with validation."""
         if value is not None:
             self._validate_dataframe(value, "bus")
         self._bus = value
 
     @property
-    def line(self) -> Optional[pd.DataFrame]:
+    def line(self) -> pd.DataFrame | None:
         """Get line data DataFrame."""
         return self._line
 
     @line.setter
-    def line(self, value: Optional[pd.DataFrame]):
+    def line(self, value: pd.DataFrame | None):
         """Set line data DataFrame with validation."""
         if value is not None:
             self._validate_dataframe(value, "line")
         self._line = value
 
     @property
-    def gen(self) -> Optional[pd.DataFrame]:
+    def gen(self) -> pd.DataFrame | None:
         """Get generator data DataFrame."""
         return self._gen
 
     @gen.setter
-    def gen(self, value: Optional[pd.DataFrame]):
+    def gen(self, value: pd.DataFrame | None):
         """Set generator data DataFrame with validation."""
         if value is not None:
             self._validate_dataframe(value, "gen")
         self._gen = value
 
     @property
-    def load(self) -> Optional[pd.DataFrame]:
+    def load(self) -> pd.DataFrame | None:
         """Get load data DataFrame."""
         return self._load
 
     @load.setter
-    def load(self, value: Optional[pd.DataFrame]):
+    def load(self, value: pd.DataFrame | None):
         """Set load data DataFrame with validation."""
         if value is not None:
             self._validate_dataframe(value, "load")
         self._load = value
 
     @property
-    def transformer(self) -> Optional[pd.DataFrame]:
+    def transformer(self) -> pd.DataFrame | None:
         """Get transformer data DataFrame."""
         return self._transformer
 
     @transformer.setter
-    def transformer(self, value: Optional[pd.DataFrame]):
+    def transformer(self, value: pd.DataFrame | None):
         """Set transformer data DataFrame with validation."""
         if value is not None:
             self._validate_dataframe(value, "transformer")
@@ -316,7 +327,7 @@ class GridInstance:
             # Warn but don't raise - allow flexibility
             pass  # Could add logging here
 
-    def validate(self) -> Dict[str, List[str]]:
+    def validate(self) -> dict[str, list[str]]:
         """
         Validate all component DataFrames and return any issues.
 
@@ -363,7 +374,7 @@ class GridInstance:
     # Summary methods
     # -------------------------------------------------------------------------
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """
         Generate a summary of the grid state.
 
@@ -392,7 +403,7 @@ class GridInstance:
 
         return result
 
-    def to_dict(self) -> Dict[str, Optional[pd.DataFrame]]:
+    def to_dict(self) -> dict[str, pd.DataFrame | None]:
         """
         Convert all component data to a dictionary.
 
@@ -408,7 +419,7 @@ class GridInstance:
         }
 
     @classmethod
-    def get_schema(cls, component: str) -> Optional[ComponentSchema]:
+    def get_schema(cls, component: str) -> ComponentSchema | None:
         """
         Get the schema for a component type.
 
@@ -424,7 +435,7 @@ class GridInstance:
         return COMPONENT_SCHEMAS.get(component)
 
     @classmethod
-    def get_required_columns(cls, component: str) -> List[str]:
+    def get_required_columns(cls, component: str) -> list[str]:
         """
         Get required columns for a component type.
 
@@ -441,7 +452,7 @@ class GridInstance:
         return schema.required_columns if schema else []
 
     @classmethod
-    def get_units(cls, component: str) -> Dict[str, str]:
+    def get_units(cls, component: str) -> dict[str, str]:
         """
         Get unit descriptions for a component type's columns.
 

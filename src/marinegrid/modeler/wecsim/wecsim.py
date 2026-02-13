@@ -13,7 +13,7 @@ import json
 import os
 import random
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 # Third-party
 import pandas as pd
@@ -67,7 +67,7 @@ class WECSimModeler:
         ... )
     """
 
-    def __init__(self, database: Optional["Database"] = None):
+    def __init__(self, database: "Database | None" = None):
         """
         Initialize WEC-Sim interface.
 
@@ -79,12 +79,12 @@ class WECSimModeler:
             Automatically loads configuration from environment variable
             ``MARINEGRID_WECSIM_PATH`` or ``~/.marinegrid/wecsim_config.json``.
         """
-        self.wec_sim_path: Optional[str] = None
-        self.database: Optional["Database"] = database
+        self.wec_sim_path: str | None = None
+        self.database: "Database | None" = database
         self.matlab_engine: Any = None
-        self._time: Optional["Time"] = None
-        self._stdout: Optional[io.StringIO] = None
-        self._stderr: Optional[io.StringIO] = None
+        self._time: "Time | None" = None
+        self._stdout: io.StringIO | None = None
+        self._stderr: io.StringIO | None = None
 
         # Load configuration on init
         self._load_config()
@@ -105,7 +105,7 @@ class WECSimModeler:
     # -------------------------------------------------------------------------
 
     @property
-    def time(self) -> Optional["Time"]:
+    def time(self) -> "Time | None":
         """Get the central Time object for simulation timeline."""
         return self._time
 
@@ -177,7 +177,7 @@ class WECSimModeler:
         self._save_config()
         return self.wec_sim_path
 
-    def get_wec_sim_path(self) -> Optional[str]:
+    def get_wec_sim_path(self) -> str | None:
         """
         Get the currently configured WEC-Sim path.
 
@@ -292,9 +292,9 @@ class WECSimModeler:
         wave_class: str = "irregular",
         wave_height: float = 2.5,
         wave_period: float = 8.0,
-        wave_seed: Optional[int] = None,
+        wave_seed: int | None = None,
         show_results: bool = True,
-    ) -> Optional[int]:
+    ) -> int | None:
         """
         Execute a WEC-Sim device simulation with specified parameters.
 
@@ -504,7 +504,7 @@ class WECSimModeler:
     # Results Access
     # -------------------------------------------------------------------------
 
-    def get_simulation_info(self, wec_sim_id: int) -> Optional[pd.DataFrame]:
+    def get_simulation_info(self, wec_sim_id: int) -> pd.DataFrame | None:
         """
         Get metadata for a WEC-Sim simulation.
 

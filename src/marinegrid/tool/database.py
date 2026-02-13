@@ -15,7 +15,8 @@ import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Dict, Generator, List, Optional, Tuple, Union, Any, TYPE_CHECKING
+from collections.abc import Generator
+from typing import Any, TYPE_CHECKING
 
 # Third-party
 import pandas as pd
@@ -42,7 +43,7 @@ def _db_config_file() -> Path:
     return _user_config_dir() / "database_config.json"
 
 
-def get_database_config() -> Optional[str]:
+def get_database_config() -> str | None:
     """Resolve database path from env var or user config file.
 
     Resolution order:
@@ -104,7 +105,7 @@ class Database:
         >>> results = db.query("SELECT * FROM wec_simulations", return_type="df")
     """
 
-    def __init__(self, study: Optional["Study"] = None):
+    def __init__(self, study: "Study | None" = None):
         """
         Initialize database handler.
 
@@ -112,7 +113,7 @@ class Database:
             study: Optional reference to parent Study object.
         """
         self.study = study
-        self.db_path: Optional[str] = None
+        self.db_path: str | None = None
 
         # Try to get database path from config
         configured_path = get_database_config()
@@ -155,7 +156,7 @@ class Database:
         finally:
             conn.close()
 
-    def set_database_path(self, db_path: Union[str, Path]) -> str:
+    def set_database_path(self, db_path: str | Path) -> str:
         """
         Set database path and save to configuration.
 
@@ -180,7 +181,7 @@ class Database:
 
         return self.db_path
 
-    def initialize_database(self, db_path: Optional[Union[str, Path]] = None) -> None:
+    def initialize_database(self, db_path: str | Path | None = None) -> None:
         """
         Initialize database with required schema.
 
@@ -370,9 +371,9 @@ class Database:
     def query(
         self,
         sql: str,
-        params: Optional[Tuple] = None,
+        params: tuple | None = None,
         return_type: str = "raw",
-    ) -> Union[List[Tuple], pd.DataFrame, List[Dict[str, Any]]]:
+    ) -> list[tuple] | pd.DataFrame | list[dict[str, Any]]:
         """
         Execute SQL query with flexible result formatting.
 
@@ -419,7 +420,7 @@ class Database:
             else:
                 return result
 
-    def execute(self, sql: str, params: Optional[Tuple] = None) -> int:
+    def execute(self, sql: str, params: tuple | None = None) -> int:
         """
         Execute SQL statement (INSERT, UPDATE, DELETE).
 
