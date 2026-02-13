@@ -14,9 +14,7 @@ import numpy as np
 
 
 # Local
-from .base import PowerSystemModeler
-from ...util.convert import Converter
-from ...util.grid_instance import GridInstance
+from .base import PowerSystemModeler, SolveResult
 
 class PyPSAModeler(PowerSystemModeler):
     """
@@ -64,272 +62,49 @@ class PyPSAModeler(PowerSystemModeler):
         self.sbase = self.network.meta.get("psse_sbase_mva", 100.0)
 
         # Run initial power flow
-        self.solve()
+        result = self.solve()
 
-        return True
+        return result.converged
 
-    def solve(self) -> bool:
+    def solve(self) -> SolveResult:
         """
-        Run PyPSA power flow calculation.
+        Run a single PyPSA power flow calculation.
 
         Returns:
-            True if power flow converged, False otherwise.
-
-        Raises:
-            RuntimeError: If network is not initialized.
+            SolveResult with convergence status, timing, and iteration count.
         """
-        if self.network is None:
-            return False
-        result = self.network.pf()
-        return result.get("converged", False) if isinstance(result, dict) else False
-
-    def getState(self, timestamp: pd.Timestamp) -> bool:
-        """
-        Capture current grid state at specified timestamp.
-
-        Creates a GridInstance with all component data and appends
-        it to the GridData history.
-
-        Args:
-            timestamp: Timestamp for this grid state snapshot.
-
-        Returns:
-            True if state capture succeeded, False otherwise.
-
-        Raises:
-            TypeError: If timestamp is not a pandas Timestamp.
-        """
-        if not isinstance(timestamp, pd.Timestamp):
-            raise TypeError("timestamp must be a pandas Timestamp instance.")
-        new_state = GridInstance()
-        new_state.timestamp = timestamp
-        new_state.bus = self.getBusData()
-        new_state.line = self.getLineData()
-        new_state.gen = self.getGeneratorData()
-        new_state.load = self.getLoadData()
-        new_state.transformer = self.getTransformerData()
-        
-        self.data.appendState(new_state)
-        
-        return True
-    
-    def simulate(
-        self,
-        gen_schedules: Optional[Dict[str, pd.DataFrame]] = None,
-        load_schedules: Optional[Dict[str, pd.DataFrame]] = None,
-        farms: Optional[list] = None,
-    ) -> bool:
-        """
-        Run PyPSA time-series simulation.
-
-        Executes power flow calculations across all snapshots from the
-        Time object, updating component setpoints at each time step and
-        capturing results to GridData.
-
-        At each timestep, updates:
-        - Generator setpoints from gen_schedules
-        - Load setpoints from load_schedules
-        - Farm-based generators (if farms provided or registered)
-
-        Uses self.time.snapshots as the simulation timeline. If no Time
-        object is set, runs a single snapshot using the current network state.
-
-        Args:
-            gen_schedules: Dictionary mapping generator name/ID to time series.
-                Values can be Series (p only) or DataFrame (columns: p, q).
-                Index should be timestamps. Power in per-unit.
-            load_schedules: Dictionary mapping load name/ID to time series.
-                Same format as gen_schedules.
-            farms: Optional list of farm objects (e.g., WECFarm) with
-                power_at_snapshot() method. Deprecated - use gen_schedules
-                or register farms via add_wec_farm().
-
-        Returns:
-            True if simulation completed successfully, False otherwise.
-        """
-        if self.network is None:
-            return False
         import time as time_module
 
-        # Combine provided farms with any registered via add_wec_farm()
-        all_farms = list(farms) if farms else []
-        registered_farms = getattr(self, "_wec_farms", [])
-        for farm in registered_farms:
-            if farm not in all_farms:
-                all_farms.append(farm)
+        if self.network is None:
+            return SolveResult(converged=False, message="Network not initialized")
 
-        # Build mapping of farm to generator name for quick lookup
-        farm_generators = {}
-        for farm in all_farms:
-            gen_name = getattr(farm, "gen_name", None)
-            if gen_name and gen_name in self.network.generators.index:
-                farm_generators[id(farm)] = gen_name
+        start = time_module.time()
+        result = self.network.pf()
+        elapsed = time_module.time() - start
 
-        # Normalize gen_schedules: ensure we have DataFrames
-        gen_schedules = gen_schedules or {}
-        normalized_gen_schedules = {}
-        for gen_id, schedule in gen_schedules.items():
-            if isinstance(schedule, pd.Series):
-                normalized_gen_schedules[gen_id] = schedule.to_frame(name="p")
+        if isinstance(result, dict):
+            converged_val = result.get("converged", False)
+            if hasattr(converged_val, "all"):
+                converged = bool(converged_val.all())
             else:
-                normalized_gen_schedules[gen_id] = schedule
+                converged = bool(converged_val)
 
-        # Normalize load_schedules: ensure we have DataFrames
-        load_schedules = load_schedules or {}
-        normalized_load_schedules = {}
-        for load_id, schedule in load_schedules.items():
-            if isinstance(schedule, pd.Series):
-                normalized_load_schedules[load_id] = schedule.to_frame(name="p")
+            n_iter_val = result.get("n_iter", 0)
+            if hasattr(n_iter_val, "iloc"):
+                iterations = int(n_iter_val.iloc[-1])
             else:
-                normalized_load_schedules[load_id] = schedule
-
-        # Clear previous history for fresh simulation
-        self.data.clear()
-        self.report = type(self.report)(backend=self.backend)
-
-        # Determine snapshots to simulate
-        if self._time is not None:
-            snapshots = self._time.snapshots
+                iterations = int(n_iter_val) if n_iter_val else 0
         else:
-            # Fallback: single snapshot at current time
-            snapshots = pd.DatetimeIndex([pd.Timestamp.now()])
+            converged = False
+            iterations = 0
 
-        simulation_start = time_module.time()
-        sbase = float(self.sbase) if self.sbase else 100.0
+        return SolveResult(
+            converged=converged,
+            solve_time=elapsed,
+            iterations=iterations,
+            message="Converged" if converged else "Did not converge",
+        )
 
-        # Run power flow for each snapshot
-        for ts in snapshots:
-            step_start = time_module.time()
-
-            # --- Update generators from schedules ---
-            for gen_id, schedule_df in normalized_gen_schedules.items():
-                if ts in schedule_df.index:
-                    # Find generator in network
-                    gen_name = self._resolve_generator_name(gen_id)
-                    if gen_name:
-                        # Update p_set
-                        if "p" in schedule_df.columns:
-                            p_pu = float(schedule_df.at[ts, "p"])
-                            self.network.generators.at[gen_name, "p_set"] = p_pu * sbase
-                        # Update q_set if provided
-                        if "q" in schedule_df.columns:
-                            q_pu = float(schedule_df.at[ts, "q"])
-                            self.network.generators.at[gen_name, "q_set"] = q_pu * sbase
-
-            # --- Update generators from farms (legacy support) ---
-            for farm in all_farms:
-                gen_name = farm_generators.get(id(farm))
-                if gen_name:
-                    try:
-                        power_pu = farm.power_at_snapshot(ts)
-                        self.network.generators.at[gen_name, "p_set"] = power_pu * sbase
-                    except (KeyError, AttributeError):
-                        pass
-
-            # --- Update loads from schedules ---
-            for load_id, schedule_df in normalized_load_schedules.items():
-                if ts in schedule_df.index:
-                    # Find load in network
-                    load_name = self._resolve_load_name(load_id)
-                    if load_name:
-                        # Update p_set
-                        if "p" in schedule_df.columns:
-                            p_pu = float(schedule_df.at[ts, "p"])
-                            self.network.loads.at[load_name, "p_set"] = p_pu * sbase
-                        # Update q_set if provided
-                        if "q" in schedule_df.columns:
-                            q_pu = float(schedule_df.at[ts, "q"])
-                            self.network.loads.at[load_name, "q_set"] = q_pu * sbase
-
-            # Solve power flow
-            converged = self.solve()
-
-            step_time = time_module.time() - step_start
-
-            # Record solve result
-            self.report.add_solve_result(
-                snapshot=ts,
-                converged=converged,
-                solve_time=step_time,
-                iterations=0,  # PyPSA doesn't expose iteration count easily
-                message="Converged" if converged else "Did not converge",
-            )
-
-            # Capture state regardless of convergence (user may want to analyze)
-            self.getState(ts)
-
-        self.report.simulation_time = time_module.time() - simulation_start
-
-        # Return True if all steps converged
-        return all(self.report.converged)
-
-    def _resolve_generator_name(self, gen_id: str) -> Optional[str]:
-        """
-        Resolve a generator identifier to its network index name.
-
-        Args:
-            gen_id: Generator name or numeric ID.
-
-        Returns:
-            Generator name in network.generators.index, or None if not found.
-        """
-        if self.network is None:
-            return None
-        # Direct match
-        if gen_id in self.network.generators.index:
-            return gen_id
-
-        # Try string conversion
-        str_id = str(gen_id)
-        if str_id in self.network.generators.index:
-            return str_id
-
-        # Try numeric index lookup (G0, G1, etc.)
-        try:
-            idx = int(gen_id) if str(gen_id).isdigit() else int(str_id[1:])
-            if 0 <= idx < len(self.network.generators.index):
-                return self.network.generators.index[idx]
-        except (ValueError, IndexError):
-            pass
-
-        return None
-
-    def _resolve_load_name(self, load_id: str) -> Optional[str]:
-        """
-        Resolve a load identifier to its network index name.
-
-        Args:
-            load_id: Load name, bus number, or numeric ID.
-
-        Returns:
-            Load name in network.loads.index, or None if not found.
-        """
-        if self.network is None:
-            return None
-        # Direct match
-        if load_id in self.network.loads.index:
-            return load_id
-
-        # Try string conversion
-        str_id = str(load_id)
-        if str_id in self.network.loads.index:
-            return str_id
-
-        # Try bus-based lookup
-        bus_to_load = {str(bus): name for name, bus in self.network.loads["bus"].items()}
-        if str_id in bus_to_load:
-            return bus_to_load[str_id]
-
-        # Try numeric index lookup (LD0, LD1, etc.)
-        try:
-            idx = int(load_id) if str(load_id).isdigit() else int(str_id[2:])
-            if 0 <= idx < len(self.network.loads.index):
-                return self.network.loads.index[idx]
-        except (ValueError, IndexError):
-            pass
-
-        return None
-    
     def getBusData(self) -> pd.DataFrame:
         """
         Retrieve bus data from PyPSA network.
@@ -1447,7 +1222,7 @@ class PyPSAModeler(PowerSystemModeler):
     # WEC Farm Integration
     # -------------------------------------------------------------------------
 
-    def add_wec_farm(self, farm, solve: bool = False) -> bool:
+    def add_wec_farm(self, farm) -> bool:
         """
         Add a WEC farm to the PyPSA network.
 
@@ -1458,7 +1233,6 @@ class PyPSAModeler(PowerSystemModeler):
         Args:
             farm: WECFarm instance containing connection details including
                 bus_location, connecting_bus, and device data.
-            solve: If True, run power flow after adding (default False).
 
         Returns:
             True if the farm was added successfully, False otherwise.
@@ -1467,10 +1241,6 @@ class PyPSAModeler(PowerSystemModeler):
             - Bus: Created at farm.bus_location with same voltage as connecting_bus
             - Line: Connects WEC bus to grid (hardcoded impedance, TODO: calculate)
             - Generator: Wave carrier type, PV control mode, p_nom from device data
-
-        Example:
-            >>> modeler.add_wec_farm(wec_farm)
-            >>> modeler.simulate()  # Farm power updated each timestep
         """
         if self.network is None:
             return False
@@ -1539,11 +1309,6 @@ class PyPSAModeler(PowerSystemModeler):
                 self._wec_farms = []
             self._wec_farms.append(farm)
 
-            if solve:
-                self.solve()
-                if self._time is not None and len(self._time) > 0:
-                    self.getState(self._time[0])
-
             return True
 
         except Exception as e:
@@ -1607,22 +1372,3 @@ class PyPSAModeler(PowerSystemModeler):
             print(f"[PyPSA ERROR] Failed to remove WEC farm: {e}")
             return False
 
-    def simulate_with_wec(self, wec_farms: Optional[list] = None) -> bool:
-        """
-        Run time-series simulation with WEC farm power updates.
-
-        This is a convenience wrapper around simulate() for backwards
-        compatibility. Use simulate(gen_schedules=...) or register
-        farms via add_wec_farm() instead.
-
-        Args:
-            wec_farms: Optional list of WECFarm objects. If None, uses
-                farms registered via add_wec_farm().
-
-        Returns:
-            True if simulation completed successfully, False otherwise.
-        """
-        if self.network is None:
-            return False
-
-        return self.simulate(farms=wec_farms)
