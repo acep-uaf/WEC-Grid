@@ -1,6 +1,11 @@
 """
 Renewable Device Abstract Base Class.
 
+Defines ``RenewableDevice``, the ABC that all device types (WEC, wind,
+solar, tidal, storage) extend. Guarantees a uniform interface for
+time-series power access so that farms and the simulation loop can
+treat every device type interchangeably.
+
 File: src/marinegrid/renewables/base.py
 """
 

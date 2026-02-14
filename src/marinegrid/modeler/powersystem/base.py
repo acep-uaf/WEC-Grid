@@ -1,6 +1,11 @@
 """
 PowerSystemModeler Abstract Base Class.
 
+Defines ``PowerSystemModeler``, the ABC that all power-system backends
+must implement, and ``SolveResult``, the dataclass returned by every
+power-flow solve. Together they establish the interface contract that
+``ModelerManager`` relies on for backend-agnostic simulation.
+
 File: src/marinegrid/modeler/powersystem/base.py
 """
 

@@ -1,6 +1,11 @@
 """
 Simulation orchestration for Marine-Grid.
 
+Defines the ``Study`` class, the top-level entry point that composes
+``Time``, ``ModelerManager``, ``Database``, ``Plot``, and ``Analysis``
+into a single coordinating object. Users create a Study, point it at a
+case file, configure the timeline, load modelers, and run simulations.
+
 File: src/marinegrid/study.py
 """
 

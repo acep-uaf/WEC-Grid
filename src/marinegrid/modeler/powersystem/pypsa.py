@@ -1,5 +1,10 @@
 """
-PyPSA Modeler Module.
+PyPSA power system modeling backend.
+
+Implements the ``PowerSystemModeler`` ABC using PyPSA as the solver.
+Provides full component CRUD (bus, generator, load, line, transformer),
+per-unit conversion on the system MVA base, AC power-flow solving, and
+WEC farm integration with automatic bus/line/generator provisioning.
 
 File: src/marinegrid/modeler/powersystem/pypsa.py
 """
@@ -25,6 +30,10 @@ class PyPSAModeler(PowerSystemModeler):
         network: PyPSA Network object containing the grid model.
         sbase: System base power in MVA.
     """
+
+    # -------------------------------------------------------------------------
+    # Initialization
+    # -------------------------------------------------------------------------
 
     def __init__(self):
         """
@@ -62,6 +71,10 @@ class PyPSAModeler(PowerSystemModeler):
         result = self.solve()
 
         return result.converged
+
+    # -------------------------------------------------------------------------
+    # Power Flow
+    # -------------------------------------------------------------------------
 
     def solve(self) -> SolveResult:
         """
@@ -101,6 +114,10 @@ class PyPSAModeler(PowerSystemModeler):
             iterations=iterations,
             message="Converged" if converged else "Did not converge",
         )
+
+    # -------------------------------------------------------------------------
+    # Data Retrieval
+    # -------------------------------------------------------------------------
 
     def get_bus_data(self) -> pd.DataFrame:
         """
@@ -546,6 +563,10 @@ class PyPSAModeler(PowerSystemModeler):
         df.index = pd.RangeIndex(start=0, stop=len(df))
         return df
     
+    # -------------------------------------------------------------------------
+    # Component Updates
+    # -------------------------------------------------------------------------
+
     def update_generator(self, name: str, **kwargs) -> bool:
         """
         Update generator parameters in PyPSA network.

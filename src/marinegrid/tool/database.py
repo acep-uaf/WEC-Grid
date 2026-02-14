@@ -25,6 +25,11 @@ if TYPE_CHECKING:
     from ..study import Study
 
 
+# -------------------------------------------------------------------------
+# Module-Level Config Helpers
+# -------------------------------------------------------------------------
+
+
 def _user_config_dir() -> Path:
     """Return a user-writable config directory for Marine-Grid.
 
@@ -126,6 +131,10 @@ class Database:
             return f"Database(path={self.db_path!r})"
         return "Database(not configured)"
 
+    # -------------------------------------------------------------------------
+    # Connection Management
+    # -------------------------------------------------------------------------
+
     @contextmanager
     def connection(self):
         """
@@ -155,6 +164,10 @@ class Database:
             raise
         finally:
             conn.close()
+
+    # -------------------------------------------------------------------------
+    # Path Configuration
+    # -------------------------------------------------------------------------
 
     def set_database_path(self, db_path: str | Path) -> str:
         """
@@ -368,6 +381,10 @@ class Database:
                 )
             """)
 
+    # -------------------------------------------------------------------------
+    # Query Interface
+    # -------------------------------------------------------------------------
+
     def query(
         self,
         sql: str,
@@ -438,6 +455,10 @@ class Database:
             cursor = conn.cursor()
             cursor.execute(sql, params or ())
             return cursor.lastrowid if "INSERT" in sql.upper() else cursor.rowcount
+
+    # -------------------------------------------------------------------------
+    # Convenience Queries
+    # -------------------------------------------------------------------------
 
     def get_wec_simulations(self) -> pd.DataFrame:
         """

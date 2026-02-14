@@ -390,6 +390,10 @@ class Time:
             else:
                 return 300  # Default to 5 minutes
 
+    # -------------------------------------------------------------------------
+    # Serialization
+    # -------------------------------------------------------------------------
+
     def to_dict(self) -> dict[str, datetime | int | str | float]:
         """
         Export time configuration as dictionary.

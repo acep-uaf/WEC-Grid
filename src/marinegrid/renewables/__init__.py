@@ -1,6 +1,17 @@
 """
 Renewable energy device models.
 
+Domain Layer classes representing marine and terrestrial renewable
+energy devices and their farm containers. Each device type extends
+``RenewableDevice`` (ABC), and farms aggregate devices for power
+injection into the grid simulation loop.
+
+Key exports:
+    RenewableDevice      — ABC for all device types.
+    RenewableEnergyFarm  — Generic mixed-device farm container.
+    WECDevice / WECFarm  — Wave energy converter specializations.
+    WindDevice, SolarDevice, TidalDevice, StorageDevice — Data containers.
+
 File: src/marinegrid/renewables/__init__.py
 """
 

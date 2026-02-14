@@ -1,6 +1,11 @@
 """
 Case file conversion utilities for Marine-Grid.
 
+Provides the ``Converter`` class for translating PSS/E RAW case files
+into PyPSA ``Network`` objects via ``grg-pssedata``. Handles buses,
+branches, generators, loads, two-winding transformers, and shunt
+impedances with per-unit conversion on the system MVA base.
+
 File: src/marinegrid/util/convert.py
 """
 
@@ -12,13 +17,33 @@ import grg_pssedata.io as grgio
 import pypsa
 
 class Converter:
-    """Case file conversion utilities (RAW → PyPSA)."""
+    """
+    Case file format converter for Marine-Grid.
+
+    Translates power system case files into solver-ready network objects.
+    Currently supports PSS/E RAW format (v30-33) via the ``grg-pssedata``
+    parser, producing a PyPSA ``Network`` with all standard component
+    types.
+
+    Attributes:
+        ALLOWED_EXTENSIONS: Set of file suffixes accepted by the
+            converter (currently ``{".raw"}``).
+
+    Example:
+        >>> conv = Converter()
+        >>> network = conv.raw_to_pypsa("IEEE14.raw")
+        >>> network.buses
+    """
 
     ALLOWED_EXTENSIONS = {".raw"}
 
     def __init__(self) -> None:
         """Initialize conversion helper."""
         pass
+
+    # -------------------------------------------------------------------------
+    # Conversion Methods
+    # -------------------------------------------------------------------------
 
     def raw_to_pypsa(self, raw_file: str | Path) -> pypsa.Network:
         """

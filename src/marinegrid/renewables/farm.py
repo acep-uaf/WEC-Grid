@@ -1,6 +1,11 @@
 """
 Renewable energy farm container.
 
+Defines ``RenewableEnergyFarm``, a generic container for mixed-device
+farms. Aggregates per-device power output into a single time series
+suitable for injection into the power-system simulation loop. Subclassed
+by ``WECFarm`` for wave-energy-specific behavior.
+
 File: src/marinegrid/renewables/farm.py
 """
 
@@ -91,6 +96,10 @@ class RenewableEnergyFarm:
         """Iterate over devices in the farm."""
         return iter(self.devices)
 
+    # -------------------------------------------------------------------------
+    # Device Management
+    # -------------------------------------------------------------------------
+
     def add_device(self, device: RenewableDevice) -> None:
         """
         Add a device to the farm.
@@ -111,6 +120,10 @@ class RenewableEnergyFarm:
             ValueError: If device is not in the farm.
         """
         self.devices.remove(device)
+
+    # -------------------------------------------------------------------------
+    # Power Output
+    # -------------------------------------------------------------------------
 
     def power_at_snapshot(self, timestamp: pd.Timestamp) -> float:
         """

@@ -11,6 +11,11 @@ from typing import Any
 # Third-party
 import pandas as pd
 
+# -------------------------------------------------------------------------
+# Component Schemas
+# -------------------------------------------------------------------------
+
+
 @dataclass
 class ComponentSchema:
     """
@@ -417,6 +422,10 @@ class GridInstance:
             "load": self._load,
             "transformer": self._transformer,
         }
+
+    # -------------------------------------------------------------------------
+    # Schema Introspection
+    # -------------------------------------------------------------------------
 
     @classmethod
     def get_schema(cls, component: str) -> ComponentSchema | None:

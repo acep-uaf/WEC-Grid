@@ -1,5 +1,10 @@
 """
-Wave energy converter device model.
+Wave energy converter device and farm models.
+
+Defines ``WECDevice`` (a single WEC unit with per-unit power data) and
+``WECFarm`` (a collection of WECDevices loaded from the database).
+``WECFarm`` handles automatic downsampling of high-resolution WEC-Sim
+output to the grid simulation timestep and per-unit conversion.
 
 File: src/marinegrid/renewables/wec.py
 """
@@ -78,6 +83,10 @@ class WECDevice(RenewableDevice):
             f"└─ data rows: {len(self.data)}"
         )
 
+    # -------------------------------------------------------------------------
+    # Power Query
+    # -------------------------------------------------------------------------
+
     def power_at(self, ts: pd.Timestamp) -> float:
         """
         Return active power at timestamp in per-unit.
@@ -144,6 +153,10 @@ class WECFarm(RenewableEnergyFarm):
         >>> power = farm.power_at_snapshot(pd.Timestamp("2024-01-01 12:00"))
     """
 
+    # -------------------------------------------------------------------------
+    # Farm Initialization
+    # -------------------------------------------------------------------------
+
     def __init__(
         self,
         farm_name: str,
@@ -207,6 +220,10 @@ class WECFarm(RenewableEnergyFarm):
             f"├─ wec_sim_id: {self.wec_sim_id}\n"
             f"└─ sbase: {self.sbase} MVA"
         )
+
+    # -------------------------------------------------------------------------
+    # Data Processing
+    # -------------------------------------------------------------------------
 
     def _prepare_farm(self) -> None:
         """
@@ -395,6 +412,10 @@ class WECFarm(RenewableEnergyFarm):
             downsampled_data[col] = downsampled_values
 
         return pd.DataFrame(downsampled_data)
+
+    # -------------------------------------------------------------------------
+    # Power Query
+    # -------------------------------------------------------------------------
 
     def reactive_power_at_snapshot(self, timestamp: pd.Timestamp) -> float:
         """
