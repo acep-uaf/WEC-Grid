@@ -9,6 +9,9 @@ by ``WECFarm`` for wave-energy-specific behavior.
 File: src/marinegrid/renewables/farm.py
 """
 
+# Standard library
+from collections.abc import Iterator
+
 # Third-party
 import pandas as pd
 
@@ -62,7 +65,15 @@ class RenewableEnergyFarm:
             devices: Pre-existing list of devices to include.
             gen_name: Generator name in the grid model.
             sbase: Base power in MVA for per-unit values.
+
+        Raises:
+            ValueError: If size is negative or sbase is not positive.
         """
+        if size < 0:
+            raise ValueError(f"size must be non-negative, got {size}")
+        if sbase <= 0:
+            raise ValueError(f"sbase must be positive, got {sbase}")
+
         self.farm_name = farm_name
         self.bus_location = bus_location
         self.connecting_bus = connecting_bus
@@ -92,7 +103,7 @@ class RenewableEnergyFarm:
         """Return number of devices in the farm."""
         return len(self.devices)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[RenewableDevice]:
         """Iterate over devices in the farm."""
         return iter(self.devices)
 
@@ -106,7 +117,12 @@ class RenewableEnergyFarm:
 
         Args:
             device: RenewableDevice instance to add.
+
+        Raises:
+            TypeError: If device is not a RenewableDevice instance.
         """
+        if not isinstance(device, RenewableDevice):
+            raise TypeError(f"device must be a RenewableDevice, got {type(device).__name__}")
         self.devices.append(device)
 
     def remove_device(self, device: RenewableDevice) -> None:

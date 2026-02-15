@@ -78,6 +78,10 @@ class Converter:
                 grgio.print_err = lambda *args, **kwargs: None
 
             case = grgio.parse_psse_case_file(raw_file_path)
+        except (ValueError, TypeError, AttributeError, IOError) as e:
+            raise ValueError(
+                f"Failed to parse RAW file '{raw_file_path.name}': {e}"
+            ) from e
         finally:
             if original_print_err is not None:
                 grgio.print_err = original_print_err

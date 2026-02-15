@@ -124,7 +124,12 @@ class ModelerManager:
 
         Args:
             time: Time object to use as the simulation timeline.
+
+        Raises:
+            ValueError: If time is None.
         """
+        if time is None:
+            raise ValueError("time cannot be None")
         self._time = time
         # Propagate time to modelers that accept it (e.g., WECSimModeler)
         for modeler in self.modelers.values():

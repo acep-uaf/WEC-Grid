@@ -9,6 +9,8 @@ import pandas as pd
 
 # Local
 from .base import RenewableDevice
+
+
 class TidalDevice(RenewableDevice):
     """
     Tidal energy converter with time-series power output.

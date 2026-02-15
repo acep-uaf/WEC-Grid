@@ -5,6 +5,7 @@ File: src/marinegrid/util/grid_data.py
 """
 
 # Standard library
+from collections.abc import Iterator
 from typing import Any
 
 # Third-party
@@ -44,7 +45,9 @@ class GridData:
         >>> gen_p.plot()
     """
 
-    def __init__(self):
+    _VALID_COMPONENTS = {"bus", "gen", "line", "load", "transformer"}
+
+    def __init__(self) -> None:
         """
         Initialize an empty GridData container.
 
@@ -100,7 +103,7 @@ class GridData:
         """Check if a timestamp exists in history."""
         return key in self._history
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[pd.Timestamp]:
         """Iterate over timestamps in order."""
         return iter(self._snapshots)
 
@@ -295,6 +298,12 @@ class GridData:
             >>> bus_voltage = data.get_timeseries("bus", "v_mag")
             >>> line_loading = data.get_timeseries("line", "loading_pct")
         """
+        if component not in self._VALID_COMPONENTS:
+            raise ValueError(
+                f"Invalid component {component!r}. "
+                f"Must be one of: {', '.join(sorted(self._VALID_COMPONENTS))}"
+            )
+
         if not self._history:
             return pd.DataFrame()
 
@@ -352,6 +361,12 @@ class GridData:
             >>> bus_data["v_mag"].plot()  # Plot voltage magnitudes over time
             >>> bus_data["p"].plot()      # Plot power injections over time
         """
+        if component not in self._VALID_COMPONENTS:
+            raise ValueError(
+                f"Invalid component {component!r}. "
+                f"Must be one of: {', '.join(sorted(self._VALID_COMPONENTS))}"
+            )
+
         if not self._history:
             return {}
 
@@ -444,8 +459,19 @@ class GridData:
 
         Raises:
             TypeError: If v_min or v_max are not float/int.
-            ValueError: If v_min or v_max are not positive.
+            ValueError: If v_min or v_max are not positive, or v_min >= v_max.
         """
+        if not isinstance(v_min, (int, float)):
+            raise TypeError(f"v_min must be a number, got {type(v_min).__name__}")
+        if not isinstance(v_max, (int, float)):
+            raise TypeError(f"v_max must be a number, got {type(v_max).__name__}")
+        if v_min <= 0:
+            raise ValueError("v_min must be positive")
+        if v_max <= 0:
+            raise ValueError("v_max must be positive")
+        if v_min >= v_max:
+            raise ValueError(f"v_min ({v_min}) must be less than v_max ({v_max})")
+
         violations = []
 
         for ts in self._snapshots:
@@ -493,6 +519,11 @@ class GridData:
             TypeError: If threshold is not a float/int.
             ValueError: If threshold is not positive.
         """
+        if not isinstance(threshold, (int, float)):
+            raise TypeError(f"threshold must be a number, got {type(threshold).__name__}")
+        if threshold <= 0:
+            raise ValueError("threshold must be positive")
+
         overloads = []
 
         for ts in self._snapshots:

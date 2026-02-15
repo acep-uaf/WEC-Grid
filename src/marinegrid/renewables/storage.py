@@ -9,6 +9,8 @@ import pandas as pd
 
 # Local
 from .base import RenewableDevice
+
+
 class StorageDevice(RenewableDevice):
     """
     Energy storage system with time-series power data.

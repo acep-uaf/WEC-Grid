@@ -61,18 +61,15 @@ class Study:
         self.modeler.set_time(self.time)
 
         # Class attributes
-        self._case_path:  Path | None = None # path to case file
-        self._case_name : str | None = None # name of the case
-        
-        
-    
+        self._case_path: Path | None = None
+        self._case_name: str | None = None
+
     @property
     def case_name(self) -> str:
         if self._case_name is None:
             raise RuntimeError("Case not set. Set study.case_path first.")
         return self._case_name
-    
-    
+
     @property
     def case_path(self) -> Path:
         if self._case_path is None:
@@ -102,7 +99,6 @@ class Study:
         self._case_path = path
         self._case_name = path.stem
 
-    
     def run(self, **kwargs) -> bool:
         """
         Run the simulation.

@@ -9,6 +9,8 @@ import pandas as pd
 
 # Local
 from .base import RenewableDevice
+
+
 class WindDevice(RenewableDevice):
     """
     Wind turbine device with time-series power output.

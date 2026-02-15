@@ -9,6 +9,8 @@ import pandas as pd
 
 # Local
 from .base import RenewableDevice
+
+
 class SolarDevice(RenewableDevice):
     """
     Solar photovoltaic device with time-series power output.

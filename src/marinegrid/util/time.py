@@ -244,6 +244,11 @@ class Time:
             TypeError: If hours is not a float or int.
             ValueError: If hours is not positive.
         """
+        if not isinstance(hours, (int, float)):
+            raise TypeError(f"hours must be a number, got {type(hours).__name__}")
+        if hours <= 0:
+            raise ValueError("hours must be positive")
+
         total_seconds = hours * 3600
         self._num_steps = int(total_seconds / self._delta_time) + 1
         self._invalidate_cache()
@@ -264,6 +269,11 @@ class Time:
         Raises:
             TypeError: If start or end are not datetime instances.
         """
+        if not isinstance(start, datetime):
+            raise TypeError(f"start must be a datetime, got {type(start).__name__}")
+        if not isinstance(end, datetime):
+            raise TypeError(f"end must be a datetime, got {type(end).__name__}")
+
         if freq is not None:
             self._freq = freq
             self._delta_time = self._freq_to_seconds(freq)
@@ -291,6 +301,8 @@ class Time:
             TypeError: If timestamp is not a datetime or Timestamp.
             ValueError: If timestamp is outside simulation range.
         """
+        if not isinstance(timestamp, (datetime, pd.Timestamp)):
+            raise TypeError(f"timestamp must be a datetime or Timestamp, got {type(timestamp).__name__}")
         if timestamp < self._start_time or timestamp > self.end_time:
             raise ValueError(f"Timestamp {timestamp} is outside simulation range")
 
@@ -311,6 +323,8 @@ class Time:
             TypeError: If step is not an int.
             IndexError: If step is out of range.
         """
+        if not isinstance(step, int):
+            raise TypeError(f"step must be an int, got {type(step).__name__}")
         if step < 0 or step >= self._num_steps:
             raise IndexError(f"Step {step} is out of range [0, {self._num_steps})")
         return self.snapshots[step]
@@ -328,6 +342,8 @@ class Time:
         Raises:
             TypeError: If timestamp is not a datetime or Timestamp.
         """
+        if not isinstance(timestamp, (datetime, pd.Timestamp)):
+            raise TypeError(f"timestamp must be a datetime or Timestamp, got {type(timestamp).__name__}")
         return self._start_time <= timestamp <= self.end_time
 
     def nearest_snapshot(self, timestamp: datetime | pd.Timestamp) -> pd.Timestamp:
@@ -343,6 +359,8 @@ class Time:
         Raises:
             TypeError: If timestamp is not a datetime or Timestamp.
         """
+        if not isinstance(timestamp, (datetime, pd.Timestamp)):
+            raise TypeError(f"timestamp must be a datetime or Timestamp, got {type(timestamp).__name__}")
         idx = self.snapshots.get_indexer([timestamp], method="nearest")[0]
         return self.snapshots[idx]
 
@@ -378,7 +396,7 @@ class Time:
         try:
             ts = pd.date_range(start="2000-01-01", periods=2, freq=freq)
             return int((ts[1] - ts[0]).total_seconds())
-        except Exception:
+        except (ValueError, TypeError):
             # Fallback: try to parse common formats
             freq_lower = freq.lower()
             if "min" in freq_lower:

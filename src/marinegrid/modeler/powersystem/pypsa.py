@@ -11,15 +11,18 @@ File: src/marinegrid/modeler/powersystem/pypsa.py
 
 # Standard library
 import warnings
+from typing import TYPE_CHECKING
 
 # Third-party
 import pypsa
 import pandas as pd
 import numpy as np
 
-
 # Local
 from .base import PowerSystemModeler, SolveResult
+
+if TYPE_CHECKING:
+    from ...renewables.farm import RenewableEnergyFarm
 
 class PyPSAModeler(PowerSystemModeler):
     """
@@ -65,6 +68,9 @@ class PyPSAModeler(PowerSystemModeler):
         Raises:
             TypeError: If network is not a pypsa.Network instance.
         """
+        if not isinstance(network, pypsa.Network):
+            raise TypeError(f"network must be a pypsa.Network, got {type(network).__name__}")
+
         self.network = network
 
         # Extract base power from network metadata
@@ -92,7 +98,10 @@ class PyPSAModeler(PowerSystemModeler):
             return SolveResult(converged=False, message="Network not initialized")
 
         start = time_module.time()
-        result = self.network.pf()
+        try:
+            result = self.network.pf()
+        except Exception as e:
+            return SolveResult(converged=False, message=f"Solver error: {e}")
         elapsed = time_module.time() - start
 
         if isinstance(result, dict):
@@ -800,7 +809,7 @@ class PyPSAModeler(PowerSystemModeler):
 
             self.network.add("Bus", name=str(name), v_nom=v_nom, **params)
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to add bus '{name}': {e}")
             return False
 
@@ -856,7 +865,7 @@ class PyPSAModeler(PowerSystemModeler):
             # Remove the bus itself
             self.network.remove("Bus", bus_name)
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to remove bus '{name}': {e}")
             return False
 
@@ -895,7 +904,7 @@ class PyPSAModeler(PowerSystemModeler):
                 **params,
             )
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to add generator '{name}': {e}")
             return False
 
@@ -918,7 +927,7 @@ class PyPSAModeler(PowerSystemModeler):
         try:
             self.network.remove("Generator", gen_name)
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to remove generator '{name}': {e}")
             return False
 
@@ -958,7 +967,7 @@ class PyPSAModeler(PowerSystemModeler):
                 **params,
             )
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to add load '{name}': {e}")
             return False
 
@@ -982,7 +991,7 @@ class PyPSAModeler(PowerSystemModeler):
         try:
             self.network.remove("Load", load_name)
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to remove load '{name}': {e}")
             return False
 
@@ -1022,7 +1031,7 @@ class PyPSAModeler(PowerSystemModeler):
                 **params,
             )
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to add line '{name}': {e}")
             return False
 
@@ -1046,7 +1055,7 @@ class PyPSAModeler(PowerSystemModeler):
         try:
             self.network.remove("Line", line_name)
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to remove line '{name}': {e}")
             return False
 
@@ -1085,7 +1094,7 @@ class PyPSAModeler(PowerSystemModeler):
                 **kwargs,
             )
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to add transformer '{name}': {e}")
             return False
 
@@ -1109,7 +1118,7 @@ class PyPSAModeler(PowerSystemModeler):
         try:
             self.network.remove("Transformer", tx_name)
             return True
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to remove transformer '{name}': {e}")
             return False
 
@@ -1119,7 +1128,7 @@ class PyPSAModeler(PowerSystemModeler):
 
     def add_wec_farm(
         self,
-        farm,
+        farm: "RenewableEnergyFarm",
         line_r: float = 0.01,
         line_x: float = 0.05,
         line_s_nom: float = 130.0,
@@ -1217,11 +1226,11 @@ class PyPSAModeler(PowerSystemModeler):
 
             return True
 
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to add WEC farm: {e}")
             return False
 
-    def remove_wec_farm(self, farm) -> bool:
+    def remove_wec_farm(self, farm: "RenewableEnergyFarm") -> bool:
         """
         Remove a WEC farm from the PyPSA network.
 
@@ -1274,7 +1283,7 @@ class PyPSAModeler(PowerSystemModeler):
 
             return True
 
-        except Exception as e:
+        except (KeyError, ValueError, TypeError) as e:
             print(f"[PyPSA ERROR] Failed to remove WEC farm: {e}")
             return False
 

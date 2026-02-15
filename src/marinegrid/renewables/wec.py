@@ -188,9 +188,21 @@ class WECFarm(RenewableEnergyFarm):
             scaling_factor: Linear multiplier applied to device power.
 
         Raises:
+            TypeError: If bus_location is not an int.
+            ValueError: If wec_sim_id, size, sbase, or scaling_factor are invalid.
             RuntimeError: If WEC simulation data is missing.
-            ValueError: If the database returns empty results.
         """
+        if not isinstance(wec_sim_id, int) or wec_sim_id < 1:
+            raise ValueError(f"wec_sim_id must be a positive integer, got {wec_sim_id!r}")
+        if not isinstance(bus_location, int):
+            raise TypeError(f"bus_location must be an int, got {type(bus_location).__name__}")
+        if size < 1:
+            raise ValueError(f"size must be at least 1, got {size}")
+        if sbase <= 0:
+            raise ValueError(f"sbase must be positive, got {sbase}")
+        if scaling_factor <= 0:
+            raise ValueError(f"scaling_factor must be positive, got {scaling_factor}")
+
         super().__init__(
             farm_name=farm_name,
             bus_location=bus_location,
@@ -236,86 +248,92 @@ class WECFarm(RenewableEnergyFarm):
         Raises:
             RuntimeError: If simulation data is missing or invalid.
         """
-        # Get model type from wec_simulations table
-        model_query = "SELECT model_type FROM wec_simulations WHERE wec_sim_id = ?"
-        model_result = self.database.query(model_query, params=(self.wec_sim_id,))
+        try:
+            # Get model type from wec_simulations table
+            model_query = "SELECT model_type FROM wec_simulations WHERE wec_sim_id = ?"
+            model_result = self.database.query(model_query, params=(self.wec_sim_id,))
 
-        if not model_result:
-            raise RuntimeError(
-                f"No simulation metadata found for wec_sim_id={self.wec_sim_id}"
-            )
+            if not model_result:
+                raise RuntimeError(
+                    f"No simulation metadata found for wec_sim_id={self.wec_sim_id}"
+                )
 
-        # Extract model name from result
-        if isinstance(model_result, list) and len(model_result) > 0:
-            first_row = model_result[0]
-            if isinstance(first_row, (list, tuple)):
-                self.model = first_row[0]
-            elif isinstance(first_row, dict):
-                self.model = first_row["model_type"]
+            # Extract model name from result
+            if isinstance(model_result, list) and len(model_result) > 0:
+                first_row = model_result[0]
+                if isinstance(first_row, (list, tuple)):
+                    self.model = first_row[0]
+                elif isinstance(first_row, dict):
+                    self.model = first_row["model_type"]
+                else:
+                    self.model = str(first_row)
             else:
-                self.model = str(first_row)
-        else:
-            raise RuntimeError(
-                f"Invalid model data returned for wec_sim_id={self.wec_sim_id}"
+                raise RuntimeError(
+                    f"Invalid model data returned for wec_sim_id={self.wec_sim_id}"
+                )
+
+            # Verify simulation exists
+            sim_check_query = "SELECT wec_sim_id FROM wec_simulations WHERE wec_sim_id = ?"
+            sim_result = self.database.query(sim_check_query, params=(self.wec_sim_id,))
+
+            if not sim_result:
+                raise RuntimeError(
+                    f"No WEC simulation found for wec_sim_id={self.wec_sim_id}. "
+                    "Run WEC-Sim first."
+                )
+
+            # Load WEC power data
+            power_query = """
+                SELECT time_sec as time, p_w as p, q_var as q, wave_elevation_m as eta
+                FROM wec_power_results
+                WHERE wec_sim_id = ?
+                ORDER BY time_sec
+            """
+            df_full = self.database.query(
+                power_query, params=(self.wec_sim_id,), return_type="df"
             )
 
-        # Verify simulation exists
-        sim_check_query = "SELECT wec_sim_id FROM wec_simulations WHERE wec_sim_id = ?"
-        sim_result = self.database.query(sim_check_query, params=(self.wec_sim_id,))
+            if df_full is None or df_full.empty:
+                raise RuntimeError(
+                    f"No WEC power data found for wec_sim_id={self.wec_sim_id}"
+                )
 
-        if not sim_result:
-            raise RuntimeError(
-                f"No WEC simulation found for wec_sim_id={self.wec_sim_id}. "
-                "Run WEC-Sim first."
+            # Apply scaling factor
+            df_full["p"] = self.scaling_factor * df_full["p"]
+            df_full["q"] = self.scaling_factor * df_full["q"]
+
+            # Downsample to grid simulation frequency
+            df_downsampled = self.downsample(df_full, self.time.delta_time)
+
+            # Apply timestamp index aligned with simulation time
+            df_downsampled["snapshots"] = pd.date_range(
+                start=self.time.start_time,
+                periods=len(df_downsampled),
+                freq=self.time.freq,
             )
+            df_downsampled.set_index("snapshots", inplace=True)
 
-        # Load WEC power data
-        power_query = """
-            SELECT time_sec as time, p_w as p, q_var as q, wave_elevation_m as eta
-            FROM wec_power_results
-            WHERE wec_sim_id = ?
-            ORDER BY time_sec
-        """
-        df_full = self.database.query(
-            power_query, params=(self.wec_sim_id,), return_type="df"
-        )
+            # Convert Watts to per-unit
+            # WEC data stored in Watts → MW (÷1e6) → per-unit (÷sbase_MVA)
+            df_downsampled["p"] = df_downsampled["p"] / (self.sbase * 1e6)
+            df_downsampled["q"] = df_downsampled["q"] / (self.sbase * 1e6)
 
-        if df_full is None or df_full.empty:
-            raise RuntimeError(
-                f"No WEC power data found for wec_sim_id={self.wec_sim_id}"
-            )
+            # Create device instances
+            for i in range(self.size):
+                name = f"{self.model}_{self.wec_sim_id}_{i}"
+                device = WECDevice(
+                    name=name,
+                    data=df_downsampled.copy(),
+                    bus_location=self.bus_location,
+                    model=self.model,
+                    wec_sim_id=self.wec_sim_id,
+                )
+                self.devices.append(device)
 
-        # Apply scaling factor
-        df_full["p"] = self.scaling_factor * df_full["p"]
-        df_full["q"] = self.scaling_factor * df_full["q"]
-
-        # Downsample to grid simulation frequency
-        df_downsampled = self.downsample(df_full, self.time.delta_time)
-
-        # Apply timestamp index aligned with simulation time
-        df_downsampled["snapshots"] = pd.date_range(
-            start=self.time.start_time,
-            periods=len(df_downsampled),
-            freq=self.time.freq,
-        )
-        df_downsampled.set_index("snapshots", inplace=True)
-
-        # Convert Watts to per-unit
-        # WEC data stored in Watts → MW (÷1e6) → per-unit (÷sbase_MVA)
-        df_downsampled["p"] = df_downsampled["p"] / (self.sbase * 1e6)
-        df_downsampled["q"] = df_downsampled["q"] / (self.sbase * 1e6)
-
-        # Create device instances
-        for i in range(self.size):
-            name = f"{self.model}_{self.wec_sim_id}_{i}"
-            device = WECDevice(
-                name=name,
-                data=df_downsampled.copy(),
-                bus_location=self.bus_location,
-                model=self.model,
-                wec_sim_id=self.wec_sim_id,
-            )
-            self.devices.append(device)
+        except RuntimeError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"Failed to load WEC farm data: {e}") from e
 
     @staticmethod
     def downsample(
