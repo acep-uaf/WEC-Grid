@@ -5,6 +5,7 @@ File: src/marinegrid/util/grid_instance.py
 """
 
 # Standard library
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -329,8 +330,11 @@ class GridInstance:
         # Check for required columns
         missing = set(schema.required_columns) - set(df.columns)
         if missing:
-            # Warn but don't raise - allow flexibility
-            pass  # Could add logging here
+            warnings.warn(
+                f"{component} DataFrame is missing required columns: "
+                f"{', '.join(sorted(missing))}",
+                stacklevel=3,
+            )
 
     def validate(self) -> dict[str, list[str]]:
         """

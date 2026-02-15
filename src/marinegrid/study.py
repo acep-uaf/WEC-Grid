@@ -103,13 +103,25 @@ class Study:
         self._case_name = path.stem
 
     
+    def run(self, **kwargs) -> bool:
+        """
+        Run the simulation.
+
+        Convenience wrapper around ``modeler.simulate()``. Accepts the same
+        keyword arguments (``gen_schedules``, ``load_schedules``).
+
+        Returns:
+            True if simulation completed successfully.
+        """
+        return self.modeler.simulate(**kwargs)
+
     def __repr__(self) -> str:
         """Return a compact summary of the study state."""
         loaded_modelers = ", ".join(self.modeler.loaded()) if self.modeler.loaded() else "None"
         return (
             f"Study:\n"
-            f"├─ Case: {self.case_name or 'Not Set'}\n"
-            f"├─ Case File: {self.case_path or 'Not Set'}\n"
+            f"├─ Case: {self._case_name or 'Not Set'}\n"
+            f"├─ Case File: {self._case_path or 'Not Set'}\n"
             f"├─ Loaded Modelers: {loaded_modelers}\n"
             f"└─ Time: {self.time}"
         )

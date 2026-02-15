@@ -388,7 +388,7 @@ class Time:
             elif "s" in freq_lower:
                 return int(freq_lower.replace("s", ""))
             else:
-                return 300  # Default to 5 minutes
+                raise ValueError(f"Unrecognized frequency string: {freq!r}")
 
     # -------------------------------------------------------------------------
     # Serialization

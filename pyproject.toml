@@ -7,7 +7,7 @@ name = "marinegrid"
 version = "2.0.0"
 description = "Marine-Grid: A tool for integrating marine renewable energy models into power system simulations"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 authors = [{name = "Alexander Barajas-Ritchie", email = "barajale@oregonstate.edu"}]
 license = {file = "LICENSE"}
 dependencies = [
@@ -25,9 +25,10 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",

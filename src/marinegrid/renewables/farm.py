@@ -160,26 +160,29 @@ class RenewableEnergyFarm:
         if not self.devices:
             return pd.DataFrame()
 
-        # Find first device with data
+        # Find first device with data to seed the result
         result = None
-        for device in self.devices:
+        seed_idx = -1
+        for i, device in enumerate(self.devices):
             if device.data is not None and not device.data.empty:
                 cols = [c for c in ["p", "q"] if c in device.data.columns]
                 if cols:
                     result = device.data[cols].copy()
+                    seed_idx = i
                     break
 
         if result is None:
             return pd.DataFrame()
 
-        # Sum across remaining devices
-        for device in self.devices:
-            if device.data is None or device.data.empty:
+        # Sum across remaining devices with safe index alignment
+        for i, device in enumerate(self.devices):
+            if i == seed_idx:
                 continue
-            if device.data is result:
+            if device.data is None or device.data.empty:
                 continue
             for col in result.columns:
                 if col in device.data.columns:
-                    result[col] = result[col] + device.data[col]
+                    aligned = device.data[col].reindex(result.index).fillna(0.0)
+                    result[col] = result[col] + aligned
 
         return result

@@ -119,15 +119,13 @@ class GridData:
         return self._history
 
     @property
-    def current_state(self) -> GridInstance:
+    def current_state(self) -> GridInstance | None:
         """
         Get the most recent grid state.
 
         Returns:
             Most recently appended GridInstance or None if no states exist.
         """
-        if self._current_state is None:
-            raise ValueError("Current State Data is None")
         return self._current_state
 
     @property
@@ -155,10 +153,10 @@ class GridData:
     # -------------------------------------------------------------------------
 
     @property
-    def bus(self) -> pd.DataFrame:
+    def bus(self) -> pd.DataFrame | None:
         """Current bus state DataFrame."""
         if self._current_state is None:
-            raise ValueError("Bus data not available") 
+            return None
         return self._current_state.bus
 
     @property

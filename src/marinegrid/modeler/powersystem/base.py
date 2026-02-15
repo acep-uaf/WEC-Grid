@@ -62,7 +62,6 @@ class PowerSystemModeler(ABC):
     Attributes:
         backend: String identifier for the backend (e.g., "pypsa").
         sbase: System base power in MVA.
-        api: Backend-specific API/connection object.
     """
 
     def __init__(self, backend: str):
@@ -74,7 +73,6 @@ class PowerSystemModeler(ABC):
         """
         self.backend = backend
         self.sbase: float | None = None
-        self.api: Any = None
 
     def __repr__(self) -> str:
         """Return a formatted summary of the modeler state."""

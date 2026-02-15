@@ -5,6 +5,7 @@ File: src/marinegrid/modeler/manager.py
 """
 
 # Standard library
+import warnings
 from typing import Any, TYPE_CHECKING
 # Third-party
 import pandas as pd
@@ -169,6 +170,13 @@ class ModelerManager:
             >>> manager.add_farm(wec_farm)
             >>> manager.simulate()  # Farm power updated each timestep
         """
+        if farm in self.farms:
+            warnings.warn(
+                f"Farm {getattr(farm, 'farm_name', repr(farm))} already registered, skipping",
+                stacklevel=2,
+            )
+            return False
+
         self.farms.append(farm)
 
         # Propagate farm to ALL loaded power system modelers
@@ -313,6 +321,22 @@ class ModelerManager:
         snapshots = self._time.snapshots
         gen_schedules = gen_schedules or {}
         load_schedules = load_schedules or {}
+
+        # Validate schedule DataFrames
+        snapshot_set = set(snapshots)
+        for label, schedules in [("gen_schedules", gen_schedules), ("load_schedules", load_schedules)]:
+            for name, schedule in schedules.items():
+                if schedule.isnull().any().any():
+                    raise ValueError(
+                        f"{label}[{name!r}] contains NaN values"
+                    )
+                overlap = set(schedule.index) & snapshot_set
+                if not overlap:
+                    warnings.warn(
+                        f"{label}[{name!r}] has no timestamps overlapping "
+                        f"with simulation snapshots",
+                        stacklevel=2,
+                    )
 
         # Convert farms to generator schedules
         for farm in self.farms:

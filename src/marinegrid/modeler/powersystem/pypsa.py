@@ -9,6 +9,9 @@ WEC farm integration with automatic bus/line/generator provisioning.
 File: src/marinegrid/modeler/powersystem/pypsa.py
 """
 
+# Standard library
+import warnings
+
 # Third-party
 import pypsa
 import pandas as pd
@@ -591,6 +594,7 @@ class PyPSAModeler(PowerSystemModeler):
 
         sbase = float(self.sbase) if self.sbase else 100.0
 
+        _KNOWN_GEN_KEYS = {"p_set", "q_set", "p_nom", "status"}
         for key, value in kwargs.items():
             if key == "p_set":
                 self.network.generators.at[gen_id, "p_set"] = float(value) * sbase
@@ -602,10 +606,16 @@ class PyPSAModeler(PowerSystemModeler):
                 if "active" in self.network.generators.columns:
                     self.network.generators.at[gen_id, "active"] = bool(value)
             else:
+                if key not in self.network.generators.columns:
+                    warnings.warn(
+                        f"update_generator: unrecognized key {key!r} for '{gen_id}' "
+                        f"(creates new column)",
+                        stacklevel=2,
+                    )
                 self.network.generators.at[gen_id, key] = value
 
         return True
-    
+
     def update_bus(self, name: str, **kwargs) -> bool:
         """
         Update bus parameters in PyPSA network.
@@ -634,10 +644,16 @@ class PyPSAModeler(PowerSystemModeler):
                 if control in ("PQ", "PV", "SLACK"):
                     self.network.buses.at[bus_id, "control"] = control
             else:
+                if key not in self.network.buses.columns:
+                    warnings.warn(
+                        f"update_bus: unrecognized key {key!r} for '{bus_id}' "
+                        f"(creates new column)",
+                        stacklevel=2,
+                    )
                 self.network.buses.at[bus_id, key] = value
 
         return True
-    
+
     def update_load(self, name: str, **kwargs) -> bool:
         """
         Update load parameters in PyPSA network.
@@ -670,10 +686,16 @@ class PyPSAModeler(PowerSystemModeler):
                 if "active" in self.network.loads.columns:
                     self.network.loads.at[load_id, "active"] = bool(value)
             else:
+                if key not in self.network.loads.columns:
+                    warnings.warn(
+                        f"update_load: unrecognized key {key!r} for '{load_id}' "
+                        f"(creates new column)",
+                        stacklevel=2,
+                    )
                 self.network.loads.at[load_id, key] = value
 
         return True
-    
+
     def update_line(self, name: str, **kwargs) -> bool:
         """
         Update transmission line parameters in PyPSA network.
@@ -700,10 +722,16 @@ class PyPSAModeler(PowerSystemModeler):
                 if "active" in self.network.lines.columns:
                     self.network.lines.at[line_id, "active"] = bool(value)
             else:
+                if key not in self.network.lines.columns:
+                    warnings.warn(
+                        f"update_line: unrecognized key {key!r} for '{line_id}' "
+                        f"(creates new column)",
+                        stacklevel=2,
+                    )
                 self.network.lines.at[line_id, key] = value
 
         return True
-    
+
     def update_transformer(self, name: str, **kwargs) -> bool:
         """
         Update transformer parameters in PyPSA network.
@@ -731,6 +759,12 @@ class PyPSAModeler(PowerSystemModeler):
                 if "active" in self.network.transformers.columns:
                     self.network.transformers.at[tx_id, "active"] = bool(value)
             else:
+                if key not in self.network.transformers.columns:
+                    warnings.warn(
+                        f"update_transformer: unrecognized key {key!r} for '{tx_id}' "
+                        f"(creates new column)",
+                        stacklevel=2,
+                    )
                 self.network.transformers.at[tx_id, key] = value
 
         return True
@@ -1083,7 +1117,13 @@ class PyPSAModeler(PowerSystemModeler):
     # WEC Farm Integration
     # -------------------------------------------------------------------------
 
-    def add_wec_farm(self, farm) -> bool:
+    def add_wec_farm(
+        self,
+        farm,
+        line_r: float = 0.01,
+        line_x: float = 0.05,
+        line_s_nom: float = 130.0,
+    ) -> bool:
         """
         Add a WEC farm to the PyPSA network.
 
@@ -1094,13 +1134,19 @@ class PyPSAModeler(PowerSystemModeler):
         Args:
             farm: WECFarm instance containing connection details including
                 bus_location, connecting_bus, and device data.
+            line_r: Series resistance of the connecting line in Ohms.
+                Default 0.01 (short submarine cable approximation).
+            line_x: Series reactance of the connecting line in Ohms.
+                Default 0.05 (short submarine cable approximation).
+            line_s_nom: Thermal rating of the connecting line in MVA.
+                Default 130.0.
 
         Returns:
             True if the farm was added successfully, False otherwise.
 
         Notes:
             - Bus: Created at farm.bus_location with same voltage as connecting_bus
-            - Line: Connects WEC bus to grid (hardcoded impedance, TODO: calculate)
+            - Line: Connects WEC bus to grid with user-specified or default impedance
             - Generator: Wave carrier type, PV control mode, p_nom from device data
         """
         if self.network is None:
@@ -1133,14 +1179,13 @@ class PyPSAModeler(PowerSystemModeler):
                 return False
 
             # Add transmission line connecting WEC to grid
-            # TODO: Calculate impedance based on farm specs and distance
             if not self.add_line(
                 line_name,
                 bus0=poi_bus_name,
                 bus1=conn_bus_name,
-                r=0.01,
-                x=0.05,
-                s_nom=130.0,
+                r=line_r,
+                x=line_x,
+                s_nom=line_s_nom,
             ):
                 # Rollback: remove bus
                 self.remove_bus(poi_bus_name)

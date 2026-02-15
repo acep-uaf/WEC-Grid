@@ -67,8 +67,6 @@ results = study.modeler.get_data("pypsa")
 The primary entry point is the `Study` class exported from `marinegrid/__init__.py`. All other components are accessed through `Study` attributes or imported directly from their subpackages.
 
 ## See Also
-
-- [CLAUDE.md](../../../CLAUDE.md) — Full project documentation and implementation status
 - [modeler/README.md](modeler/README.md) — Plugin architecture details
 - [renewables/README.md](renewables/README.md) — Device and farm hierarchy
 - [util/README.md](util/README.md) — Time, grid state, and conversion utilities
