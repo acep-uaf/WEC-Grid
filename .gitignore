@@ -156,3 +156,6 @@ src/wecgrid/util/database_config.json
 
 docs/examples/jupyter_notebooks/
 docs/examples/WECGrid.db
+
+#ignore virtual environment directories
+marinegrid_env/
