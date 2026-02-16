@@ -429,7 +429,7 @@ class Time:
         }
 
     @classmethod
-    def from_dict(cls, config: dict) -> "Time":
+    def from_dict(cls, config: dict[str, datetime | int | str | float]) -> "Time":
         """
         Create Time instance from configuration dictionary.
 

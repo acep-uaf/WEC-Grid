@@ -123,18 +123,17 @@ class PowerSystemModeler(ABC):
         """
         Pull and organize all bus data in format specified in documentation.
 
-        Return:
-            Pandas DataFrame
+        Returns:
+            Pandas DataFrame with bus state data.
         """
-
 
     @abstractmethod
     def get_generator_data(self) -> pd.DataFrame:
         """
         Pull and organize all generator data in format specified in documentation.
 
-        Return:
-            Pandas DataFrame
+        Returns:
+            Pandas DataFrame with generator state data.
         """
 
     @abstractmethod
@@ -142,8 +141,8 @@ class PowerSystemModeler(ABC):
         """
         Pull and organize all load data in format specified in documentation.
 
-        Return:
-            Pandas DataFrame
+        Returns:
+            Pandas DataFrame with load state data.
         """
 
     @abstractmethod
@@ -151,18 +150,17 @@ class PowerSystemModeler(ABC):
         """
         Pull and organize all line data in format specified in documentation.
 
-        Return:
-            Pandas DataFrame
+        Returns:
+            Pandas DataFrame with line state data.
         """
-
 
     @abstractmethod
     def get_transformer_data(self) -> pd.DataFrame:
         """
         Pull and organize all transformer data in format specified in documentation.
 
-        Return:
-            Pandas DataFrame
+        Returns:
+            Pandas DataFrame with transformer state data.
         """
 
 

@@ -4,9 +4,6 @@ Energy storage device model.
 File: src/marinegrid/renewables/storage.py
 """
 
-# Third-party
-import pandas as pd
-
 # Local
 from .base import RenewableDevice
 
@@ -30,9 +27,3 @@ class StorageDevice(RenewableDevice):
         self.energy_capacity: float | None = None
         self.max_charge_rate: float | None = None
         self.max_discharge_rate: float | None = None
-
-    def power_at(self, ts: pd.Timestamp) -> float:
-        """Return net power at timestamp `ts` (per unit)."""
-        if ts not in self.data.index:
-            raise KeyError(f"Timestamp {ts} not found in storage device data")
-        return float(self.data.loc[ts, "p"])

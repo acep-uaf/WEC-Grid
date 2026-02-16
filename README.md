@@ -13,7 +13,7 @@
 
 ### Quick Install (macOS, Python venv)
 
-We recommend Python 3.9 to match pinned dependencies.
+We recommend Python 3.10 or later.
 
 1) Clone the repo
 ```bash

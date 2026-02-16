@@ -10,6 +10,7 @@ File: src/marinegrid/modeler/powersystem/pypsa.py
 """
 
 # Standard library
+import logging
 import warnings
 from typing import TYPE_CHECKING
 
@@ -20,6 +21,8 @@ import numpy as np
 
 # Local
 from .base import PowerSystemModeler, SolveResult
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ...renewables.farm import RenewableEnergyFarm
@@ -293,11 +296,11 @@ class PyPSAModeler(PowerSystemModeler):
             line_id = i + 1
 
             # apparent power (MVA) at each end for loading calculation
-            S0 = np.hypot(p0_MW.get(line_name, 0.0), q0_MVAr.get(line_name, 0.0))
-            S1 = np.hypot(p1_MW.get(line_name, 0.0), q1_MVAr.get(line_name, 0.0))
+            S0 = np.hypot(p0_MW.at[line_name], q0_MVAr.at[line_name])
+            S1 = np.hypot(p1_MW.at[line_name], q1_MVAr.at[line_name])
             Smax = max(S0, S1)
 
-            s_nom = float(line.s_nom) if pd.notna(line.get("s_nom")) else np.nan
+            s_nom = float(line.s_nom) if pd.notna(line.s_nom) else np.nan
             loading_pct = float(100.0 * Smax / s_nom) if s_nom and s_nom > 0 else np.nan
 
             rows.append({
@@ -305,11 +308,11 @@ class PyPSAModeler(PowerSystemModeler):
                 "line_name": line_name,
                 "ibus": ibus,
                 "jbus": jbus,
-                "p0": float(p0_MW.get(line_name, 0.0)) / sbase,
-                "p1": float(p1_MW.get(line_name, 0.0)) / sbase,
+                "p0": float(p0_MW.at[line_name]) / sbase,
+                "p1": float(p1_MW.at[line_name]) / sbase,
                 "loading_pct": loading_pct,
                 "s_nom": s_nom,
-                "status": 1 if bool(status_series.get(line_name, True)) else 0,
+                "status": 1 if bool(status_series.at[line_name]) else 0,
             })
 
         df = pd.DataFrame(rows)
@@ -382,10 +385,10 @@ class PyPSAModeler(PowerSystemModeler):
                 "gen": i + 1,
                 "gen_name": gen_name,
                 "bus": bus_num,
-                "p": float(p_MW.get(gen_name, 0.0)) / sbase,
-                "q": float(q_MVAr.get(gen_name, 0.0)) / sbase,
-                "p_nom": float(gen.get("p_nom", 0.0)) if pd.notna(gen.get("p_nom")) else 0.0,
-                "status": int(stat.get(gen_name, 1)),
+                "p": float(p_MW.at[gen_name]) / sbase,
+                "q": float(q_MVAr.at[gen_name]) / sbase,
+                "p_nom": float(gen.p_nom) if pd.notna(gen.p_nom) else 0.0,
+                "status": int(stat.at[gen_name]),
             })
 
         df = pd.DataFrame(rows)
@@ -452,9 +455,9 @@ class PyPSAModeler(PowerSystemModeler):
                 "load": i + 1,
                 "load_name": load_name,
                 "bus": bus_num,
-                "p": float(p_MW.get(load_name, 0.0)) / sbase,
-                "q": float(q_MVAr.get(load_name, 0.0)) / sbase,
-                "status": 1 if bool(status_series.get(load_name, True)) else 0,
+                "p": float(p_MW.at[load_name]) / sbase,
+                "q": float(q_MVAr.at[load_name]) / sbase,
+                "status": 1 if bool(status_series.at[load_name]) else 0,
             })
 
         df = pd.DataFrame(rows)
@@ -549,11 +552,11 @@ class PyPSAModeler(PowerSystemModeler):
                 bus1_num = tx.bus1
 
             # Calculate apparent power and loading
-            S0 = np.hypot(p0.get(tx_name, 0.0), q0.get(tx_name, 0.0))
-            S1 = np.hypot(p1.get(tx_name, 0.0), q1.get(tx_name, 0.0))
+            S0 = np.hypot(p0.at[tx_name], q0.at[tx_name])
+            S1 = np.hypot(p1.at[tx_name], q1.at[tx_name])
             Smax = max(S0, S1)
 
-            s_nom = float(tx.s_nom) if pd.notna(tx.get("s_nom")) else np.nan
+            s_nom = float(tx.s_nom) if pd.notna(tx.s_nom) else np.nan
             loading_pct = float(100.0 * Smax / s_nom) if s_nom and s_nom > 0 else np.nan
 
             rows.append({
@@ -561,13 +564,13 @@ class PyPSAModeler(PowerSystemModeler):
                 "transformer_name": tx_name,
                 "bus0": bus0_num,
                 "bus1": bus1_num,
-                "p0": float(p0.get(tx_name, 0.0)) / sbase,
-                "p1": float(p1.get(tx_name, 0.0)) / sbase,
-                "tap_ratio": float(tx.get("tap_ratio", 1.0)) if pd.notna(tx.get("tap_ratio")) else 1.0,
-                "phase_shift": float(tx.get("phase_shift", 0.0)) if pd.notna(tx.get("phase_shift")) else 0.0,
+                "p0": float(p0.at[tx_name]) / sbase,
+                "p1": float(p1.at[tx_name]) / sbase,
+                "tap_ratio": float(tx.tap_ratio) if pd.notna(tx.tap_ratio) else 1.0,
+                "phase_shift": float(tx.phase_shift) if pd.notna(tx.phase_shift) else 0.0,
                 "s_nom": s_nom,
                 "loading_pct": loading_pct,
-                "status": 1 if bool(status_series.get(tx_name, True)) else 0,
+                "status": 1 if bool(status_series.at[tx_name]) else 0,
             })
 
         df = pd.DataFrame(rows)
@@ -810,7 +813,7 @@ class PyPSAModeler(PowerSystemModeler):
             self.network.add("Bus", name=str(name), v_nom=v_nom, **params)
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to add bus '{name}': {e}")
+            logger.error("Failed to add bus '%s': %s", name, e)
             return False
 
     def remove_bus(self, name: str) -> bool:
@@ -866,7 +869,7 @@ class PyPSAModeler(PowerSystemModeler):
             self.network.remove("Bus", bus_name)
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to remove bus '{name}': {e}")
+            logger.error("Failed to remove bus '%s': %s", name, e)
             return False
 
     def add_generator(
@@ -905,7 +908,7 @@ class PyPSAModeler(PowerSystemModeler):
             )
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to add generator '{name}': {e}")
+            logger.error("Failed to add generator '%s': %s", name, e)
             return False
 
     def remove_generator(self, name: str) -> bool:
@@ -928,7 +931,7 @@ class PyPSAModeler(PowerSystemModeler):
             self.network.remove("Generator", gen_name)
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to remove generator '{name}': {e}")
+            logger.error("Failed to remove generator '%s': %s", name, e)
             return False
 
     def add_load(
@@ -968,7 +971,7 @@ class PyPSAModeler(PowerSystemModeler):
             )
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to add load '{name}': {e}")
+            logger.error("Failed to add load '%s': %s", name, e)
             return False
 
     def remove_load(self, name: str) -> bool:
@@ -992,7 +995,7 @@ class PyPSAModeler(PowerSystemModeler):
             self.network.remove("Load", load_name)
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to remove load '{name}': {e}")
+            logger.error("Failed to remove load '%s': %s", name, e)
             return False
 
     def add_line(
@@ -1032,7 +1035,7 @@ class PyPSAModeler(PowerSystemModeler):
             )
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to add line '{name}': {e}")
+            logger.error("Failed to add line '%s': %s", name, e)
             return False
 
     def remove_line(self, name: str) -> bool:
@@ -1056,7 +1059,7 @@ class PyPSAModeler(PowerSystemModeler):
             self.network.remove("Line", line_name)
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to remove line '{name}': {e}")
+            logger.error("Failed to remove line '%s': %s", name, e)
             return False
 
     def add_transformer(
@@ -1095,7 +1098,7 @@ class PyPSAModeler(PowerSystemModeler):
             )
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to add transformer '{name}': {e}")
+            logger.error("Failed to add transformer '%s': %s", name, e)
             return False
 
     def remove_transformer(self, name: str) -> bool:
@@ -1119,7 +1122,7 @@ class PyPSAModeler(PowerSystemModeler):
             self.network.remove("Transformer", tx_name)
             return True
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to remove transformer '{name}': {e}")
+            logger.error("Failed to remove transformer '%s': %s", name, e)
             return False
 
     # -------------------------------------------------------------------------
@@ -1227,7 +1230,7 @@ class PyPSAModeler(PowerSystemModeler):
             return True
 
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to add WEC farm: {e}")
+            logger.error("Failed to add WEC farm: %s", e)
             return False
 
     def remove_wec_farm(self, farm: "RenewableEnergyFarm") -> bool:
@@ -1284,6 +1287,6 @@ class PyPSAModeler(PowerSystemModeler):
             return True
 
         except (KeyError, ValueError, TypeError) as e:
-            print(f"[PyPSA ERROR] Failed to remove WEC farm: {e}")
+            logger.error("Failed to remove WEC farm: %s", e)
             return False
 

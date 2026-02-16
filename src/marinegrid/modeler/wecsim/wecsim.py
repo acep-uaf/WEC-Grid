@@ -10,6 +10,7 @@ wave energy converter simulations using MATLAB engine integration.
 # Standard library
 import io
 import json
+import logging
 import os
 import random
 from pathlib import Path
@@ -19,6 +20,8 @@ from typing import Any, TYPE_CHECKING
 import pandas as pd
 
 # Local
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
     from ...util.time import Time
     from ...tool.database import Database
@@ -154,7 +157,7 @@ class WECSimModeler:
             with open(config_file, "w") as f:
                 json.dump(config, f, indent=2)
         except OSError as e:
-            print(f"Warning: Could not save WEC-Sim config: {e}")
+            logger.warning("Could not save WEC-Sim config: %s", e)
 
     def set_wec_sim_path(self, path: str) -> str:
         """
@@ -189,12 +192,12 @@ class WECSimModeler:
     def show_config(self) -> None:
         """Display current WEC-Sim configuration."""
         config_file = _wecsim_config_file()
-        print("WEC-Sim Configuration:")
-        print(f"  Path: {self.wec_sim_path or 'Not configured'}")
-        print(f"  Config file: {config_file}")
-        print(f"  Config exists: {config_file.exists()}")
-        print("  Env var: MARINEGRID_WECSIM_PATH (overrides config if set)")
-        print(f"  MATLAB Engine: {'Running' if self.is_running else 'Stopped'}")
+        logger.info("WEC-Sim Configuration:")
+        logger.info("  Path: %s", self.wec_sim_path or "Not configured")
+        logger.info("  Config file: %s", config_file)
+        logger.info("  Config exists: %s", config_file.exists())
+        logger.info("  Env var: MARINEGRID_WECSIM_PATH (overrides config if set)")
+        logger.info("  MATLAB Engine: %s", "Running" if self.is_running else "Stopped")
 
     # -------------------------------------------------------------------------
     # MATLAB Engine Management
@@ -221,22 +224,24 @@ class WECSimModeler:
         try:
             import matlab.engine
         except ImportError:
-            print("MATLAB Python API not installed.")
-            print(
-                "See: https://www.mathworks.com/help/matlab/matlab_external/"
+            logger.error(
+                "MATLAB Python API not installed. See: "
+                "https://www.mathworks.com/help/matlab/matlab_external/"
                 "install-the-matlab-engine-for-python.html"
             )
             return False
 
         # Engine already running
         if self.matlab_engine is not None:
-            print("MATLAB engine is already running.")
+            logger.info("MATLAB engine is already running.")
             return True
 
         # Validate WEC-Sim path
         if self.wec_sim_path is None:
-            print("WEC-Sim path not configured.")
-            print("Use set_wec_sim_path() or set MARINEGRID_WECSIM_PATH env var.")
+            logger.error(
+                "WEC-Sim path not configured. "
+                "Use set_wec_sim_path() or set MARINEGRID_WECSIM_PATH env var."
+            )
             return False
 
         if not os.path.exists(self.wec_sim_path):
@@ -245,15 +250,15 @@ class WECSimModeler:
             )
 
         # Start engine
-        print("Starting MATLAB engine... ", end="", flush=True)
+        logger.info("Starting MATLAB engine...")
         self.matlab_engine = matlab.engine.start_matlab()
-        print("done.")
+        logger.info("MATLAB engine started.")
 
         # Add WEC-Sim to MATLAB path
-        print("Adding WEC-Sim to MATLAB path... ", end="", flush=True)
+        logger.info("Adding WEC-Sim to MATLAB path...")
         matlab_path = self.matlab_engine.genpath(self.wec_sim_path, nargout=1)
         self.matlab_engine.addpath(matlab_path, nargout=0)
-        print("done.")
+        logger.info("WEC-Sim added to MATLAB path.")
 
         # Initialize output capture
         self._stdout = io.StringIO()
@@ -273,10 +278,10 @@ class WECSimModeler:
             self.matlab_engine = None
             self._stdout = None
             self._stderr = None
-            print("MATLAB engine stopped.")
+            logger.info("MATLAB engine stopped.")
             return True
 
-        print("MATLAB engine is not running.")
+        logger.info("MATLAB engine is not running.")
         return False
 
     # -------------------------------------------------------------------------
@@ -346,19 +351,19 @@ class WECSimModeler:
         # Print simulation banner
         self._print_banner()
 
-        print("Starting WEC-Sim simulation...")
-        print(f"  Model: {model_name}")
-        print(f"  Model Path: {model_path}")
-        print(f"  Duration: {sim_length} seconds")
-        print(f"  Time Step: {delta_time} seconds")
-        print(f"  Wave Class: {wave_class}")
-        print(f"  Wave Height: {wave_height} m")
-        print(f"  Wave Period: {wave_period} s")
-        print(f"  Wave Seed: {wave_seed}")
+        logger.info("Starting WEC-Sim simulation...")
+        logger.info("  Model: %s", model_name)
+        logger.info("  Model Path: %s", model_path)
+        logger.info("  Duration: %s seconds", sim_length)
+        logger.info("  Time Step: %s seconds", delta_time)
+        logger.info("  Wave Class: %s", wave_class)
+        logger.info("  Wave Height: %s m", wave_height)
+        logger.info("  Wave Period: %s s", wave_period)
+        logger.info("  Wave Seed: %s", wave_seed)
 
         # Start MATLAB if needed
         if not self.start_matlab():
-            print("Failed to start MATLAB engine.")
+            logger.error("Failed to start MATLAB engine.")
             return None
 
         stdout = io.StringIO()
@@ -387,7 +392,7 @@ class WECSimModeler:
                 stderr=stderr,
             )
 
-            print(f"Simulation complete. Writing to database...")
+            logger.info("Simulation complete. Writing to database...")
 
             # Run formatter to process results
             self.matlab_engine.eval("formatter", nargout=0, stdout=stdout, stderr=stderr)
@@ -395,7 +400,7 @@ class WECSimModeler:
             # Get the wec_sim_id from MATLAB workspace
             wec_sim_id = int(self.matlab_engine.workspace["wec_sim_id_result"])
 
-            print(f"WEC-Sim complete: model={model_name}, wec_sim_id={wec_sim_id}")
+            logger.info("WEC-Sim complete: model=%s, wec_sim_id=%s", model_name, wec_sim_id)
 
             # Show results if requested
             if show_results:
@@ -404,15 +409,11 @@ class WECSimModeler:
             return wec_sim_id
 
         except Exception as e:
-            print(f"[WEC-Sim ERROR] {e}")
-            print("=" * 40)
+            logger.error("WEC-Sim simulation failed: %s", e)
             if stdout.getvalue():
-                print("MATLAB Output:")
-                print(stdout.getvalue())
+                logger.debug("MATLAB Output:\n%s", stdout.getvalue())
             if stderr.getvalue():
-                print("MATLAB Errors:")
-                print(stderr.getvalue())
-            print("=" * 40)
+                logger.debug("MATLAB Errors:\n%s", stderr.getvalue())
             return None
 
         finally:
@@ -420,8 +421,8 @@ class WECSimModeler:
             pass
 
     def _print_banner(self) -> None:
-        """Print WEC-Sim ASCII art banner."""
-        print(
+        """Log WEC-Sim ASCII art banner."""
+        logger.info(
             r"""
         WEC-SIM         ⣠⣴⣶⠾⠿⠿⠯⣷⣄⡀
                      ⢀⣼⣾⠛⠁⠀⠀⠀⠀⠀⠀⠈⢻⣦
@@ -446,7 +447,7 @@ class WECSimModeler:
         try:
             import matplotlib.pyplot as plt
         except ImportError:
-            print("matplotlib not available for plotting")
+            logger.warning("matplotlib not available for plotting")
             return
 
         # Query power results
@@ -459,7 +460,7 @@ class WECSimModeler:
         df_power = self.database.query(power_query, params=(wec_sim_id,), return_type="df")
 
         if df_power.empty:
-            print("No power data available for visualization")
+            logger.warning("No power data available for visualization")
             return
 
         # Create plot

@@ -416,6 +416,12 @@ class Database:
             ...     return_type="df"
             ... )
         """
+        _VALID_RETURN_TYPES = {"raw", "df", "dict"}
+        if return_type not in _VALID_RETURN_TYPES:
+            raise ValueError(
+                f"return_type must be one of {_VALID_RETURN_TYPES!r}, got {return_type!r}"
+            )
+
         with self.connection() as conn:
             cursor = conn.cursor()
             cursor.execute(sql, params or ())

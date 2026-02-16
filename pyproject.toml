@@ -11,17 +11,17 @@ requires-python = ">=3.10"
 authors = [{name = "Alexander Barajas-Ritchie", email = "barajale@oregonstate.edu"}]
 license = {file = "LICENSE"}
 dependencies = [
-    "numpy",
-    "scipy",
-    "pandas",
-    "matplotlib",
-    "pypsa",
-    "grg-pssedata",
-    "networkx",
-    "pyomo",
-    "tqdm",
-    "jupyter",
-    "mkdocstrings-python"
+    "numpy>=1.23",
+    "scipy>=1.9",
+    "pandas>=2.0",
+    "matplotlib>=3.6",
+    "pypsa>=0.26",
+    "grg-pssedata>=0.1.0",
+    "networkx>=3.0",
+    "pyomo>=6.5",
+    "tqdm>=4.60",
+    "jupyter>=1.0",
+    "mkdocstrings-python>=1.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -53,6 +53,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 marinegrid = [
+    "py.typed",
     "util/*.json",
     "modeler/wecsim/*.json",
 ]

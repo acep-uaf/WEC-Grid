@@ -5,6 +5,7 @@ File: src/marinegrid/util/grid_data.py
 """
 
 # Standard library
+import warnings
 from collections.abc import Iterator
 from typing import Any
 
@@ -213,6 +214,12 @@ class GridData:
 
         if state.timestamp is None:
             raise ValueError("GridInstance must have a timestamp set.")
+
+        if state.timestamp in self._history:
+            warnings.warn(
+                f"Overwriting existing state at timestamp {state.timestamp}",
+                stacklevel=2,
+            )
 
         self._history[state.timestamp] = state
         self._current_state = state

@@ -151,12 +151,14 @@ class Converter:
             g_pu = (br.gi + br.gj)
             b_pu = (br.bi + br.bj + br.b)
 
-            # Convert per-unit shunts to Siemens.
-            # PyPSA's internal per-unit uses b_pu ≈ b * v_nom^2, so to match the
-            # PSSE per-unit value we set b ≈ b_pu / v_nom^2 (and likewise for g).
+            # Convert per-unit shunt admittance to Siemens:
+            # Y_siemens = Y_pu × Y_base, where Y_base = S_base / V_base²
+            # NOTE: Verify shunt values against known power flow results.
+            # If PyPSA loading percentages or reactive flows look off,
+            # check whether sbase belongs in this conversion for your case.
             denom = v_base_kv ** 2
-            g_s = g_pu / denom if denom != 0 else 0.0
-            b_s = b_pu / denom if denom != 0 else 0.0
+            g_s = g_pu * sbase / denom if denom != 0 else 0.0
+            b_s = b_pu * sbase / denom if denom != 0 else 0.0
 
             s_nom = br.ratea if br.ratea > 0.0 else sbase
 
@@ -255,10 +257,12 @@ class Converter:
             v_base_kv = network.buses.at[bus0, "v_nom"]
             z_base_tx = (v_base_kv ** 2) / s_tx_base
 
-            # Convert per-unit r12/x12 on transformer base so that PyPSA r_pu/x_pu
-            # match the original per-unit values on s_tx_base.
-            r_ohm = p2.r12 * (w1.rata if w1.rata > 0.0 else s_tx_base)
-            x_ohm = p2.x12 * (w1.rata if w1.rata > 0.0 else s_tx_base)
+            # Convert per-unit impedance to Ohms: Z_ohm = Z_pu × Z_base
+            # where Z_base = V_base² / S_base (computed as z_base_tx above).
+            # NOTE: Verify r/x values against your case. If the transformer uses
+            # a winding-specific MVA base different from sbase12, adjust z_base_tx.
+            r_ohm = p2.r12 * z_base_tx
+            x_ohm = p2.x12 * z_base_tx
             if r_ohm == 0.0:
                 r_ohm = 1e-6  # avoid zero-impedance warnings in linearized models
 
@@ -294,11 +298,11 @@ class Converter:
             if v_base_kv == 0.0:
                 continue
 
-            # gl/bl are MW/MVAr at 1.0 pu on system base.
-            # PyPSA uses g_pu = g * v_nom**2 and b_pu = b * v_nom**2, so choose
-            # g,b such that g_pu = gl/sbase and b_pu = bl/sbase.
-            g_s = sh.gl / (sbase * (v_base_kv ** 2))
-            b_s = sh.bl / (sbase * (v_base_kv ** 2))
+            # gl/bl are MW/MVAr at 1.0 pu voltage on system base.
+            # G_pu = gl / sbase, Y_base = sbase / V² → G_siemens = gl / V²
+            # NOTE: Verify shunt MW/MVAr injection against your power flow case.
+            g_s = sh.gl / (v_base_kv ** 2)
+            b_s = sh.bl / (v_base_kv ** 2)
 
             if abs(g_s) < 1e-9 and abs(b_s) < 1e-9:
                 continue
@@ -322,12 +326,14 @@ class Converter:
             if v_base_kv == 0.0:
                 continue
 
-            # binit is MVAr per unit voltage at 1.0 pu on system base.
+            # binit is MVAr at 1.0 pu voltage on system base.
+            # B_siemens = binit / V² (same derivation as fixed shunts)
+            # NOTE: Verify switched shunt MVAr against your power flow case.
             b_mvar = sh.binit
             if abs(b_mvar) < 1e-9:
                 continue
 
-            b_s = b_mvar / (sbase * (v_base_kv ** 2))  # target b_pu = binit/sbase
+            b_s = b_mvar / (v_base_kv ** 2)
 
             name = f"SSH{idx}"
             network.add(

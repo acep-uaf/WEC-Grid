@@ -361,46 +361,62 @@ class ModelerManager:
             if name in self._grid_data:
                 self._grid_data[name].clear()
 
+        failed_steps: list[tuple[pd.Timestamp, str, str]] = []
+
         for ts in snapshots:
             for name, modeler in ps_modelers.items():
+                try:
+                    # 1. Apply generator schedules
+                    for gen_name, schedule in gen_schedules.items():
+                        if ts in schedule.index:
+                            row = schedule.loc[ts]
+                            modeler.update_generator(
+                                gen_name,
+                                p_set=float(row.get("p", 0.0)),
+                                q_set=float(row.get("q", 0.0)),
+                            )
 
-                # 1. Apply generator schedules
-                for gen_name, schedule in gen_schedules.items():
-                    if ts in schedule.index:
-                        row = schedule.loc[ts]
-                        modeler.update_generator(
-                            gen_name,
-                            p_set=float(row.get("p", 0.0)),
-                            q_set=float(row.get("q", 0.0)),
-                        )
+                    # 2. Apply load schedules
+                    for load_name, schedule in load_schedules.items():
+                        if ts in schedule.index:
+                            row = schedule.loc[ts]
+                            modeler.update_load(
+                                load_name,
+                                p_set=float(row.get("p", 0.0)),
+                                q_set=float(row.get("q", 0.0)),
+                            )
 
-                # 2. Apply load schedules
-                for load_name, schedule in load_schedules.items():
-                    if ts in schedule.index:
-                        row = schedule.loc[ts]
-                        modeler.update_load(
-                            load_name,
-                            p_set=float(row.get("p", 0.0)),
-                            q_set=float(row.get("q", 0.0)),
-                        )
+                    # 3. Solve
+                    result = modeler.solve()
 
-                # 3. Solve
-                result = modeler.solve()
+                    # 4. Collect grid state
+                    state = GridInstance()
+                    state.timestamp = ts
+                    state.solve_result = result
+                    state.bus = modeler.get_bus_data()
+                    state.gen = modeler.get_generator_data()
+                    state.load = modeler.get_load_data()
+                    state.line = modeler.get_line_data()
+                    state.transformer = modeler.get_transformer_data()
 
-                # 4. Collect grid state
-                state = GridInstance()
-                state.timestamp = ts
-                state.solve_result = result
-                state.bus = modeler.get_bus_data()
-                state.gen = modeler.get_generator_data()
-                state.load = modeler.get_load_data()
-                state.line = modeler.get_line_data()
-                state.transformer = modeler.get_transformer_data()
+                    # 5. Store
+                    self._grid_data[name].append_state(state)
 
-                # 5. Store
-                self._grid_data[name].append_state(state)
+                except Exception as e:
+                    failed_steps.append((ts, name, str(e)))
+                    warnings.warn(
+                        f"Simulation step failed at {ts} for '{name}': {e}",
+                        stacklevel=2,
+                    )
 
-        return True
+        if failed_steps:
+            warnings.warn(
+                f"{len(failed_steps)} simulation step(s) failed. "
+                f"GridData may be incomplete.",
+                stacklevel=2,
+            )
+
+        return len(failed_steps) == 0
 
     def loaded(self) -> list[str]:
         """

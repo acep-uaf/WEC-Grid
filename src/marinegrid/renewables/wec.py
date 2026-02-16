@@ -3,8 +3,9 @@ Wave energy converter device and farm models.
 
 Defines ``WECDevice`` (a single WEC unit with per-unit power data) and
 ``WECFarm`` (a collection of WECDevices loaded from the database).
-``WECFarm`` handles automatic downsampling of high-resolution WEC-Sim
-output to the grid simulation timestep and per-unit conversion.
+``WECFarm`` is a container and aggregation layer that creates devices
+from database results. Downsampling of high-resolution data is handled
+by the device class (``RenewableDevice.downsample``).
 
 File: src/marinegrid/renewables/wec.py
 """
@@ -14,7 +15,6 @@ from typing import TYPE_CHECKING
 
 # Third-party
 import pandas as pd
-import numpy as np
 
 # Local
 from .base import RenewableDevice
@@ -98,7 +98,6 @@ class WECDevice(RenewableDevice):
             Active power output at the given timestamp in per-unit.
 
         Raises:
-            TypeError: If ts is not a pd.Timestamp.
             KeyError: If timestamp is not in device data.
         """
         if ts not in self.data.index:
@@ -116,7 +115,6 @@ class WECDevice(RenewableDevice):
             Reactive power output at the given timestamp in per-unit.
 
         Raises:
-            TypeError: If ts is not a pd.Timestamp.
             KeyError: If timestamp is not in device data.
         """
         if ts not in self.data.index:
@@ -241,9 +239,11 @@ class WECFarm(RenewableEnergyFarm):
         """
         Load WEC-Sim data and create device objects.
 
-        Queries the database for the selected simulation, downsamples the
-        power data to the grid simulation frequency, and instantiates
-        `size` WECDevice objects.
+        Queries the database for the selected simulation, stores the
+        full-resolution data on each device (``raw_data``), then
+        downsamples to the grid simulation frequency via the device's
+        ``downsample()`` method. Per-unit conversion and timestamp
+        alignment are applied to produce ``device.data``.
 
         Raises:
             RuntimeError: If simulation data is missing or invalid.
@@ -298,138 +298,46 @@ class WECFarm(RenewableEnergyFarm):
                     f"No WEC power data found for wec_sim_id={self.wec_sim_id}"
                 )
 
-            # Apply scaling factor
+            # Apply scaling factor to full-resolution data
             df_full["p"] = self.scaling_factor * df_full["p"]
             df_full["q"] = self.scaling_factor * df_full["q"]
 
-            # Downsample to grid simulation frequency
-            df_downsampled = self.downsample(df_full, self.time.delta_time)
-
-            # Apply timestamp index aligned with simulation time
-            df_downsampled["snapshots"] = pd.date_range(
-                start=self.time.start_time,
-                periods=len(df_downsampled),
-                freq=self.time.freq,
-            )
-            df_downsampled.set_index("snapshots", inplace=True)
-
-            # Convert Watts to per-unit
-            # WEC data stored in Watts → MW (÷1e6) → per-unit (÷sbase_MVA)
-            df_downsampled["p"] = df_downsampled["p"] / (self.sbase * 1e6)
-            df_downsampled["q"] = df_downsampled["q"] / (self.sbase * 1e6)
-
-            # Create device instances
+            # Create device instances with full-resolution and downsampled data
             for i in range(self.size):
                 name = f"{self.model}_{self.wec_sim_id}_{i}"
                 device = WECDevice(
                     name=name,
-                    data=df_downsampled.copy(),
                     bus_location=self.bus_location,
                     model=self.model,
                     wec_sim_id=self.wec_sim_id,
                 )
+
+                # Store full-resolution data on device (Watts, time in seconds)
+                device.raw_data = df_full.copy()
+
+                # Downsample via device method to grid simulation frequency
+                df_downsampled = device.downsample(self.time.delta_time)
+
+                # Apply timestamp index aligned with simulation time
+                df_downsampled["snapshots"] = pd.date_range(
+                    start=self.time.start_time,
+                    periods=len(df_downsampled),
+                    freq=self.time.freq,
+                )
+                df_downsampled.set_index("snapshots", inplace=True)
+
+                # Convert Watts to per-unit
+                # WEC data in Watts → MW (÷1e6) → per-unit (÷sbase_MVA)
+                df_downsampled["p"] = df_downsampled["p"] / (self.sbase * 1e6)
+                df_downsampled["q"] = df_downsampled["q"] / (self.sbase * 1e6)
+
+                device.data = df_downsampled
                 self.devices.append(device)
 
         except RuntimeError:
             raise
         except Exception as e:
             raise RuntimeError(f"Failed to load WEC farm data: {e}") from e
-
-    @staticmethod
-    def downsample(
-        wec_df: pd.DataFrame,
-        new_sample_period: float,
-        timeshift: int = 0,
-    ) -> pd.DataFrame:
-        """
-        Downsample WEC time series to a coarser resolution.
-
-        Averages high-resolution WEC-Sim output to match the grid simulation
-        time step. This is necessary because WEC-Sim typically runs at
-        sub-second resolution while grid simulations use 5-minute or longer
-        time steps.
-
-        Args:
-            wec_df: Input data with a "time" column in seconds.
-            new_sample_period: Desired sampling period in seconds (must be > 0).
-            timeshift: 0 for end-aligned timestamps, 1 for centered.
-
-        Returns:
-            Downsampled DataFrame with the same columns.
-
-        Raises:
-            TypeError: If wec_df is not a DataFrame or new_sample_period is not numeric.
-            ValueError: If new_sample_period is not positive or smaller than original step.
-            KeyError: If the "time" column is missing.
-        """
-        if "time" not in wec_df.columns:
-            raise KeyError("DataFrame must contain 'time' column for downsampling")
-
-        time_values = wec_df["time"].values
-        if len(time_values) < 2:
-            return wec_df.copy()
-
-        # Calculate original time step
-        old_dt = time_values[1] - time_values[0]
-
-        if new_sample_period <= old_dt:
-            raise ValueError(
-                f"New sample period ({new_sample_period}s) must be larger than "
-                f"original timestep ({old_dt}s)"
-            )
-
-        # Calculate sampling parameters
-        t_sample = int(new_sample_period / old_dt)
-        new_sample_size = int((time_values[-1] - time_values[0]) / new_sample_period)
-
-        if new_sample_size <= 0:
-            return wec_df.copy()
-
-        # Create new time grid
-        if timeshift == 1:
-            # Center-aligned timestamps
-            new_times = np.arange(
-                new_sample_period / 2,
-                new_sample_size * new_sample_period + new_sample_period / 2,
-                new_sample_period,
-            )
-        else:
-            # End-aligned timestamps
-            new_times = np.arange(
-                new_sample_period,
-                (new_sample_size + 1) * new_sample_period,
-                new_sample_period,
-            )
-
-        # Ensure we don't exceed original time range
-        new_times = new_times[new_times <= time_values[-1]]
-        new_sample_size = len(new_times)
-
-        # Initialize downsampled data
-        downsampled_data = {"time": new_times}
-
-        # Downsample each data column (excluding time)
-        data_columns = [col for col in wec_df.columns if col != "time"]
-
-        for col in data_columns:
-            downsampled_values = np.zeros(new_sample_size)
-
-            for i in range(new_sample_size):
-                if i == 0:
-                    start_idx = 0
-                    end_idx = min(t_sample, len(wec_df))
-                else:
-                    start_idx = (i - 1) * t_sample
-                    end_idx = min(i * t_sample, len(wec_df))
-
-                if start_idx < len(wec_df) and end_idx > start_idx:
-                    downsampled_values[i] = wec_df[col].iloc[start_idx:end_idx].mean()
-                else:
-                    downsampled_values[i] = 0.0
-
-            downsampled_data[col] = downsampled_values
-
-        return pd.DataFrame(downsampled_data)
 
     # -------------------------------------------------------------------------
     # Power Query
@@ -444,9 +352,6 @@ class WECFarm(RenewableEnergyFarm):
 
         Returns:
             Sum of device reactive powers in per-unit on sbase.
-
-        Raises:
-            TypeError: If timestamp is not a pd.Timestamp.
         """
         total_power = 0.0
         for device in self.devices:
@@ -454,6 +359,7 @@ class WECFarm(RenewableEnergyFarm):
                 device.data is not None
                 and not device.data.empty
                 and timestamp in device.data.index
+                and "q" in device.data.columns
             ):
                 total_power += device.data.at[timestamp, "q"]
         return total_power
